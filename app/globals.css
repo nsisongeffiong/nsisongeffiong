@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Light mode tokens ──────────────────────────────────────────────────────── */
+:root {
+  --bg:          #F7F5F0;
+  --bg2:         #EEEAE0;
+  --bg3:         #E5E0D4;
+  --txt:         #1C1C18;
+  --txt2:        #5C5B54;
+  --txt3:        #9C9B90;
+  --bdr:         rgba(28, 28, 24, 0.1);
+  --bdr2:        rgba(28, 28, 24, 0.2);
+
+  /* Poetry — purple */
+  --purple:      #534AB7;
+  --purple-bg:   #EEEDFE;
+  --purple-txt:  #3C3489;
+  --purple-acc:  #AFA9EC;
+
+  /* Tech — teal */
+  --teal-hero:   #04342C;
+  --teal-mid:    #1D9E75;
+  --teal-light:  #5DCAA5;
+  --teal-pale:   #E1F5EE;
+  --teal-txt:    #085041;
+  --teal-comm:   #0F6E56;
+
+  /* Ideas — amber */
+  --amber:       #BA7517;
+  --amber-bg:    #FDF6E8;
+  --amber-txt:   #7A4A0A;
+  --amber-pq:    #FDF0D4;
+  --amber-pq-txt:#5C3608;
+}
+
+/* ─── Dark mode tokens ───────────────────────────────────────────────────────── */
+.dark {
+  --bg:          #0E0E0C;
+  --bg2:         #181815;
+  --bg3:         #1E1E1A;
+  --txt:         #F0EFE8;
+  --txt2:        #A8A89E;
+  --txt3:        #606058;
+  --bdr:         rgba(240, 239, 232, 0.1);
+  --bdr2:        rgba(240, 239, 232, 0.2);
+
+  --purple:      #AFA9EC;
+  --purple-bg:   #26215C;
+  --purple-txt:  #CECBF6;
+  --purple-acc:  #7F77DD;
+
+  --teal-hero:   #021F1A;
+  --teal-mid:    #5DCAA5;
+  --teal-light:  #9FE1CB;
+  --teal-pale:   #085041;
+  --teal-txt:    #9FE1CB;
+  --teal-comm:   #0F6E56;
+
+  --amber:       #EF9F27;
+  --amber-bg:    #2C1D06;
+  --amber-txt:   #FAC775;
+  --amber-pq:    #2C1D06;
+  --amber-pq-txt:#FAC775;
+}
+
+/* ─── Base styles ────────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background-color: var(--bg);
+  color: var(--txt);
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--txt);
+  font-family: var(--font-syne), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Tiptap editor base ─────────────────────────────────────────────────────── */
+.tiptap {
+  outline: none;
+  font-family: var(--font-source-serif), serif;
+  font-size: 17px;
+  line-height: 1.9;
+  color: var(--txt2);
+}
+
+.tiptap p { margin-bottom: 1.4rem; }
+.tiptap h2 {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 2.5rem 0 0.85rem;
+  color: var(--txt);
+}
+.tiptap h3 {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  margin: 2rem 0 0.75rem;
+  color: var(--txt);
+}
+.tiptap pre {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 12px;
+  background: var(--teal-hero);
+  color: #9FE1CB;
+  padding: 1.25rem 1.5rem;
+  border-radius: 4px;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  line-height: 1.85;
+}
+.tiptap blockquote {
+  border-top: 2.5px solid var(--amber);
+  padding: 1rem 0 1rem 1.25rem;
+  margin: 2rem 0;
+  font-style: italic;
+  color: var(--txt2);
+}
+.tiptap a { color: var(--amber); text-decoration: underline; }
+
+/* ─── Focus ring ─────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
