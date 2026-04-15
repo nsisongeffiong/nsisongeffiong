@@ -1,27 +1,38 @@
-import { SiteNav } from '@/components/shared/SiteNav';
+export const dynamic = 'force-dynamic'
 
-const recentPosts = [
-  {
-    type: 'Poetry',
-    title: 'The River Remembers',
-    date: '2024-12-15',
-    href: '/poetry/the-river-remembers',
-  },
-  {
-    type: 'Tech',
-    title: 'Building Resilient ML Pipelines',
-    date: '2024-12-10',
-    href: '/tech/building-resilient-ml-pipelines',
-  },
-  {
-    type: 'Ideas',
-    title: 'On the Architecture of Public Trust',
-    date: '2024-12-05',
-    href: '/ideas/on-the-architecture-of-public-trust',
-  },
-];
+import { SiteNav } from '@/components/shared/SiteNav'
+import { db } from '@/lib/db'
+import { posts } from '@/lib/db/schema'
+import { desc, eq, and } from 'drizzle-orm'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const recentPosts = await db
+    .select({
+      id:          posts.id,
+      type:        posts.type,
+      title:       posts.title,
+      slug:        posts.slug,
+      publishedAt: posts.publishedAt,
+    })
+    .from(posts)
+    .where(eq(posts.published, true))
+    .orderBy(desc(posts.publishedAt))
+    .limit(3)
+
+  const [latestIdeas] = await db
+    .select({ title: posts.title, slug: posts.slug })
+    .from(posts)
+    .where(and(eq(posts.published, true), eq(posts.type, 'ideas')))
+    .orderBy(desc(posts.publishedAt))
+    .limit(1)
+
+  const formatted = recentPosts.map((p) => ({
+    type:  p.type.charAt(0).toUpperCase() + p.type.slice(1),
+    title: p.title,
+    date:  p.publishedAt ? p.publishedAt.toISOString().split('T')[0] : '',
+    href:  `/${p.type}/${p.slug}`,
+  }))
+
   return (
     <div
       style={{
@@ -161,7 +172,7 @@ export default function HomePage() {
                 color: 'var(--txt)',
               }}
             >
-              &ldquo;The river carries what the mouth cannot hold…&rdquo;
+              {formatted.find((p) => p.type === 'Poetry')?.title ?? ''}
             </p>
           </div>
           <a
@@ -255,7 +266,7 @@ export default function HomePage() {
                 color: 'var(--txt)',
               }}
             >
-              Building Resilient ML Pipelines at Scale
+              {formatted.find((p) => p.type === 'Tech')?.title ?? ''}
             </p>
           </div>
           <a
@@ -349,7 +360,7 @@ export default function HomePage() {
                 color: 'var(--txt)',
               }}
             >
-              On the Architecture of Public Trust
+              {latestIdeas?.title ?? ''}
             </p>
           </div>
           <a
@@ -399,7 +410,7 @@ export default function HomePage() {
             gap: '1.5rem',
           }}
         >
-          {recentPosts.map((post) => (
+          {formatted.map((post) => (
             <a
               key={post.href}
               href={post.href}
@@ -444,20 +455,22 @@ export default function HomePage() {
               >
                 {post.title}
               </span>
-              <time
-                style={{
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.7rem',
-                  color: 'var(--txt-secondary)',
-                }}
-                dateTime={post.date}
-              >
-                {new Date(post.date).toLocaleDateString('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </time>
+              {post.date && (
+                <time
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '0.7rem',
+                    color: 'var(--txt-secondary)',
+                  }}
+                  dateTime={post.date}
+                >
+                  {new Date(post.date).toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </time>
+              )}
             </a>
           ))}
         </div>
@@ -484,5 +497,5 @@ export default function HomePage() {
         </p>
       </footer>
     </div>
-  );
+  )
 }
