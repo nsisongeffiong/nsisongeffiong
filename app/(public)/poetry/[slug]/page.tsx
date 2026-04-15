@@ -514,7 +514,7 @@ export default function PoetrySinglePage() {
 
           {/* comment form or disqus */}
           {post.metadata.legacyDisqus ? (
-            <DisqusComments slug={post.slug} path={`/poetry/${post.slug}`} />
+            <DisqusComments slug={post.slug} title={post.title} path={`/poetry/${post.slug}`} />
           ) : (
             <CommentForm section="poetry" />
           )}
