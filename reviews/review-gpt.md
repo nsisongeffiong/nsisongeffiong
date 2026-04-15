@@ -1,65 +1,30 @@
 ## Documentation Gaps
 
-No genuine docstring gaps worth flagging.
+None worth flagging.
 
-Most exported items are route handlers or trivial page/layout components where the function name and colocated comments are already sufficient. Internal helpers like `verifyTurnstile` are not public API.
+There are no public classes, and the exported route handlers/components are either trivial or already self-explanatory in context. Internal helpers like `verifyTurnstile` are not public API.
 
 ---
 
 ## Code Quality Issues
 
-- **[lib/db/schema.ts:39] Schema docs are out of sync with the project rules.** The `metadata` comment documents a rejected `poemNumber` field and calls the Tech section “Technical”, which conflicts with `CONTEXT.md` and invites incorrect future usage.  
-  **Suggested fix:** update the comment to reflect the actual metadata shapes (`category`, `poetNote`, `legacyDisqus` for poetry; `readTime`, `featured`, `codeLanguages`, `legacyDisqus` for tech).
+- **[app/api/posts/route.ts:53] “Admin only” is not actually enforced.** Any authenticated Supabase user can create posts because the handler checks only `getUser()`, not an admin role/claim/allowlist.  
+  **Suggested fix:** enforce server-side admin authorization before insert.
 
-- **[types/index.ts:8] `PostType` does not match the database enum.** The app type is `'poetry' | 'tech' | 'ideas'`, but `lib/db/schema.ts` defines the DB enum as `'poetry' | 'tech' | 'ideas'`? Wait—here the schema is actually correct as `tech`; the mismatch is elsewhere in comments/docs, not code. No issue here.  
-  **Suggested fix:** none.
+- **[components/shared/CommentForm.tsx:47] Comment submissions will always fail until Turnstile is integrated.** The component sends `window.turnstileToken ?? ''`, but nothing in the codebase sets that value. Since the API requires a token, real users cannot submit comments successfully.  
+  **Suggested fix:** either integrate Turnstile properly in the form or block/hide submission until it is available.
 
-- **[app/api/posts/route.ts:14] Invalid `type` query values are silently ignored instead of rejected.** `type` is cast to `PostType | null`; if a caller passes an arbitrary string, the API returns all published posts rather than a 400. That makes client bugs harder to detect.  
-  **Suggested fix:** validate `type` against the allowed literals and return `400` for invalid values.
+- **[components/shared/CommentForm.tsx:195] Hardcoded hex color violates project styling rules.** Error text falls back to `#E24B4A`, but the project explicitly forbids hardcoded hex values in component styles.  
+  **Suggested fix:** add a CSS variable for error text and use that instead.
 
-- **[app/api/posts/route.ts:47] “admin only” is enforced only by presence of any authenticated user.** Any logged-in Supabase user can create posts. If this project truly has a single-admin backend, this is an authorization gap, not just missing polish.  
-  **Suggested fix:** enforce an admin claim, allowlist, or server-side role check before insert.
+- **[src/generated.py:1] Generated artifact contains invalid source code and stale implementations.** This file embeds `.tsx` source inside a Python file, includes broken imports/tokens, and is not part of the actual app structure. Keeping it in the repo invites confusion and accidental copy/paste regressions.  
+  **Suggested fix:** delete `src/generated.py` from the repository.
 
-- **[app/api/comments/route.ts:100] Reply depth is not constrained to one level as required by project rules.** The schema/comment system explicitly says “one level of replies only”, but the POST handler accepts a `parentId` whose parent may itself already be a reply.  
-  **Suggested fix:** when `parentId` is present, fetch the parent comment and reject if `parent.parentId` is non-null.
+- **[src/index.js:1] Unused non-Next entrypoint adds noise.** This file does not participate in the Next.js app and appears to be a leftover pipeline artifact.  
+  **Suggested fix:** remove it unless an external tool explicitly depends on it.
 
-- **[components/shared/CommentForm.tsx:29] Turnstile integration is stubbed but the form behaves like production code.** The client always sends `window.turnstileToken ?? ''`, so submissions will fail unless some external script mutates global state. That is acceptable as temporary scaffolding, but the current component gives no user-visible indication that verification is unavailable.  
-  **Suggested fix:** either integrate Turnstile fully or gate submission with a clearer UI/error state until it exists.
-
-- **[components/shared/CommentForm.tsx:194] Ideas footer text uses the wrong font family.** The Ideas section rules require Source Serif 4 for body text, but the footer note uses Cormorant because `isPoetry || isIdeas` is grouped together.  
-  **Suggested fix:** split the font-family branch so Ideas uses `var(--font-source-serif), serif`.
-
-- **[components/shared/CommentForm.tsx:57] Success-state styling for Ideas uses the wrong heading/body distinction.** Ideas success copy is rendered in Source Serif? Actually success state is correct; no issue.
-
-- **[app/(public)/page.tsx:1] `SiteNav` is imported as a default export, but `components/shared/SiteNav.tsx` exports it as a named export.** This will fail at compile time.  
-  **Suggested fix:** change to `import { SiteNav } from '@/components/shared/SiteNav'`.
-
-- **[app/(public)/poetry/page.tsx:1] `SiteNav` is imported as a default export, but only a named export exists.** Compile-time import error.  
-  **Suggested fix:** use `import { SiteNav } from '@/components/shared/SiteNav'`.
-
-- **[app/(public)/tech/page.tsx:1] `SiteNav` is imported as a default export, but only a named export exists.** Compile-time import error.  
-  **Suggested fix:** use `import { SiteNav } from '@/components/shared/SiteNav'`.
-
-- **[app/(public)/ideas/page.tsx:1] `SiteNav` is imported as a default export, but only a named export exists.** Compile-time import error.  
-  **Suggested fix:** use `import { SiteNav } from '@/components/shared/SiteNav'`.
-
-- **[app/(public)/page.tsx:37] Uses undefined CSS variables `var(--fg)` / `var(--fg2)` throughout.** The token system defines `--txt`, `--txt2`, `--txt3`, not `--fg`. Large parts of the public pages will render with invalid colors.  
-  **Suggested fix:** replace `--fg` → `--txt` and `--fg2` → `--txt2`.
-
-- **[app/(public)/poetry/page.tsx:34] Uses undefined CSS variables `var(--fg)` / `var(--fg2)` throughout.** This breaks text coloring on the Poetry index page.  
-  **Suggested fix:** replace with the defined text tokens.
-
-- **[app/(public)/tech/page.tsx:91] Hardcoded hex colors are used directly in component styles.** The project rules explicitly forbid hardcoded hex values in component styles, and this page uses `#9FE1CB` repeatedly.  
-  **Suggested fix:** replace with existing CSS variables such as `var(--teal-light)`.
-
-- **[app/(public)/ideas/page.tsx:73] Uses undefined CSS variables `var(--fg)` / `var(--fg2)` throughout.** This page relies on non-existent tokens, so colors will not resolve as intended.  
-  **Suggested fix:** replace with `var(--txt)` / `var(--txt2)`.
-
-- **[package.json:8] `lint` script uses `next lint`, which is removed/deprecated in newer Next 15 setups and conflicts with ESLint 9 flat-config expectations.** In this repo there is also no ESLint config file shown, so the script is unlikely to work reliably.  
-  **Suggested fix:** switch to `eslint .` with an explicit ESLint config.
-
-- **[src/index.js:1] Stub file appears unused and unrelated to the Next app.** It adds noise and suggests a second entrypoint that does not exist.  
-  **Suggested fix:** remove it unless an external tool requires it.
+- **[package.json:7] `next lint` is not a valid long-term lint entry for this setup.** With Next 15 and ESLint 9, relying on `next lint` is brittle; there is also no explicit ESLint config shown.  
+  **Suggested fix:** switch to `eslint .` and add a real ESLint config.
 
 ---
 
@@ -72,215 +37,186 @@ Most exported items are route handlers or trivial page/layout components where t
   - missing email/password
   - invalid credentials
   - successful login
-  - sign-out error path
+  - sign-out failure path
 
 - **`app/api/comments/route.ts`**
-  - honeypot short-circuit
+  - honeypot fake-success path
   - missing Turnstile token
   - failed Turnstile verification
   - invalid email
   - too-short body
-  - unpublished post rejection
-  - invalid parent comment
+  - unpublished/nonexistent post
+  - invalid `parentId`
   - cross-post parent rejection
-  - nested reply rejection once one-level enforcement is added
-  - successful pending insert
+  - reply-to-reply rejection
+  - successful insert as `pending`
 
 - **`app/api/posts/route.ts`**
-  - GET with invalid `type`
-  - GET with default, NaN, negative, and oversized `limit`
+  - invalid `type` query
+  - `limit` coercion for NaN, negative, and oversized values
   - unauthenticated POST
-  - authenticated non-admin POST rejection once authz is added
+  - authenticated but non-admin POST rejection once authz is added
   - invalid `type` on POST
   - duplicate slug conflict
   - `publishedAt` set only when `published === true`
 
 - **`components/shared/CommentForm.tsx`**
   - API error rendering
-  - network failure rendering
-  - submit disabled state
+  - network error rendering
   - success reset behavior
+  - disabled submit state
   - `onSuccess` callback
   - `onCancel` callback
-  - section-specific copy/styles, especially Ideas font mismatch
-
-- **Public section pages**
-  - no rendering tests would currently catch the broken `SiteNav` import
-  - no smoke tests would catch use of undefined CSS variables on public pages
+  - failure behavior when Turnstile token is absent
 
 - **`lib/utils/index.ts`**
   - `generateSlug`
-  - date formatting helpers
+  - `formatDate`, `formatDateShort`, `formatDateRelative`
   - `estimateReadTime`
   - `truncate`
   - `absoluteUrl`
 
-### Suggested specific test cases
+### Suggested test cases
 
-1. **Reject second-level reply**
-   - Seed a post, a top-level approved/pending comment, and a reply to it.
-   - Submit a new comment with `parentId` equal to the reply ID.
-   - Expect `400` with a message indicating only one reply level is allowed.
+1. **Comments API honeypot**
+   - POST with `website` filled.
+   - Expect `200` success with `{ pending: true }` and no DB insert.
 
-2. **Posts GET rejects invalid type**
-   - Request `/api/posts?type=invalid`.
-   - Expect `400` instead of falling back to all posts.
+2. **Comments API missing Turnstile**
+   - POST valid fields but no `turnstileToken`.
+   - Expect `400`.
 
-3. **Public page smoke test for Home/Poetry/Tech/Ideas**
-   - Render each page component.
-   - Assert `SiteNav` import resolves and the page does not throw.
+3. **Comments API nested reply rejection**
+   - Seed top-level comment and reply.
+   - POST a reply to that reply.
+   - Expect `400` with one-level-depth error.
 
-4. **CommentForm Ideas typography test**
-   - Render `CommentForm` with `section="ideas"`.
-   - Assert the helper/footer copy uses Source Serif 4, not Cormorant.
+4. **Posts API invalid type**
+   - GET `/api/posts?type=bad`.
+   - Expect `400`.
 
-5. **Tech page style token test**
-   - Render the Tech page and assert key hero/button colors use CSS variables (`var(--teal-light)`, `var(--teal-hero)`) rather than hardcoded hex values.
+5. **Posts API duplicate slug**
+   - POST two published posts with same title.
+   - Expect second request to return `409`.
 
-6. **Auth route malformed body**
-   - Send invalid JSON to `POST /api/auth`.
-   - Expect controlled `500` or `400`, depending on intended behavior, and no uncaught exception.
+6. **CommentForm failure without token**
+   - Render form, submit valid inputs without a Turnstile token.
+   - Assert error state is shown.
+
+7. **Utility tests**
+   - Empty string read time returns `0`
+   - `truncate` appends ellipsis only when needed
+   - `absoluteUrl('/tech/post')` prefixes site URL correctly
 
 ---
 
 ## Suggested Improvements
 
-### 1) Enforce one-level reply depth
+### 1) Enforce real admin authorization in post creation
 
 **Before**
 ```ts
-if (parentId) {
-  const [parent] = await db
-    .select({ id: comments.id, postId: comments.postId })
-    .from(comments)
-    .where(eq(comments.id, parentId))
-    .limit(1)
+const supabase = await createClient()
+const { data: { user } } = await supabase.auth.getUser()
 
-  if (!parent || parent.postId !== postId) {
-    return NextResponse.json(
-      { success: false, error: 'Invalid parent comment' },
-      { status: 400 }
-    )
-  }
-}
-```
-
-**After**
-```ts
-if (parentId) {
-  const [parent] = await db
-    .select({
-      id: comments.id,
-      postId: comments.postId,
-      parentId: comments.parentId,
-    })
-    .from(comments)
-    .where(eq(comments.id, parentId))
-    .limit(1)
-
-  if (!parent || parent.postId !== postId) {
-    return NextResponse.json(
-      { success: false, error: 'Invalid parent comment' },
-      { status: 400 }
-    )
-  }
-
-  if (parent.parentId) {
-    return NextResponse.json(
-      { success: false, error: 'Replies are limited to one level' },
-      { status: 400 }
-    )
-  }
-}
-```
-
----
-
-### 2) Fix broken `SiteNav` imports and invalid text tokens on public pages
-
-**Before**
-```tsx
-import SiteNav from '@/components/shared/SiteNav';
-...
-color: 'var(--fg)',
-```
-
-**After**
-```tsx
-import { SiteNav } from '@/components/shared/SiteNav'
-...
-color: 'var(--txt)',
-```
-
-Apply the same replacement for `var(--fg2)` → `var(--txt2)` across:
-- `app/(public)/page.tsx`
-- `app/(public)/poetry/page.tsx`
-- `app/(public)/tech/page.tsx`
-- `app/(public)/ideas/page.tsx`
-
----
-
-### 3) Remove hardcoded Tech page colors
-
-**Before**
-```tsx
-color: '#9FE1CB',
-border: '1px solid #9FE1CB',
-```
-
-**After**
-```tsx
-color: 'var(--teal-light)',
-border: '1px solid var(--teal-light)',
-```
-
-This keeps the page aligned with the design rules and theme token system.
-
----
-
-### 4) Fix Ideas comment footer typography
-
-**Before**
-```tsx
-fontFamily:  isPoetry || isIdeas ? 'var(--font-cormorant), serif' : 'var(--font-dm-mono), monospace',
-```
-
-**After**
-```tsx
-fontFamily: isPoetry
-  ? 'var(--font-cormorant), serif'
-  : isIdeas
-    ? 'var(--font-source-serif), serif'
-    : 'var(--font-dm-mono), monospace',
-```
-
----
-
-### 5) Tighten post type validation on GET
-
-**Before**
-```ts
-const type  = searchParams.get('type') as PostType | null
-const conditions = [eq(posts.published, true)]
-if (type) conditions.push(eq(posts.type, type))
-```
-
-**After**
-```ts
-const rawType = searchParams.get('type')
-const allowedTypes: PostType[] = ['poetry', 'tech', 'ideas']
-
-if (rawType && !allowedTypes.includes(rawType as PostType)) {
+if (!user) {
   return NextResponse.json(
-    { success: false, error: 'Invalid post type' },
-    { status: 400 }
+    { success: false, error: 'Unauthorised' },
+    { status: 401 }
+  )
+}
+```
+
+**After**
+```ts
+const supabase = await createClient()
+const { data: { user } } = await supabase.auth.getUser()
+
+const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+  .split(',')
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean)
+
+if (!user) {
+  return NextResponse.json(
+    { success: false, error: 'Unauthorised' },
+    { status: 401 }
   )
 }
 
-const conditions = [eq(posts.published, true)]
-if (rawType) conditions.push(eq(posts.type, rawType as PostType))
+if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
+  return NextResponse.json(
+    { success: false, error: 'Forbidden' },
+    { status: 403 }
+  )
+}
 ```
 
 ---
 
-Biggest priorities: fix the broken public page imports/tokens, enforce real admin authorization on post creation, and add one-level reply validation to comments.
+### 2) Make Turnstile failure explicit in the form until integrated
+
+**Before**
+```ts
+const turnstileToken = (window as any).turnstileToken ?? ''
+```
+
+**After**
+```ts
+const turnstileToken = (window as any).turnstileToken ?? ''
+
+if (!turnstileToken) {
+  setStatus('error')
+  setErrorMsg('Verification is not ready yet. Please try again later.')
+  return
+}
+```
+
+This avoids sending guaranteed-failing requests and gives the user a real explanation.
+
+---
+
+### 3) Replace hardcoded error color with a token
+
+**Before**
+```tsx
+color: 'var(--color-text-danger, #E24B4A)',
+```
+
+**After**
+```css
+:root {
+  --danger: #E24B4A;
+}
+
+.dark {
+  --danger: #FF7B72;
+}
+```
+
+```tsx
+color: 'var(--danger)',
+```
+
+If you want to stay strict with the no-hex-in-components rule, move all color values into CSS tokens.
+
+---
+
+### 4) Remove dead/generated artifacts
+
+**Before**
+```text
+src/generated.py
+src/index.js
+```
+
+**After**
+```text
+# delete both files if they are not used by tooling
+```
+
+This reduces confusion and prevents reviewers from chasing non-runtime code.
+
+---
+
+Biggest priorities: fix admin authorization, make comment submission usable by integrating or gating Turnstile, and remove generated artifact files.
