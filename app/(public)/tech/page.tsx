@@ -1,4 +1,4 @@
-import SiteNav from '@/components/shared/SiteNav';
+import { SiteNav } from '@/components/shared/SiteNav';
 
 const filters = ['all', 'AI/ML', 'systems', 'web', 'devtools'];
 

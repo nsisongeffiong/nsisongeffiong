@@ -1,4 +1,4 @@
-import SiteNav from '@/components/shared/SiteNav';
+import { SiteNav } from '@/components/shared/SiteNav';
 
 const categories = [
   'All',

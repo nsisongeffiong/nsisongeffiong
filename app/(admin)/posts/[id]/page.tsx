@@ -1,7 +1,8 @@
-export default function AdminEditPostPage({
+export default async function AdminEditPostPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  return <main><p>Edit post {params.id} — coming soon</p></main>
+  const { id } = await params
+  return <main><p>Edit post {id} — coming soon</p></main>
 }

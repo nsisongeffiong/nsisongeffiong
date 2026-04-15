@@ -33,6 +33,9 @@
   --amber-txt:   #7A4A0A;
   --amber-pq:    #FDF0D4;
   --amber-pq-txt:#5C3608;
+
+  /* Semantic */
+  --danger:      #E24B4A;
 }
 
 /* ─── Dark mode tokens ───────────────────────────────────────────────────────── */
@@ -63,6 +66,8 @@
   --amber-txt:   #FAC775;
   --amber-pq:    #2C1D06;
   --amber-pq-txt:#FAC775;
+
+  --danger:      #FF7B72;
 }
 
 /* ─── Base styles ────────────────────────────────────────────────────────────── */
