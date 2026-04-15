@@ -14,10 +14,23 @@ export function DisqusComments({ slug, title, path }: DisqusCommentsProps) {
 
   useEffect(() => {
     const win = window as any
-    win.disqus_config = function () {
+
+    const config = function (this: any) {
       this.page.url        = `${siteUrl}${path}`
       this.page.identifier = slug
       this.page.title      = title
+    }
+
+    win.disqus_config = config
+
+    // If DISQUS is already loaded (e.g. navigating between posts),
+    // call reset instead of appending a new script
+    if (win.DISQUS) {
+      win.DISQUS.reset({
+        reload: true,
+        config,
+      })
+      return
     }
 
     const script    = document.createElement('script')
@@ -28,12 +41,10 @@ export function DisqusComments({ slug, title, path }: DisqusCommentsProps) {
 
     return () => {
       // Clean up the embed when navigating away
-      if (script.parentNode) script.parentNode.removeChild(script)
       const thread = document.getElementById('disqus_thread')
       if (thread) thread.innerHTML = ''
-      delete win.DISQUS
     }
-  }, [slug, title, siteUrl, shortname])
+  }, [slug, title, path, siteUrl, shortname])
 
   return (
     <div style={{ padding: '2.5rem 2rem' }}>

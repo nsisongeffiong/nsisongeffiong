@@ -4,6 +4,10 @@ import { posts } from '@/lib/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { absoluteUrl } from '@/lib/utils'
 
+function toCdataSafe(value: string): string {
+  return value.replaceAll(']]>', ']]]]><![CDATA[>')
+}
+
 export async function GET() {
   try {
     const allPosts = await db
@@ -31,11 +35,11 @@ export async function GET() {
 
         return `
     <item>
-      <title><![CDATA[${post.title}]]></title>
+      <title><![CDATA[${toCdataSafe(post.title)}]]></title>
       <link>${href}</link>
       <guid isPermaLink="true">${href}</guid>
       <pubDate>${date}</pubDate>
-      ${post.excerpt ? `<description><![CDATA[${post.excerpt}]]></description>` : ''}
+      ${post.excerpt ? `<description><![CDATA[${toCdataSafe(post.excerpt)}]]></description>` : ''}
       <category>${post.type}</category>
     </item>`
       })

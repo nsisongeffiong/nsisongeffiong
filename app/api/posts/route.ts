@@ -32,7 +32,15 @@ export async function GET(request: NextRequest) {
     if (rawType && isValidPostType(rawType)) conditions.push(eq(posts.type, rawType))
 
     const result = await db
-      .select()
+      .select({
+        id: posts.id,
+        type: posts.type,
+        title: posts.title,
+        slug: posts.slug,
+        excerpt: posts.excerpt,
+        tags: posts.tags,
+        publishedAt: posts.publishedAt,
+      })
       .from(posts)
       .where(and(...conditions))
       .orderBy(desc(posts.publishedAt))
@@ -64,8 +72,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: Add admin authorization check here before production.
-    // Options: ADMIN_EMAILS env var allowlist, Supabase custom claims, or RLS.
+    // Admin authorization via email allowlist
+    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((v) => v.trim().toLowerCase())
+      .filter(Boolean)
+
+    if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
 
     const body = await request.json()
     const { title, type, content, excerpt, tags, metadata, published } = body

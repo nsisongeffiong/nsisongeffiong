@@ -47,7 +47,6 @@ export const NAV_LINKS: NavLink[] = [
   { label: 'Poetry', href: '/poetry' },
   { label: 'Tech',   href: '/tech'   },
   { label: 'Ideas',  href: '/ideas'  },
-  { label: 'About',  href: '/about'  },
 ]
 
 // ─── Section config ───────────────────────────────────────────────────────────

@@ -2,6 +2,12 @@
 
 import { useState, useRef } from 'react'
 
+declare global {
+  interface Window {
+    turnstileToken?: string
+  }
+}
+
 interface CommentFormProps {
   postId:   string
   parentId?: string | null
@@ -35,7 +41,7 @@ export function CommentForm({
 
     try {
       // Get Turnstile token — widget renders via script in page
-      const turnstileToken = (window as any).turnstileToken ?? ''
+      const turnstileToken = window.turnstileToken ?? ''
 
       if (!turnstileToken) {
         setStatus('error')

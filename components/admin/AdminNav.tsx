@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -12,9 +13,17 @@ const navItems = [
 export default function AdminNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [signOutError, setSignOutError] = useState(false);
 
   const handleSignOut = async () => {
-    await fetch('/api/auth', { method: 'DELETE' });
+    setSignOutError(false);
+    const res = await fetch('/api/auth', { method: 'DELETE' });
+
+    if (!res.ok) {
+      setSignOutError(true);
+      return;
+    }
+
     router.push('/admin/login');
   };
 
@@ -101,6 +110,20 @@ export default function AdminNav() {
           );
         })}
       </nav>
+
+      {signOutError && (
+        <p
+          style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: 10,
+            color: 'var(--danger)',
+            padding: '0 1.5rem',
+            marginBottom: '0.5rem',
+          }}
+        >
+          Sign out failed. Try again.
+        </p>
+      )}
 
       <button
         onClick={handleSignOut}

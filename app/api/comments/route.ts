@@ -6,15 +6,17 @@ import { eq, and, asc } from 'drizzle-orm'
 // ─── Turnstile verification ───────────────────────────────────────────────────
 async function verifyTurnstile(token: string): Promise<boolean> {
   try {
+    const body = new URLSearchParams({
+      secret: process.env.TURNSTILE_SECRET_KEY ?? '',
+      response: token,
+    })
+
     const res = await fetch(
       'https://challenges.cloudflare.com/turnstile/v0/siteverify',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          secret:   process.env.TURNSTILE_SECRET_KEY,
-          response: token,
-        }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
       }
     )
     if (!res.ok) return false
@@ -87,23 +89,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, data: { pending: true } })
     }
 
-    // ── Layer 2: Turnstile verification ──────────────────────────────────────
-    if (!turnstileToken) {
-      return NextResponse.json(
-        { success: false, error: 'Missing verification token' },
-        { status: 400 }
-      )
-    }
-
-    const turnstileValid = await verifyTurnstile(turnstileToken)
-    if (!turnstileValid) {
-      return NextResponse.json(
-        { success: false, error: 'Verification failed — please try again' },
-        { status: 400 }
-      )
-    }
-
-    // ── Basic validation ─────────────────────────────────────────────────────
+    // ── Layer 2: Basic validation (before external calls) ────────────────────
     if (!postId || !authorName?.trim() || !authorEmail?.trim() || !bodyText?.trim()) {
       return NextResponse.json(
         { success: false, error: 'All fields are required' },
@@ -122,6 +108,22 @@ export async function POST(request: NextRequest) {
     if (bodyText.trim().length < 2) {
       return NextResponse.json(
         { success: false, error: 'Comment is too short' },
+        { status: 400 }
+      )
+    }
+
+    // ── Layer 3: Turnstile verification ──────────────────────────────────────
+    if (!turnstileToken) {
+      return NextResponse.json(
+        { success: false, error: 'Missing verification token' },
+        { status: 400 }
+      )
+    }
+
+    const turnstileValid = await verifyTurnstile(turnstileToken)
+    if (!turnstileValid) {
+      return NextResponse.json(
+        { success: false, error: 'Verification failed — please try again' },
         { status: 400 }
       )
     }
@@ -147,12 +149,13 @@ export async function POST(request: NextRequest) {
           id:       comments.id,
           postId:   comments.postId,
           parentId: comments.parentId,
+          status:   comments.status,
         })
         .from(comments)
         .where(eq(comments.id, parentId))
         .limit(1)
 
-      if (!parent || parent.postId !== postId) {
+      if (!parent || parent.postId !== postId || parent.status !== 'approved') {
         return NextResponse.json(
           { success: false, error: 'Invalid parent comment' },
           { status: 400 }
@@ -168,7 +171,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Layer 3: Save as pending — moderation queue ──────────────────────────
+    // ── Layer 4: Save as pending — moderation queue ──────────────────────────
     const [comment] = await db
       .insert(comments)
       .values({
