@@ -1,1415 +1,1543 @@
 
 
-I'll start by reading CONTEXT.md to understand the full design system, then read the existing stubs and implement each page.
+```tsx app/(public)/page.tsx
+import SiteNav from '@/components/shared/SiteNav';
+import Link from 'next/link';
 
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">CONTEXT.md</param>
-</tool_call>
+const recentPosts = [
+  {
+    section: 'Poetry' as const,
+    title: 'The Weight of Rivers',
+    date: 'Apr 12, 2026',
+    href: '/poetry/the-weight-of-rivers',
+  },
+  {
+    section: 'Tech' as const,
+    title: 'Building Resilient Edge Functions',
+    date: 'Apr 10, 2026',
+    href: '/tech/resilient-edge-functions',
+  },
+  {
+    section: 'Ideas' as const,
+    title: 'On the Architecture of Public Trust',
+    date: 'Apr 8, 2026',
+    href: '/ideas/architecture-of-public-trust',
+  },
+];
 
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/(public)/page.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/(public)/poetry/page.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/(public)/tech/page.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/(public)/ideas/page.tsx</param>
-</tool_call>
-
-Let me also check the existing layout, components, and CSS variables to understand what's already in place.
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/(public)/layout.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/globals.css</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/layout.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">components</param>
-</tool_call>
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">lib</param>
-</tool_call>
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">app/(public)</param>
-</tool_call>
-
-Now let me check for existing components and the database schema:
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">components</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/schema.ts</param>
-</tool_call>
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">components/ui</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">components/ui/ThemeToggle.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">components/ui/Header.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">lib/db</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/index.ts</param>
-</tool_call>
-
-Now let me check what queries might already exist and understand the full schema:
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">lib</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/schema.ts</param>
-</tool_call>
-
-Let me see the full project structure:
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">.</param>
-</tool_call>
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">app</param>
-</tool_call>
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">app/(public)/poetry</param>
-</tool_call>
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">app/(public)/tech</param>
-</tool_call>
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">app/(public)/ideas</param>
-</tool_call>
-
-Now I have a comprehensive understanding. Let me implement all four pages. Let me re-read the CONTEXT.md carefully for the landing page and section page designs:
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">CONTEXT.md</param>
-</tool_call>
-
-Now let me check the globals.css for all CSS variables available:
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/globals.css</param>
-</tool_call>
-
-Let me also check if there's a queries file or any existing data fetching utilities:
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">lib/db</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/index.ts</param>
-</tool_call>
-
-Now let me check what the Header component looks like to understand navigation:
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">components/ui/Header.tsx</param>
-</tool_call>
-
-Let me check for any existing components in the section-specific folders:
-
-<tool_call>
-<tool_name>list_directory</tool_name>
-<param name="directory_path">components</param>
-</tool_call>
-
-Good. Now I have a full understanding of everything. Let me implement the four pages. First, I need to create a queries utility for fetching posts, then implement each page.
-
-Let me first create the queries file:
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/schema.ts</param>
-</tool_call>
-
-Now I have everything I need. Let me implement all the pages. I'll start with a shared queries module, then each page.
-
-<tool_call>
-<tool_name>write_to_file</tool_name>
-<param name="file_path">lib/db/queries.ts</param>
-<param name="content">import { db } from '@/lib/db';
-import { posts, comments } from '@/lib/db/schema';
-import { eq, desc, and, count, sql } from 'drizzle-orm';
-
-export type PostWithCommentCount = {
-  id: string;
+function SectionCard({
+  section,
+  title,
+  titleStyle,
+  latest,
+  href,
+}: {
+  section: string;
   title: string;
-  slug: string;
-  section: 'poetry' | 'tech' | 'ideas';
-  excerpt: string | null;
-  publishedAt: Date | null;
-  metadata: Record<string, unknown>;
-};
-
-/**
- * Fetch the latest published post from each section for the landing page.
- */
-export async function getLatestPostPerSection() {
-  const sections = ['poetry', 'tech', 'ideas'] as const;
-
-  const results = await Promise.all(
-    sections.map(async (section) => {
-      const [post] = await db
-        .select({
-          id: posts.id,
-          title: posts.title,
-          slug: posts.slug,
-          section: posts.section,
-          excerpt: posts.excerpt,
-          publishedAt: posts.publishedAt,
-          metadata: posts.metadata,
-        })
-        .from(posts)
-        .where(
-          and(
-            eq(posts.section, section),
-            eq(posts.status, 'published')
-          )
-        )
-        .orderBy(desc(posts.publishedAt))
-        .limit(1);
-
-      return post ?? null;
-    })
-  );
-
-  return {
-    poetry: results[0],
-    tech: results[1],
-    ideas: results[2],
-  };
-}
-
-/**
- * Fetch published posts for a given section, ordered by publishedAt desc.
- */
-export async function getPostsBySection(
-  section: 'poetry' | 'tech' | 'ideas',
-  limit = 20,
-  offset = 0
-) {
-  const rows = await db
-    .select({
-      id: posts.id,
-      title: posts.title,
-      slug: posts.slug,
-      section: posts.section,
-      excerpt: posts.excerpt,
-      publishedAt: posts.publishedAt,
-      metadata: posts.metadata,
-      commentCount: count(comments.id),
-    })
-    .from(posts)
-    .leftJoin(
-      comments,
-      and(
-        eq(comments.postId, posts.id),
-        eq(comments.status, 'approved')
-      )
-    )
-    .where(
-      and(
-        eq(posts.section, section),
-        eq(posts.status, 'published')
-      )
-    )
-    .groupBy(posts.id)
-    .orderBy(desc(posts.publishedAt))
-    .limit(limit)
-    .offset(offset);
-
-  return rows;
-}
-
-/**
- * Get total published post count for a section.
- */
-export async function getPostCountBySection(section: 'poetry' | 'tech' | 'ideas') {
-  const [result] = await db
-    .select({ total: count() })
-    .from(posts)
-    .where(
-      and(
-        eq(posts.section, section),
-        eq(posts.status, 'published')
-      )
-    );
-
-  return result?.total ?? 0;
-}
-</param>
-</tool_call>
-
-Now let me implement the landing page:
-
-<tool_call>
-<tool_name>write_to_file</tool_name>
-<param name="file_path">app/(public)/page.tsx</param>
-<param name="content">import Link from 'next/link';
-import { getLatestPostPerSection } from '@/lib/db/queries';
-
-export const metadata = {
-  title: 'Nsisong Effiong',
-  description: 'Poetry, Tech, and Ideas — the personal site of Nsisong Effiong.',
-};
-
-export default async function LandingPage() {
-  const latest = await getLatestPostPerSection();
-
+  titleStyle: React.CSSProperties;
+  latest: { title: string; excerpt: string };
+  href: string;
+}) {
   return (
-    <main className="landing">
-      {/* ─── Hero ─── */}
-      <section className="landing__hero">
-        <h1 className="landing__name">Nsisong Effiong</h1>
-        <p className="landing__tagline">Poetry · Tech · Ideas</p>
-      </section>
-
-      {/* ─── Three-column section grid ─── */}
-      <section className="landing__grid">
-        {/* Poetry column */}
-        <Link href="/poetry" className="landing__card landing__card--poetry">
-          <span className="landing__card-label">Poetry</span>
-          {latest.poetry ? (
-            <>
-              <span className="landing__card-title">{latest.poetry.title}</span>
-              {latest.poetry.excerpt && (
-                <span className="landing__card-excerpt">{latest.poetry.excerpt}</span>
-              )}
-            </>
-          ) : (
-            <span className="landing__card-excerpt">Coming soon</span>
-          )}
-          <span className="landing__card-cta">Read →</span>
-        </Link>
-
-        {/* Tech column */}
-        <Link href="/tech" className="landing__card landing__card--tech">
-          <span className="landing__card-label">Tech</span>
-          {latest.tech ? (
-            <>
-              <span className="landing__card-title">{latest.tech.title}</span>
-              {latest.tech.excerpt && (
-                <span className="landing__card-excerpt">{latest.tech.excerpt}</span>
-              )}
-            </>
-          ) : (
-            <span className="landing__card-excerpt">Coming soon</span>
-          )}
-          <span className="landing__card-cta">Read →</span>
-        </Link>
-
-        {/* Ideas column */}
-        <Link href="/ideas" className="landing__card landing__card--ideas">
-          <span className="landing__card-label">Ideas</span>
-          {latest.ideas ? (
-            <>
-              <span className="landing__card-title">{latest.ideas.title}</span>
-              {latest.ideas.excerpt && (
-                <span className="landing__card-excerpt">{latest.ideas.excerpt}</span>
-              )}
-            </>
-          ) : (
-            <span className="landing__card-excerpt">Coming soon</span>
-          )}
-          <span className="landing__card-cta">Read →</span>
-        </Link>
-      </section>
-
-      <style>{`
-        /* ─── Landing: layout ─── */
-        .landing {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 0 var(--space-md);
-        }
-
-        /* ─── Hero ─── */
-        .landing__hero {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: var(--space-2xl) 0 var(--space-xl);
-          text-align: center;
-        }
-
-        .landing__name {
-          font-family: var(--font-syne), sans-serif;
-          font-size: clamp(2.4rem, 5vw, 4rem);
-          font-weight: 700;
-          color: var(--fg);
-          letter-spacing: -0.02em;
-          margin: 0;
-        }
-
-        .landing__tagline {
-          font-family: var(--font-cormorant), serif;
-          font-size: clamp(1rem, 2vw, 1.35rem);
-          font-weight: 300;
-          font-style: italic;
-          color: var(--fg2);
-          margin-top: var(--space-xs);
-        }
-
-        /* ─── Three-column grid ─── */
-        .landing__grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: var(--space-lg);
-          width: 100%;
-          max-width: 960px;
-          padding-bottom: var(--space-2xl);
-        }
-
-        @media (max-width: 768px) {
-          .landing__grid {
-            grid-template-columns: 1fr;
-            gap: var(--space-md);
-          }
-        }
-
-        /* ─── Card (shared) ─── */
-        .landing__card {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-sm);
-          padding: var(--space-lg) var(--space-md);
-          border: 0.5px solid var(--bdr);
-          border-radius: 2px;
-          text-decoration: none;
-          transition: border-color 0.2s ease, background 0.2s ease;
-        }
-
-        .landing__card:hover {
-          border-color: var(--fg2);
-          background: var(--bg2);
-        }
-
-        .landing__card-label {
-          font-family: var(--font-dm-mono), monospace;
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: var(--fg2);
-        }
-
-        .landing__card-title {
-          font-family: var(--font-syne), sans-serif;
-          font-size: 1.15rem;
-          font-weight: 600;
-          color: var(--fg);
-          line-height: 1.3;
-        }
-
-        .landing__card-excerpt {
-          font-family: var(--font-source-serif), serif;
-          font-size: 0.9rem;
-          color: var(--fg2);
-          line-height: 1.55;
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .landing__card-cta {
-          font-family: var(--font-dm-mono), monospace;
-          font-size: 0.75rem;
-          letter-spacing: 0.06em;
-          margin-top: auto;
-        }
-
-        /* ─── Card accents ─── */
-        .landing__card--poetry {
-          border-top: 2px solid var(--purple-acc);
-        }
-        .landing__card--poetry .landing__card-label {
-          color: var(--purple-acc);
-        }
-        .landing__card--poetry .landing__card-cta {
-          color: var(--purple-acc);
-        }
-        .landing__card--poetry .landing__card-title {
-          font-family: var(--font-cormorant), serif;
-          font-weight: 300;
-          font-style: italic;
-          font-size: 1.25rem;
-        }
-
-        .landing__card--tech {
-          border-top: 2px solid var(--teal-hero);
-        }
-        .landing__card--tech .landing__card-label {
-          color: var(--teal-hero);
-        }
-        .landing__card--tech .landing__card-cta {
-          color: var(--teal-hero);
-        }
-
-        .landing__card--ideas {
-          border-top: 2px solid var(--amber);
-        }
-        .landing__card--ideas .landing__card-label {
-          color: var(--amber);
-        }
-        .landing__card--ideas .landing__card-cta {
-          color: var(--amber);
-        }
-      `}</style>
-    </main>
-  );
-}
-</param>
-</tool_call>
-
-Now the Poetry section page:
-
-<tool_call>
-<tool_name>write_to_file</tool_name>
-<param name="file_path">app/(public)/poetry/page.tsx</param>
-<param name="content">import Link from 'next/link';
-import { getPostsBySection } from '@/lib/db/queries';
-
-export const metadata = {
-  title: 'Poetry — Nsisong Effiong',
-  description: 'Poems by Nsisong Effiong.',
-};
-
-function formatDate(date: Date | null): string {
-  if (!date) return '';
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(date));
-}
-
-export default async function PoetryIndexPage() {
-  const posts = await getPostsBySection('poetry');
-
-  return (
-    <main className="poetry-index">
-      <header className="poetry-index__header">
-        <h1 className="poetry-index__heading">Poetry</h1>
-        <div className="poetry-index__rule" />
-      </header>
-
-      {posts.length === 0 ? (
-        <p className="poetry-index__empty">No poems yet. Check back soon.</p>
-      ) : (
-        <ul className="poetry-index__list">
-          {posts.map((post) => (
-            <li key={post.id} className="poetry-index__item">
-              <Link
-                href={`/poetry/${post.slug}`}
-                className="poetry-index__link"
-              >
-                <span className="poetry-index__title">{post.title}</span>
-                {post.excerpt && (
-                  <span className="poetry-index__excerpt">{post.excerpt}</span>
-                )}
-                <span className="poetry-index__meta">
-                  {post.publishedAt && (
-                    <time dateTime={new Date(post.publishedAt).toISOString()}>
-                      {formatDate(post.publishedAt)}
-                    </time>
-                  )}
-                  {post.commentCount > 0 && (
-                    <span className="poetry-index__responses">
-                      {post.commentCount} {post.commentCount === 1 ? 'response' : 'responses'}
-                    </span>
-                  )}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <style>{`
-        .poetry-index {
-          max-width: 600px;
-          margin: 0 auto;
-          padding: var(--space-xl) var(--space-md) var(--space-2xl);
-        }
-
-        .poetry-index__header {
-          text-align: center;
-          margin-bottom: var(--space-xl);
-        }
-
-        .poetry-index__heading {
-          font-family: var(--font-cormorant), serif;
-          font-weight: 300;
-          font-style: italic;
-          font-size: clamp(2rem, 4vw, 3rem);
-          color: var(--fg);
-          margin: 0 0 var(--space-sm);
-        }
-
-        .poetry-index__rule {
-          width: 48px;
-          height: 0.5px;
-          background: var(--purple-acc);
-          margin: 0 auto;
-        }
-
-        .poetry-index__empty {
-          font-family: var(--font-cormorant), serif;
-          font-style: italic;
-          font-size: 1.1rem;
-          color: var(--fg2);
-          text-align: center;
-        }
-
-        .poetry-index__list {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-lg);
-        }
-
-        .poetry-index__item {
-          border-bottom: 0.5px solid var(--bdr2);
-          padding-bottom: var(--space-lg);
-        }
-
-        .poetry-index__item:last-child {
-          border-bottom: none;
-        }
-
-        .poetry-index__link {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-xs);
-          text-decoration: none;
-          text-align: center;
-        }
-
-        .poetry-index__link:hover .poetry-index__title {
-          color: var(--purple-acc);
-        }
-
-        .poetry-index__title {
-          font-family: var(--font-cormorant), serif;
-          font-weight: 300;
-          font-style: italic;
-          font-size: 1.45rem;
-          color: var(--fg);
-          line-height: 1.3;
-          transition: color 0.2s ease;
-        }
-
-        .poetry-index__excerpt {
-          font-family: var(--font-cormorant), serif;
-          font-weight: 300;
-          font-style: italic;
-          font-size: 1rem;
-          color: var(--fg2);
-          line-height: 1.6;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .poetry-index__meta {
-          display: flex;
-          justify-content: center;
-          gap: var(--space-sm);
-          font-family: var(--font-dm-mono), monospace;
-          font-size: 0.7rem;
-          color: var(--fg2);
-          letter-spacing: 0.04em;
-          margin-top: var(--space-xs);
-        }
-
-        .poetry-index__responses {
-          color: var(--purple-acc);
-        }
-      `}</style>
-    </main>
-  );
-}
-</param>
-</tool_call>
-
-Now the Tech section page:
-
-<tool_call>
-<tool_name>write_to_file</tool_name>
-<param name="file_path">app/(public)/tech/page.tsx</param>
-<param name="content">import Link from 'next/link';
-import { getPostsBySection } from '@/lib/db/queries';
-
-export const metadata = {
-  title: 'Tech — Nsisong Effiong',
-  description: 'Technical writing by Nsisong Effiong.',
-};
-
-function formatDate(date: Date | null): string {
-  if (!date) return '';
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(date));
-}
-
-export default async function TechIndexPage() {
-  const posts = await getPostsBySection('tech');
-
-  return (
-    <main className="tech-index">
-      {/* ─── Hero banner ─── */}
-      <section className="tech-index__hero">
-        <h1 className="tech-index__heading">Tech</h1>
-        <p className="tech-index__sub">
-          Notes on software, systems, and building things.
+    <div
+      style={{
+        flex: '1 1 0',
+        padding: '2.5rem 2rem',
+        borderRight: '1px solid var(--bdr)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.5rem',
+      }}
+    >
+      <p
+        style={{
+          fontFamily: 'var(--font-dm-mono), monospace',
+          fontSize: '0.75rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          color: 'var(--fg2)',
+        }}
+      >
+        {section}
+      </p>
+      <h2 style={titleStyle}>{title}</h2>
+      <div style={{ marginTop: 'auto' }}>
+        <p
+          style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '0.65rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--fg2)',
+            marginBottom: '0.5rem',
+          }}
+        >
+          Latest
         </p>
-      </section>
-
-      {/* ─── Post list ─── */}
-      <section className="tech-index__body">
-        {posts.length === 0 ? (
-          <p className="tech-index__empty">$ no posts found</p>
-        ) : (
-          <ul className="tech-index__list">
-            {posts.map((post) => (
-              <li key={post.id} className="tech-index__item">
-                <Link
-                  href={`/tech/${post.slug}`}
-                  className="tech-index__link"
-                >
-                  <span className="tech-index__date">
-                    {post.publishedAt ? formatDate(post.publishedAt) : '—'}
-                  </span>
-                  <div className="tech-index__content">
-                    <span className="tech-index__title">{post.title}</span>
-                    {post.excerpt && (
-                      <span className="tech-index__excerpt">{post.excerpt}</span>
-                    )}
-                  </div>
-                  <span className="tech-index__meta">
-                    {post.commentCount > 0 && (
-                      <span className="tech-index__responses">
-                        {post.commentCount} {post.commentCount === 1 ? 'response' : 'responses'}
-                      </span>
-                    )}
-                    <span className="tech-index__arrow">→</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <style>{`
-        /* ─── Hero ─── */
-        .tech-index__hero {
-          background: var(--teal-hero);
-          padding: var(--space-xl) var(--space-md);
-          text-align: center;
-        }
-
-        .tech-index__heading {
-          font-family: var(--font-syne), sans-serif;
-          font-weight: 700;
-          font-size: clamp(2rem, 4vw, 3rem);
-          color: #9FE1CB;
-          margin: 0 0 var(--space-xs);
-        }
-
-        .tech-index__sub {
-          font-family: var(--font-dm-mono), monospace;
-          font-size: 0.8rem;
-          color: #9FE1CB;
-          opacity: 0.8;
-          margin: 0;
-        }
-
-        /* ─── Body ─── */
-        .tech-index {
-          min-height: 100vh;
-        }
-
-        .tech-index__body {
-          max-width: 740px;
-          margin: 0 auto;
-          padding: var(--space-xl) var(--space-md) var(--space-2xl);
-        }
-
-        .tech-index__empty {
-          font-family: var(--font-dm-mono), monospace;
-          font-size: 0.85rem;
-          color: var(--fg2);
-        }
-
-        /* ─── List ─── */
-        .tech-index__list {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-        }
-
-        .tech-index__item {
-          border-bottom: 0.5px solid var(--bdr2);
-        }
-
-        .tech-index__item:first-child {
-          border-top: 0.5px solid var(--bdr2);
-        }
-
-        .tech-index__link {
-          display: grid;
-          grid-template-columns: 100px 1fr auto;
-          gap: var(--space-md);
-          align-items: baseline;
-          padding: var(--space-md) 0;
-          text-decoration: none;
-          transition: background 0.15s ease;
-        }
-
-        .tech-index__link:hover {
-          background: var(--bg2);
-        }
-
-        .tech-index__link:hover .tech-index__title {
-          color: var(--teal-hero);
-        }
-
-        @media (max-width: 600px) {
-          .tech-index__link {
-            grid-template-columns: 1fr auto;
-          }
-          .tech-index__date {
-            display: none;
-          }
-        }
-
-        /* ─── Date column ─── */
-        .tech-index__date {
-          font-family: var(--font-dm-mono), monospace;
-          font-size: 0.7rem;
-          color: var(--fg2);
-          letter-spacing: 0.04em;
-          white-space: nowrap;
-        }
-
-        /* ─── Content column ─── */
-        .tech-index__content {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .tech-index__title {
-          font-family: var(--font-syne), sans-serif;
-          font-weight: 600;
-          font-size: 1rem;
-          color: var(--fg);
-          line-height: 1.35;
-          transition: color 0.2s ease;
-        }
-
-        .tech-index__excerpt {
-          font-family: var(--font-dm-mono), monospace;
-          font-size: 0.78rem;
-          color: var(--fg2);
-          line-height: 1.5;
-          display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        /* ─── Meta column ─── */
-        .tech-index__meta {
-          display: flex;
-          align-items: center;
-          gap: var(--space-sm);
-          font-family: var(--font-dm-mono), monospace;
-          font-size: 0.7rem;
-          color: var(--fg2);
-          white-space: nowrap;
-        }
-
-        .tech-index__responses {
-          color: var(--teal-hero);
-        }
-
-        .tech-index__arrow {
-          color: var(--fg2);
-          transition: color 0.2s ease;
-        }
-
-        .tech-index__link:hover .tech-index__arrow {
-          color: var(--teal-hero);
-        }
-      `}</style>
-    </main>
+        <p
+          style={{
+            fontFamily: 'var(--font-source-serif), serif',
+            fontSize: '1rem',
+            fontWeight: 600,
+            color: 'var(--fg)',
+            marginBottom: '0.35rem',
+          }}
+        >
+          {latest.title}
+        </p>
+        <p
+          style={{
+            fontFamily: 'var(--font-source-serif), serif',
+            fontSize: '0.875rem',
+            color: 'var(--fg2)',
+            lineHeight: 1.5,
+          }}
+        >
+          {latest.excerpt}
+        </p>
+      </div>
+      <Link
+        href={href}
+        style={{
+          fontFamily: 'var(--font-dm-mono), monospace',
+          fontSize: '0.8rem',
+          color: 'var(--fg)',
+          textDecoration: 'none',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          marginTop: '0.5rem',
+        }}
+      >
+        Explore {section} <span aria-hidden="true">→</span>
+      </Link>
+    </div>
   );
 }
-</param>
-</tool_call>
 
-Now the Ideas section page:
+export default function HomePage() {
+  return (
+    <>
+      <SiteNav />
+      <main>
+        {/* Hero */}
+        <section
+          style={{
+            padding: '8rem 2rem 6rem',
+            textAlign: 'center',
+            maxWidth: '720px',
+            margin: '0 auto',
+          }}
+        >
+          <h1
+            style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontWeight: 300,
+              fontStyle: 'italic',
+              fontSize: 'clamp(3rem, 7vw, 5.5rem)',
+              lineHeight: 1.05,
+              color: 'var(--fg)',
+              marginBottom: '1.5rem',
+            }}
+          >
+            Nsisong Effiong
+          </h1>
+          <p
+            style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontStyle: 'italic',
+              fontWeight: 300,
+              fontSize: 'clamp(1.1rem, 2.5vw, 1.4rem)',
+              color: 'var(--fg2)',
+              lineHeight: 1.6,
+              maxWidth: '540px',
+              margin: '0 auto',
+            }}
+          >
+            Poet, engineer, essayist — writing at the intersection of
+            language, technology, and public thought.
+          </p>
+        </section>
 
-<tool_call>
-<tool_name>write_to_file</tool_name>
-<param name="file_path">app/(public)/ideas/page.tsx</param>
-<param name="content">import Link from 'next/link';
-import { getPostsBySection } from '@/lib/db/queries';
+        {/* Section Cards */}
+        <section
+          style={{
+            maxWidth: '1120px',
+            margin: '0 auto 4rem',
+            display: 'flex',
+            borderTop: '1px solid var(--bdr)',
+            borderBottom: '1px solid var(--bdr)',
+            borderLeft: '1px solid var(--bdr)',
+            flexWrap: 'wrap',
+          }}
+        >
+          <SectionCard
+            section="Poetry"
+            title="Poetry"
+            titleStyle={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontWeight: 300,
+              fontStyle: 'italic',
+              fontSize: '2.2rem',
+              color: 'var(--fg)',
+            }}
+            latest={{
+              title: 'The Weight of Rivers',
+              excerpt:
+                'A meditation on water, memory, and the names we inherit from geography.',
+            }}
+            href="/poetry"
+          />
+          <SectionCard
+            section="Tech"
+            title="./tech"
+            titleStyle={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontWeight: 400,
+              fontSize: '2rem',
+              color: 'var(--fg)',
+            }}
+            latest={{
+              title: 'Building Resilient Edge Functions',
+              excerpt:
+                'Patterns for fault-tolerant serverless architectures at the edge.',
+            }}
+            href="/tech"
+          />
+          <SectionCard
+            section="Ideas"
+            title="Ideas"
+            titleStyle={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontWeight: 800,
+              fontSize: '2.2rem',
+              color: 'var(--fg)',
+            }}
+            latest={{
+              title: 'On the Architecture of Public Trust',
+              excerpt:
+                'How institutional design shapes — and erodes — democratic confidence.',
+            }}
+            href="/ideas"
+          />
+        </section>
 
-export const metadata = {
-  title: 'Ideas — Nsisong Effiong',
-  description: 'Essays and ideas by Nsisong Effiong.',
+        {/* Recent Posts Strip */}
+        <section
+          style={{
+            maxWidth: '1120px',
+            margin: '0 auto 6rem',
+            padding: '0 2rem',
+          }}
+        >
+          <h3
+            style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'var(--fg2)',
+              marginBottom: '1.5rem',
+            }}
+          >
+            Recent
+          </h3>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '1.5rem',
+            }}
+          >
+            {recentPosts.map((post) => {
+              const sectionColor =
+                post.section === 'Poetry'
+                  ? 'var(--purple-acc)'
+                  : post.section === 'Tech'
+                    ? 'var(--teal-hero)'
+                    : 'var(--amber)';
+              return (
+                <Link
+                  key={post.href}
+                  href={post.href}
+                  style={{
+                    textDecoration: 'none',
+                    display: 'block',
+                    padding: '1.25rem 1.5rem',
+                    borderLeft: `3px solid ${sectionColor}`,
+                    background: 'var(--bg2)',
+                    borderRadius: '2px',
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-dm-mono), monospace',
+                      fontSize: '0.65rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      color: sectionColor,
+                      marginBottom: '0.4rem',
+                    }}
+                  >
+                    {post.section}
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-source-serif), serif',
+                      fontSize: '1.05rem',
+                      fontWeight: 600,
+                      color: 'var(--fg)',
+                      marginBottom: '0.3rem',
+                    }}
+                  >
+                    {post.title}
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-dm-mono), monospace',
+                      fontSize: '0.7rem',
+                      color: 'var(--fg2)',
+                    }}
+                  >
+                    {post.date}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer
+          style={{
+            borderTop: '1px solid var(--bdr)',
+            padding: '2.5rem 2rem',
+            textAlign: 'center',
+          }}
+        >
+          <p
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.75rem',
+              color: 'var(--fg2)',
+            }}
+          >
+            © {new Date().getFullYear()} Nsisong Effiong. All rights reserved.
+          </p>
+        </footer>
+      </main>
+    </>
+  );
+}
+```
+
+```tsx app/(public)/poetry/page.tsx
+import SiteNav from '@/components/shared/SiteNav';
+import Link from 'next/link';
+
+const categories = [
+  'All',
+  'Nature & place',
+  'Memory',
+  'Language & form',
+  'Grief',
+  'Politics',
+];
+
+const featuredPoem = {
+  title: 'The Weight of Rivers',
+  excerpt:
+    'A meditation on the names we carry from water — on how rivers remember what we choose to forget, and how their weight shifts the language of return.',
+  verse:
+    'The river does not ask\nfor the names we give it.\nIt carries them anyway —\nstone-smooth, moss-worn,\nuntranslatable.',
+  date: 'April 12, 2026',
+  category: 'Nature & place',
+  href: '/poetry/the-weight-of-rivers',
 };
 
-function formatDate(date: Date | null): string {
-  if (!date) return '';
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(date));
-}
+const poems = [
+  {
+    title: 'Elegy with No Forwarding Address',
+    excerpt:
+      'On the insufficiency of letters sent to the departed, and the echo that fills the space where a name once lived.',
+    date: 'March 28, 2026',
+    category: 'Grief',
+    href: '/poetry/elegy-no-forwarding-address',
+  },
+  {
+    title: 'Syntax of Belonging',
+    excerpt:
+      'The grammar we invent to describe home — subject, predicate, the unparseable remainder of longing.',
+    date: 'March 15, 2026',
+    category: 'Language & form',
+    href: '/poetry/syntax-of-belonging',
+  },
+  {
+    title: 'Cartography of Silence',
+    excerpt:
+      'Mapping the territories we refuse to name. A study in negative space and political quiet.',
+    date: 'February 22, 2026',
+    category: 'Politics',
+    href: '/poetry/cartography-of-silence',
+  },
+  {
+    title: 'What the Baobab Holds',
+    excerpt:
+      'Root-memory, trunk-time. The tree as archive, its rings a chronicle of drought and deluge.',
+    date: 'February 10, 2026',
+    category: 'Nature & place',
+    href: '/poetry/what-the-baobab-holds',
+  },
+  {
+    title: 'Returning, Again',
+    excerpt:
+      'On the airport as threshold — neither here nor there, a liturgy of arrivals performed in reverse.',
+    date: 'January 30, 2026',
+    category: 'Memory',
+    href: '/poetry/returning-again',
+  },
+  {
+    title: 'The Declension of Light',
+    excerpt:
+      'Light conjugated through season: harmattan haze, equatorial noon, the subjunctive dusk of February.',
+    date: 'January 18, 2026',
+    category: 'Language & form',
+    href: '/poetry/declension-of-light',
+  },
+];
 
-function getVolume(post: { metadata: Record<string, unknown> }): string | null {
-  const vol = post.metadata?.volume;
-  return typeof vol === 'string' ? vol : null;
-}
-
-function getKicker(post: { metadata: Record<string, unknown> }): string | null {
-  const kicker = post.metadata?.kicker;
-  return typeof kicker === 'string' ? kicker : null;
-}
-
-export default async function IdeasIndexPage() {
-  const posts = await getPostsBySection('ideas');
-
+export default function PoetryPage() {
   return (
-    <main className="ideas-index">
-      <header className="ideas-index__header">
-        <h1 className="ideas-index__heading">Ideas</h1>
-        <p className="ideas-index__sub">Essays, reflections, and long-form thinking.</p>
-        <div className="ideas-index__rule" />
-      </header>
+    <>
+      <SiteNav />
+      <main>
+        {/* Hero */}
+        <section
+          style={{
+            padding: '7rem 2rem 4rem',
+            textAlign: 'center',
+            maxWidth: '800px',
+            margin: '0 auto',
+          }}
+        >
+          <h1
+            style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontWeight: 300,
+              fontStyle: 'italic',
+              fontSize: 'clamp(3.5rem, 8vw, 5rem)',
+              lineHeight: 1.05,
+              color: 'var(--fg)',
+              marginBottom: '1rem',
+            }}
+          >
+            Poetry
+          </h1>
+          <p
+            style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontStyle: 'italic',
+              fontWeight: 300,
+              fontSize: '1.2rem',
+              color: 'var(--fg2)',
+              lineHeight: 1.6,
+              maxWidth: '480px',
+              margin: '0 auto',
+            }}
+          >
+            Verse at the edges of memory, landscape, and the politics of language.
+          </p>
+        </section>
 
-      {posts.length === 0 ? (
-        <p className="ideas-index__empty">No essays yet. Check back soon.</p>
-      ) : (
-        <ul className="ideas-index__list">
-          {posts.map((post, i) => {
-            const kicker = getKicker(post);
-            const volume = getVolume(post);
-            return (
-              <li key={post.id} className="ideas-index__item">
-                {/* Section Roman numeral divider */}
-                <div className="ideas-index__divider">
-                  <hr className="ideas-index__hr" />
-                  <span className="ideas-index__numeral">
-                    {toRoman(i + 1)}.
-                  </span>
-                  <hr className="ideas-index__hr" />
-                </div>
+        {/* Category Filter */}
+        <nav
+          style={{
+            maxWidth: '800px',
+            margin: '0 auto 3rem',
+            padding: '0 2rem',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+            justifyContent: 'center',
+          }}
+        >
+          {categories.map((cat, i) => (
+            <button
+              key={cat}
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontStyle: 'italic',
+                fontWeight: 300,
+                fontSize: '0.95rem',
+                padding: '0.4rem 1.2rem',
+                background: i === 0 ? 'var(--fg)' : 'transparent',
+                color: i === 0 ? 'var(--bg)' : 'var(--fg2)',
+                border: `1px solid ${i === 0 ? 'var(--fg)' : 'var(--bdr2)'}`,
+                borderRadius: '999px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {cat}
+            </button>
+          ))}
+        </nav>
 
-                <Link
-                  href={`/ideas/${post.slug}`}
-                  className="ideas-index__link"
+        {/* Featured Poem */}
+        <section
+          style={{
+            maxWidth: '900px',
+            margin: '0 auto 4rem',
+            padding: '0 2rem',
+          }}
+        >
+          <Link
+            href={featuredPoem.href}
+            style={{ textDecoration: 'none', display: 'block' }}
+          >
+            <div
+              style={{
+                background: 'var(--bg2)',
+                padding: '3rem',
+                borderRadius: '2px',
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.65rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  color: 'var(--purple-acc)',
+                  marginBottom: '0.75rem',
+                }}
+              >
+                Featured
+              </p>
+              <h2
+                style={{
+                  fontFamily: 'var(--font-cormorant), serif',
+                  fontWeight: 300,
+                  fontStyle: 'italic',
+                  fontSize: '2.2rem',
+                  color: 'var(--fg)',
+                  marginBottom: '1rem',
+                  lineHeight: 1.15,
+                }}
+              >
+                {featuredPoem.title}
+              </h2>
+              <p
+                style={{
+                  fontFamily: 'var(--font-cormorant), serif',
+                  fontStyle: 'italic',
+                  fontWeight: 300,
+                  fontSize: '1.05rem',
+                  color: 'var(--fg2)',
+                  lineHeight: 1.6,
+                  marginBottom: '1.5rem',
+                  maxWidth: '600px',
+                }}
+              >
+                {featuredPoem.excerpt}
+              </p>
+              <div
+                style={{
+                  borderLeft: '2px solid var(--purple-acc)',
+                  paddingLeft: '1.5rem',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic',
+                    fontWeight: 300,
+                    fontSize: '1.1rem',
+                    color: 'var(--fg)',
+                    lineHeight: 1.8,
+                    whiteSpace: 'pre-line',
+                  }}
                 >
-                  {kicker && (
-                    <span className="ideas-index__kicker">{kicker}</span>
-                  )}
-                  <span className="ideas-index__title">{post.title}</span>
-                  {post.excerpt && (
-                    <span className="ideas-index__excerpt">{post.excerpt}</span>
-                  )}
-                  <span className="ideas-index__meta">
-                    {post.publishedAt && (
-                      <time dateTime={new Date(post.publishedAt).toISOString()}>
-                        {formatDate(post.publishedAt)}
-                      </time>
-                    )}
-                    {post.commentCount > 0 && (
-                      <span className="ideas-index__responses">
-                        {post.commentCount}{' '}
-                        {post.commentCount === 1 ? 'response' : 'responses'}
-                        {volume && ` · ${volume}`}
-                      </span>
-                    )}
-                    {post.commentCount === 0 && volume && (
-                      <span className="ideas-index__volume">{volume}</span>
-                    )}
+                  {featuredPoem.verse}
+                </p>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '0.7rem',
+                    color: 'var(--fg2)',
+                  }}
+                >
+                  {featuredPoem.date}
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic',
+                    fontSize: '0.85rem',
+                    color: 'var(--purple-acc)',
+                    border: '1px solid var(--purple-acc)',
+                    padding: '0.2rem 0.7rem',
+                    borderRadius: '999px',
+                  }}
+                >
+                  {featuredPoem.category}
+                </span>
+              </div>
+            </div>
+          </Link>
+        </section>
+
+        {/* Poem Card Grid */}
+        <section
+          style={{
+            maxWidth: '900px',
+            margin: '0 auto 6rem',
+            padding: '0 2rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+            gap: '2rem',
+          }}
+        >
+          {poems.map((poem) => (
+            <Link
+              key={poem.href}
+              href={poem.href}
+              style={{ textDecoration: 'none', display: 'block' }}
+            >
+              <article
+                style={{
+                  padding: '2rem 0',
+                  borderTop: '1px solid var(--bdr)',
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic',
+                    fontSize: '0.85rem',
+                    color: 'var(--purple-acc)',
+                    letterSpacing: '0.2em',
+                    marginBottom: '0.75rem',
+                  }}
+                >
+                  · · ·
+                </p>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontWeight: 300,
+                    fontStyle: 'italic',
+                    fontSize: '1.5rem',
+                    color: 'var(--fg)',
+                    marginBottom: '0.6rem',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {poem.title}
+                </h3>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic',
+                    fontWeight: 300,
+                    fontSize: '0.95rem',
+                    color: 'var(--fg2)',
+                    lineHeight: 1.6,
+                    marginBottom: '1rem',
+                  }}
+                >
+                  {poem.excerpt}
+                </p>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-dm-mono), monospace',
+                      fontSize: '0.65rem',
+                      color: 'var(--fg2)',
+                    }}
+                  >
+                    {poem.date}
                   </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-cormorant), serif',
+                      fontStyle: 'italic',
+                      fontSize: '0.8rem',
+                      color: 'var(--fg2)',
+                      border: '1px solid var(--bdr2)',
+                      padding: '0.15rem 0.6rem',
+                      borderRadius: '999px',
+                    }}
+                  >
+                    {poem.category}
+                  </span>
+                </div>
+              </article>
+            </Link>
+          ))}
+        </section>
 
-      <style>{`
-        .ideas-index {
-          max-width: 660px;
-          margin: 0 auto;
-          padding: var(--space-xl) var(--space-md) var(--space-2xl);
-        }
-
-        /* ─── Header ─── */
-        .ideas-index__header {
-          text-align: center;
-          margin-bottom: var(--space-xl);
-        }
-
-        .ideas-index__heading {
-          font-family: var(--font-syne), sans-serif;
-          font-weight: 700;
-          font-size: clamp(2rem, 4vw, 3rem);
-          color: var(--fg);
-          margin: 0 0 var(--space-xs);
-        }
-
-        .ideas-index__sub {
-          font-family: var(--font-source-serif), serif;
-          font-size: 1rem;
-          color: var(--fg2);
-          margin: 0 0 var(--space-md);
-          line-height: 1.5;
-        }
-
-        .ideas-index__rule {
-          width: 48px;
-          height: 0.5px;
-          background: var(--amber);
-          margin: 0 auto;
-        }
-
-        .ideas-index__empty {
-          font-family: var(--font-source-serif), serif;
-          font-size: 1.05rem;
-          color: var(--fg2);
-          text-align: center;
-        }
-
-        /* ─── List ─── */
-        .ideas-index__list {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-lg);
-        }
-
-        .ideas-index__item {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-md);
-        }
-
-        /* ─── Roman numeral divider ─── */
-        .ideas-index__divider {
-          display: flex;
-          align-items: center;
-          gap: var(--space-sm);
-        }
-
-        .ideas-index__hr {
-          flex: 1;
-          border: none;
-          border-top: 0.5px solid var(--bdr2);
-          margin: 0;
-        }
-
-        .ideas-index__numeral {
-          font-family: var(--font-source-serif), serif;
-          font-size: 0.8rem;
-          color: var(--fg2);
-          letter-spacing: 0.08em;
-          flex-shrink: 0;
-        }
-
-        /* ─── Link card ─── */
-        .ideas-index__link {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-xs);
-          text-decoration: none;
-          padding: var(--space-sm) 0;
-        }
-
-        .ideas-index__link:hover .ideas-index__title {
-          color: var(--amber);
-        }
-
-        .ideas-index__kicker {
-          font-family: var(--font-dm-mono), monospace;
-          font-size: 0.68rem;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: var(--amber);
-        }
-
-        .ideas-index__title {
-          font-family: var(--font-syne), sans-serif;
-          font-weight: 600;
-          font-size: 1.3rem;
-          color: var(--fg);
-          line-height: 1.3;
-          transition: color 0.2s ease;
-        }
-
-        .ideas-index__excerpt {
-          font-family: var(--font-source-serif), serif;
-          font-size: 0.95rem;
-          color: var(--fg2);
-          line-height: 1.65;
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .ideas-index__meta {
-          display: flex;
-          gap: var(--space-sm);
-          font-family: var(--font-dm-mono), monospace;
-          font-size: 0.7rem;
-          color: var(--fg2);
-          letter-spacing: 0.04em;
-          margin-top: var(--space-xs);
-        }
-
-        .ideas-index__responses {
-          color: var(--amber);
-        }
-
-        .ideas-index__volume {
-          color: var(--fg2);
-          opacity: 0.7;
-        }
-      `}</style>
-    </main>
+        {/* Footer */}
+        <footer
+          style={{
+            borderTop: '1px solid var(--bdr)',
+            padding: '2.5rem 2rem',
+            textAlign: 'center',
+          }}
+        >
+          <p
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.75rem',
+              color: 'var(--fg2)',
+            }}
+          >
+            © {new Date().getFullYear()} Nsisong Effiong. All rights reserved.
+          </p>
+        </footer>
+      </main>
+    </>
   );
 }
+```
 
-/* ─── Roman numeral helper ─── */
-function toRoman(num: number): string {
-  const lookup: [number, string][] = [
-    [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
-    [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
-    [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
-  ];
-  let result = '';
-  let remaining = num;
-  for (const [value, symbol] of lookup) {
-    while (remaining >= value) {
-      result += symbol;
-      remaining -= value;
-    }
-  }
-  return result;
+```tsx app/(public)/tech/page.tsx
+import SiteNav from '@/components/shared/SiteNav';
+import Link from 'next/link';
+
+const filterChips = [
+  'All',
+  'Systems',
+  'Edge Computing',
+  'Databases',
+  'DevOps',
+  'Architecture',
+  'TypeScript',
+];
+
+const articles = [
+  {
+    num: '01',
+    title: 'Building Resilient Edge Functions',
+    excerpt:
+      'Patterns for fault-tolerant serverless architectures — retry strategies, circuit breakers, and graceful degradation at the edge.',
+    date: '2026-04-10',
+    readTime: '8 min',
+    tags: ['Edge Computing', 'Architecture'],
+    href: '/tech/resilient-edge-functions',
+  },
+  {
+    num: '02',
+    title: 'Drizzle ORM: Beyond the Basics',
+    excerpt:
+      'Advanced query composition, type-safe migrations, and performance patterns for production Drizzle applications.',
+    date: '2026-03-25',
+    readTime: '12 min',
+    tags: ['Databases', 'TypeScript'],
+    href: '/tech/drizzle-orm-advanced',
+  },
+  {
+    num: '03',
+    title: 'Zero-Downtime Deployments with Supabase',
+    excerpt:
+      'A practical guide to rolling migrations, connection pooling, and deployment strategies that keep your database online.',
+    date: '2026-03-12',
+    readTime: '10 min',
+    tags: ['DevOps', 'Databases'],
+    href: '/tech/zero-downtime-supabase',
+  },
+  {
+    num: '04',
+    title: 'Type-Safe API Contracts with tRPC',
+    excerpt:
+      'End-to-end type safety from database to UI — eliminating an entire class of runtime errors in full-stack TypeScript.',
+    date: '2026-02-28',
+    readTime: '7 min',
+    tags: ['TypeScript', 'Architecture'],
+    href: '/tech/type-safe-trpc',
+  },
+  {
+    num: '05',
+    title: 'Observability for Small Teams',
+    excerpt:
+      'Structured logging, distributed tracing, and alerting strategies that scale from side project to production without enterprise budgets.',
+    date: '2026-02-15',
+    readTime: '9 min',
+    tags: ['DevOps', 'Systems'],
+    href: '/tech/observability-small-teams',
+  },
+];
+
+const tagPills = [
+  'next.js',
+  'supabase',
+  'drizzle',
+  'edge-functions',
+  'typescript',
+  'systems',
+];
+
+export default function TechPage() {
+  return (
+    <>
+      <SiteNav />
+      <main>
+        {/* Hero */}
+        <section
+          style={{
+            background: 'var(--teal-hero)',
+            padding: '6rem 2rem 4rem',
+          }}
+        >
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <p
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.8rem',
+                color: '#9FE1CB',
+                marginBottom: '0.75rem',
+                opacity: 0.7,
+              }}
+            >
+              {'# engineering blog'}
+            </p>
+            <h1
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontWeight: 400,
+                fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+                color: '#9FE1CB',
+                marginBottom: '1rem',
+                lineHeight: 1.1,
+              }}
+            >
+              ./tech
+            </h1>
+            <p
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.95rem',
+                color: '#9FE1CB',
+                lineHeight: 1.7,
+                maxWidth: '560px',
+                marginBottom: '1.5rem',
+                opacity: 0.85,
+              }}
+            >
+              Notes on building things — systems design, edge computing,
+              databases, and the craft of reliable software.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {tagPills.map((tag) => (
+                <span
+                  key={tag}
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '0.7rem',
+                    color: '#9FE1CB',
+                    border: '1px solid #9FE1CB',
+                    borderRadius: '999px',
+                    padding: '0.25rem 0.75rem',
+                    opacity: 0.6,
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Filter Chips */}
+        <nav
+          style={{
+            maxWidth: '900px',
+            margin: '0 auto',
+            padding: '2rem 2rem 1rem',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+          }}
+        >
+          {filterChips.map((chip, i) => (
+            <button
+              key={chip}
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.75rem',
+                padding: '0.35rem 1rem',
+                background: i === 0 ? 'var(--fg)' : 'transparent',
+                color: i === 0 ? 'var(--bg)' : 'var(--fg2)',
+                border: `1px solid ${i === 0 ? 'var(--fg)' : 'var(--bdr2)'}`,
+                borderRadius: '2px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {chip}
+            </button>
+          ))}
+        </nav>
+
+        {/* Article List */}
+        <section
+          style={{
+            maxWidth: '900px',
+            margin: '1rem auto 3rem',
+            padding: '0 2rem',
+          }}
+        >
+          {articles.map((article) => (
+            <Link
+              key={article.href}
+              href={article.href}
+              style={{ textDecoration: 'none', display: 'block' }}
+            >
+              <article
+                style={{
+                  padding: '2rem 0',
+                  borderBottom: '1px solid var(--bdr)',
+                  display: 'grid',
+                  gridTemplateColumns: '3.5rem 1fr',
+                  gap: '1.5rem',
+                  alignItems: 'start',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '1.8rem',
+                    fontWeight: 700,
+                    color: 'var(--teal-hero)',
+                    lineHeight: 1,
+                    opacity: 0.4,
+                  }}
+                >
+                  {article.num}
+                </span>
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '0.4rem',
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    {article.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        style={{
+                          fontFamily: 'var(--font-dm-mono), monospace',
+                          fontSize: '0.6rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: 'var(--teal-hero)',
+                          border: '1px solid var(--bdr2)',
+                          borderRadius: '2px',
+                          padding: '0.15rem 0.5rem',
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <h3
+                    style={{
+                      fontFamily: 'var(--font-syne), sans-serif',
+                      fontWeight: 700,
+                      fontSize: '1.25rem',
+                      color: 'var(--fg)',
+                      marginBottom: '0.4rem',
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {article.title}
+                  </h3>
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-dm-mono), monospace',
+                      fontSize: '0.85rem',
+                      color: 'var(--fg2)',
+                      lineHeight: 1.6,
+                      marginBottom: '0.75rem',
+                    }}
+                  >
+                    {article.excerpt}
+                  </p>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '1.5rem',
+                      fontFamily: 'var(--font-dm-mono), monospace',
+                      fontSize: '0.7rem',
+                      color: 'var(--fg2)',
+                    }}
+                  >
+                    <span>{article.date}</span>
+                    <span>{article.readTime} read</span>
+                  </div>
+                </div>
+              </article>
+            </Link>
+          ))}
+        </section>
+
+        {/* Stats Bar */}
+        <section
+          style={{
+            maxWidth: '900px',
+            margin: '0 auto 6rem',
+            padding: '0 2rem',
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--bg2)',
+              borderRadius: '2px',
+              padding: '2rem',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              textAlign: 'center',
+              gap: '1rem',
+            }}
+          >
+            {[
+              { value: '12', label: 'articles published' },
+              { value: '1,840', label: 'avg words' },
+              { value: '6', label: 'topics covered' },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '2rem',
+                    fontWeight: 700,
+                    color: 'var(--teal-hero)',
+                    lineHeight: 1,
+                    marginBottom: '0.35rem',
+                  }}
+                >
+                  {stat.value}
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '0.7rem',
+                    color: 'var(--fg2)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer
+          style={{
+            borderTop: '1px solid var(--bdr)',
+            padding: '2.5rem 2rem',
+            textAlign: 'center',
+          }}
+        >
+          <p
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.75rem',
+              color: 'var(--fg2)',
+            }}
+          >
+            © {new Date().getFullYear()} Nsisong Effiong. All rights reserved.
+          </p>
+        </footer>
+      </main>
+    </>
+  );
 }
-</param>
-</tool_call>
+```
 
-Now let me verify the files look correct and check for any import issues:
+```tsx app/(public)/ideas/page.tsx
+import SiteNav from '@/components/shared/SiteNav';
+import Link from 'next/link';
 
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/index.ts</param>
-</tool_call>
+const topicChips = [
+  'All',
+  'Governance',
+  'Technology & Society',
+  'Education',
+  'Urban Policy',
+  'Democracy',
+  'Climate',
+];
 
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/schema.ts</param>
-</tool_call>
+const leadEssay = {
+  kicker: 'Governance',
+  title: 'On the Architecture of Public Trust',
+  excerpt:
+    'How institutional design shapes — and erodes — democratic confidence. A close reading of three frameworks for restoring civic faith in an age of compounding crises.',
+  date: 'April 8, 2026',
+  readTime: '14 min',
+  href: '/ideas/architecture-of-public-trust',
+};
 
-Let me verify that the schema types match what I'm querying. Let me check the posts table for the `status` field and `metadata` type:
+const sidebarEssays = [
+  {
+    kicker: 'Education',
+    title: 'The Curriculum as Territory',
+    excerpt:
+      'Who decides what a nation remembers? On the politics of syllabi.',
+    date: 'March 30, 2026',
+    readTime: '9 min',
+    href: '/ideas/curriculum-as-territory',
+  },
+  {
+    kicker: 'Technology & Society',
+    title: 'Algorithmic Publics',
+    excerpt:
+      'When the town square is a feed, what constitutes assembly?',
+    date: 'March 18, 2026',
+    readTime: '11 min',
+    href: '/ideas/algorithmic-publics',
+  },
+  {
+    kicker: 'Urban Policy',
+    title: 'Cities Without Centres',
+    excerpt:
+      'Polycentric urbanism and the end of the downtown paradigm.',
+    date: 'March 5, 2026',
+    readTime: '8 min',
+    href: '/ideas/cities-without-centres',
+  },
+];
 
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/schema.ts</param>
-</tool_call>
+const pullQuote =
+  '"The measure of a public institution is not its efficiency but its legibility — whether ordinary citizens can read the logic of its decisions and recognise themselves in its reasoning."';
 
-Let me verify the drizzle imports work correctly:
+const gridEssays = [
+  {
+    kicker: 'Democracy',
+    title: 'Deliberation at Scale',
+    excerpt:
+      'Can democratic deliberation survive beyond the village? Lessons from citizen assemblies in Ireland, France, and Kenya.',
+    date: 'Feb 22, 2026',
+    readTime: '12 min',
+    href: '/ideas/deliberation-at-scale',
+  },
+  {
+    kicker: 'Climate',
+    title: 'The Vocabulary of Adaptation',
+    excerpt:
+      'We lack the language for slow catastrophe. On building a rhetoric adequate to the climate crisis.',
+    date: 'Feb 10, 2026',
+    readTime: '10 min',
+    href: '/ideas/vocabulary-of-adaptation',
+  },
+  {
+    kicker: 'Governance',
+    title: 'Bureaucracy as Craft',
+    excerpt:
+      'Against the caricature of the civil servant. Why competent administration is a democratic art form.',
+    date: 'Jan 28, 2026',
+    readTime: '9 min',
+    href: '/ideas/bureaucracy-as-craft',
+  },
+  {
+    kicker: 'Education',
+    title: 'What Universities Owe',
+    excerpt:
+      'The debt runs both ways. On the social contract between higher education and the public that funds it.',
+    date: 'Jan 15, 2026',
+    readTime: '11 min',
+    href: '/ideas/what-universities-owe',
+  },
+  {
+    kicker: 'Technology & Society',
+    title: 'Data as Commons',
+    excerpt:
+      'From extraction to stewardship: reimagining data governance through the lens of shared resources.',
+    date: 'Jan 3, 2026',
+    readTime: '13 min',
+    href: '/ideas/data-as-commons',
+  },
+  {
+    kicker: 'Urban Policy',
+    title: 'The Right to Shade',
+    excerpt:
+      'Tree canopy as infrastructure. Why urban cooling is the next frontier of environmental justice.',
+    date: 'Dec 20, 2025',
+    readTime: '7 min',
+    href: '/ideas/right-to-shade',
+  },
+];
 
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/queries.ts</param>
-</tool_call>
+export default function IdeasPage() {
+  return (
+    <>
+      <SiteNav />
+      <main>
+        {/* Masthead */}
+        <section
+          style={{
+            padding: '7rem 2rem 3.5rem',
+            maxWidth: '1120px',
+            margin: '0 auto',
+            borderBottom: '1px solid var(--bdr)',
+          }}
+        >
+          <p
+            style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.15em',
+              color: 'var(--fg2)',
+              marginBottom: '0.75rem',
+            }}
+          >
+            Essays · Policy · Public Thought
+          </p>
+          <h1
+            style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontWeight: 800,
+              fontSize: 'clamp(3.5rem, 8vw, 5rem)',
+              color: 'var(--fg)',
+              lineHeight: 1.05,
+              marginBottom: '0.75rem',
+            }}
+          >
+            Ideas
+          </h1>
+          <p
+            style={{
+              fontFamily: 'var(--font-source-serif), serif',
+              fontSize: '1rem',
+              color: 'var(--fg2)',
+              fontStyle: 'italic',
+            }}
+          >
+            Vol. I · April 2026
+          </p>
+        </section>
 
-Now let me verify the globals.css has all the CSS variables I'm referencing:
+        {/* Top Grid: Lead + Sidebar */}
+        <section
+          style={{
+            maxWidth: '1120px',
+            margin: '0 auto',
+            padding: '3rem 2rem',
+            display: 'grid',
+            gridTemplateColumns: '2fr 1px 1fr',
+            gap: '2.5rem',
+          }}
+        >
+          {/* Lead Essay */}
+          <Link
+            href={leadEssay.href}
+            style={{ textDecoration: 'none', display: 'block' }}
+          >
+            <article>
+              <p
+                style={{
+                  fontFamily: 'var(--font-syne), sans-serif',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
+                  color: 'var(--amber)',
+                  marginBottom: '0.75rem',
+                }}
+              >
+                {leadEssay.kicker}
+              </p>
+              <h2
+                style={{
+                  fontFamily: 'var(--font-syne), sans-serif',
+                  fontWeight: 800,
+                  fontSize: '2rem',
+                  color: 'var(--fg)',
+                  lineHeight: 1.15,
+                  marginBottom: '1rem',
+                }}
+              >
+                {leadEssay.title}
+              </h2>
+              <p
+                style={{
+                  fontFamily: 'var(--font-source-serif), serif',
+                  fontSize: '1.05rem',
+                  color: 'var(--fg2)',
+                  lineHeight: 1.7,
+                  marginBottom: '1rem',
+                }}
+              >
+                {leadEssay.excerpt}
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '1.5rem',
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.7rem',
+                  color: 'var(--fg2)',
+                }}
+              >
+                <span>{leadEssay.date}</span>
+                <span>{leadEssay.readTime} read</span>
+              </div>
+            </article>
+          </Link>
 
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/globals.css</param>
-</tool_call>
+          {/* Vertical Divider */}
+          <div style={{ background: 'var(--bdr)', width: '1px' }} />
 
-I need to check if all CSS variables I'm using are defined. Let me search for the specific ones:
+          {/* Sidebar */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0',
+            }}
+          >
+            {sidebarEssays.map((essay, i) => (
+              <Link
+                key={essay.href}
+                href={essay.href}
+                style={{ textDecoration: 'none', display: 'block' }}
+              >
+                <article
+                  style={{
+                    padding: '1.25rem 0',
+                    borderBottom:
+                      i < sidebarEssays.length - 1
+                        ? '1px solid var(--bdr)'
+                        : 'none',
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-syne), sans-serif',
+                      fontWeight: 600,
+                      fontSize: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      color: 'var(--amber)',
+                      marginBottom: '0.35rem',
+                    }}
+                  >
+                    {essay.kicker}
+                  </p>
+                  <h3
+                    style={{
+                      fontFamily: 'var(--font-syne), sans-serif',
+                      fontWeight: 700,
+                      fontSize: '1rem',
+                      color: 'var(--fg)',
+                      lineHeight: 1.25,
+                      marginBottom: '0.3rem',
+                    }}
+                  >
+                    {essay.title}
+                  </h3>
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-source-serif), serif',
+                      fontSize: '0.85rem',
+                      color: 'var(--fg2)',
+                      lineHeight: 1.5,
+                      marginBottom: '0.4rem',
+                    }}
+                  >
+                    {essay.excerpt}
+                  </p>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-dm-mono), monospace',
+                      fontSize: '0.65rem',
+                      color: 'var(--fg2)',
+                    }}
+                  >
+                    {essay.readTime} read
+                  </span>
+                </article>
+              </Link>
+            ))}
+          </div>
+        </section>
 
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--space-</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
+        {/* Pull Quote Strip */}
+        <section
+          style={{
+            background: 'var(--amber-pq)',
+            padding: '3.5rem 2rem',
+            margin: '1rem 0',
+          }}
+        >
+          <blockquote
+            style={{
+              maxWidth: '800px',
+              margin: '0 auto',
+              fontFamily: 'var(--font-source-serif), serif',
+              fontStyle: 'italic',
+              fontSize: 'clamp(1.15rem, 2.5vw, 1.5rem)',
+              lineHeight: 1.6,
+              color: 'var(--fg)',
+              textAlign: 'center',
+            }}
+          >
+            {pullQuote}
+          </blockquote>
+        </section>
 
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--teal-hero</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
+        {/* Topic Filter */}
+        <nav
+          style={{
+            maxWidth: '1120px',
+            margin: '0 auto',
+            padding: '2.5rem 2rem 1rem',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+          }}
+        >
+          {topicChips.map((chip, i) => (
+            <button
+              key={chip}
+              style={{
+                fontFamily: 'var(--font-syne), sans-serif',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                padding: '0.35rem 1rem',
+                background: i === 0 ? 'var(--fg)' : 'transparent',
+                color: i === 0 ? 'var(--bg)' : 'var(--fg2)',
+                border: `1px solid ${i === 0 ? 'var(--fg)' : 'var(--bdr2)'}`,
+                borderRadius: '999px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {chip}
+            </button>
+          ))}
+        </nav>
 
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--purple-acc</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
+        {/* Essay Grid */}
+        <section
+          style={{
+            maxWidth: '1120px',
+            margin: '1rem auto 6rem',
+            padding: '0 2rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '2rem',
+          }}
+        >
+          {gridEssays.map((essay) => (
+            <Link
+              key={essay.href}
+              href={essay.href}
+              style={{ textDecoration: 'none', display: 'block' }}
+            >
+              <article
+                style={{
+                  padding: '1.75rem 0',
+                  borderTop: '1px solid var(--bdr)',
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: 'var(--font-syne), sans-serif',
+                    fontWeight: 600,
+                    fontSize: '0.65rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    color: 'var(--amber)',
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  {essay.kicker}
+                </p>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-syne), sans-serif',
+                    fontWeight: 700,
+                    fontSize: '1.15rem',
+                    color: 'var(--fg)',
+                    lineHeight: 1.25,
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  {essay.title}
+                </h3>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-source-serif), serif',
+                    fontSize: '0.9rem',
+                    color: 'var(--fg2)',
+                    lineHeight: 1.6,
+                    marginBottom: '0.85rem',
+                  }}
+                >
+                  {essay.excerpt}
+                </p>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '1.25rem',
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '0.65rem',
+                    color: 'var(--fg2)',
+                  }}
+                >
+                  <span>{essay.date}</span>
+                  <span>{essay.readTime} read</span>
+                </div>
+              </article>
+            </Link>
+          ))}
+        </section>
 
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--amber</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
-
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--bg2</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
-
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--fg2</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
-
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--bdr</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
-
-Good - all the CSS variables I'm using (`--space-*`, `--teal-hero`, `--purple-acc`, `--amber`, `--bg2`, `--fg2`, `--fg`, `--bdr`, `--bdr2`) are defined in globals.css. Let me also verify the font variables exist:
-
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--font-cormorant</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
-
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--font-syne</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
-
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--font-dm-mono</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
-
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--font-source-serif</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
-
-The font variables are defined in the root layout (app/layout.tsx) as CSS variables applied through Next.js font loading. Let me confirm:
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/layout.tsx</param>
-</tool_call>
-
-All font CSS variables are properly set. Now let me also check the `--space-2xl` variable since I'm using it:
-
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">--space-2xl</param>
-<param name="file_pattern">*.css</param>
-</tool_call>
-
-All variables are defined. Let me also verify the db/index.ts exports properly:
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/index.ts</param>
-</tool_call>
-
-Now let me verify the package.json has drizzle-orm:
-
-<tool_call>
-<tool_name>search_in_files</tool_name>
-<param name="search_string">drizzle-orm</param>
-<param name="file_pattern">package.json</param>
-</tool_call>
-
-Let me do a final review of all four files to make sure everything is consistent:
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/(public)/page.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/(public)/poetry/page.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/(public)/tech/page.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/(public)/ideas/page.tsx</param>
-</tool_call>
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/queries.ts</param>
-</tool_call>
-
-Everything looks good. Let me check if the `count` import from drizzle-orm is correct and the `sql` import isn't unused:
-
-I notice I imported `sql` in queries.ts but don't use it. Let me clean that up:
-
-<tool_call>
-<tool_name>replace_in_file</tool_name>
-<param name="file_path">lib/db/queries.ts</param>
-<param name="search">import { eq, desc, and, count, sql } from 'drizzle-orm';</param>
-<param name="replacement">import { eq, desc, and, count } from 'drizzle-orm';</param>
-</tool_call>
-
-Now let me verify the schema has a `status` column on posts and what valid values it takes:
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">lib/db/schema.ts</param>
-</tool_call>
-
-Let me check if the `PostWithCommentCount` type in queries.ts actually aligns with the Drizzle select output. The type I defined is informational but the actual return type is inferred. Let me also verify the `metadata` field type in the schema:
-
-The schema shows `metadata: jsonb('metadata').default({}).$type<Record<string, unknown>>()` — this means the field type is `Record<string, unknown>`, which matches my usage in the Ideas page. Good.
-
-Let me do one final check — the `(public)` layout to make sure it wraps pages correctly:
-
-<tool_call>
-<tool_name>read_file</tool_name>
-<param name="file_path">app/(public)/layout.tsx</param>
-</tool_call>
-
-Everything is consistent and properly structured. Here's a summary of what was implemented:
-
-## Summary
-
-### New file: `lib/db/queries.ts`
-Shared data-fetching utilities using Drizzle ORM:
-- **`getLatestPostPerSection()`** — Fetches the latest published post from each section (poetry, tech, ideas) for the landing page
-- **`getPostsBySection(section, limit, offset)`** — Fetches published posts with approved comment counts for section index pages
-- **`getPostCountBySection(section)`** — Returns total published post count for pagination
-
-### `app/(public)/page.tsx` — Landing Page
-- Hero section with name (`var(--font-syne)`) and tagline (`var(--font-cormorant)`, italic)
-- Three-column grid (responsive to single column on mobile) with section cards
-- Each card shows the latest post from that section with accent colors:
-  - Poetry: `var(--purple-acc)` top border, Cormorant italic title
-  - Tech: `var(--teal-hero)` top border, Syne heading
-  - Ideas: `var(--amber)` top border, Syne heading
-- Cards link to section index pages with hover states
-
-### `app/(public)/poetry/page.tsx` — Poetry Index
-- Centered narrow column layout (600px max)
-- Cormorant italic heading with purple decorative rule
-- Posts listed with generous vertical rhythm, separated by underlines (`border-bottom: 0.5px solid var(--bdr2)`)
-- Each post shows title (Cormorant italic), excerpt, date, and response count
-- Response count uses "responses" (plural) label in `var(--purple-acc)` color
-- No poem numbers (per system rules)
-
-### `app/(public)/tech/page.tsx` — Tech Index
-- Hero banner with `background: var(--teal-hero)`, text in `#9FE1CB`
-- Syne heading, DM Mono subheading
-- Table-like grid layout: date column | title + excerpt | meta + arrow
-- DM Mono for dates, Syne for titles, DM Mono for excerpts
-- Hover highlights title in teal, responsive (date column hidden on mobile)
-
-### `app/(public)/ideas/page.tsx` — Ideas Index
-- Syne heading + Source Serif subtitle with amber decorative rule
-- Roman numeral section dividers (I. / II. / III.) with horizontal rules between each post
-- Each post shows kicker (DM Mono uppercase in amber), title (Syne), excerpt (Source Serif)
-- Comment count includes volume from metadata: "2 responses · Vol. I"
-- `toRoman()` helper function for numeral conversion
+        {/* Footer */}
+        <footer
+          style={{
+            borderTop: '1px solid var(--bdr)',
+            padding: '2.5rem 2rem',
+            textAlign: 'center',
+          }}
+        >
+          <p
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.75rem',
+              color: 'var(--fg2)',
+            }}
+          >
+            © {new Date().getFullYear()} Nsisong Effiong. All rights reserved.
+          </p>
+        </footer>
+      </main>
+    </>
+  );
+}
+```
