@@ -1,57 +1,65 @@
 ## Documentation Gaps
 
-No genuine documentation gaps worth flagging.
+No genuine docstring gaps worth flagging.
 
-Most exported functions are either trivially self-descriptive route handlers/components or already have adequate inline comments. Internal helpers like `verifyTurnstile` are not public.
+Most exported items are route handlers or trivial page/layout components where the function name and colocated comments are already sufficient. Internal helpers like `verifyTurnstile` are not public API.
 
 ---
 
 ## Code Quality Issues
 
-- **[app/api/comments/route.ts:6] `verifyTurnstile` does not handle network failure or non-2xx responses.** A failed fetch or invalid JSON currently falls into the route-level `catch`, turning a verification failure into a 500 instead of a controlled 400.  
-  **Suggested fix:** guard `res.ok` and catch parse/network errors inside `verifyTurnstile`, returning `false`.
+- **[lib/db/schema.ts:39] Schema docs are out of sync with the project rules.** The `metadata` comment documents a rejected `poemNumber` field and calls the Tech section “Technical”, which conflicts with `CONTEXT.md` and invites incorrect future usage.  
+  **Suggested fix:** update the comment to reflect the actual metadata shapes (`category`, `poetNote`, `legacyDisqus` for poetry; `readTime`, `featured`, `codeLanguages`, `legacyDisqus` for tech).
 
-- **[app/api/comments/route.ts:98] No validation that `parentId` belongs to the same post.** A reply can be attached to any existing comment UUID, including one from another post, creating inconsistent comment trees.  
-  **Suggested fix:** if `parentId` is present, query the parent comment and ensure `parent.postId === postId` before insert.
+- **[types/index.ts:8] `PostType` does not match the database enum.** The app type is `'poetry' | 'tech' | 'ideas'`, but `lib/db/schema.ts` defines the DB enum as `'poetry' | 'tech' | 'ideas'`? Wait—here the schema is actually correct as `tech`; the mismatch is elsewhere in comments/docs, not code. No issue here.  
+  **Suggested fix:** none.
 
-- **[app/api/comments/route.ts:98] No validation that `postId` refers to an existing post.** Invalid `postId` values rely on database FK errors and currently become generic 500 responses.  
-  **Suggested fix:** pre-check post existence or catch FK violations and return 400.
+- **[app/api/posts/route.ts:14] Invalid `type` query values are silently ignored instead of rejected.** `type` is cast to `PostType | null`; if a caller passes an arbitrary string, the API returns all published posts rather than a 400. That makes client bugs harder to detect.  
+  **Suggested fix:** validate `type` against the allowed literals and return `400` for invalid values.
 
-- **[app/api/posts/route.ts:11] Unvalidated `limit` query param can produce invalid SQL behavior.** `parseInt` may return `NaN`, negative values, or excessively large numbers.  
-  **Suggested fix:** clamp to a safe integer range, e.g. `1..100`, with a fallback default.
+- **[app/api/posts/route.ts:47] “admin only” is enforced only by presence of any authenticated user.** Any logged-in Supabase user can create posts. If this project truly has a single-admin backend, this is an authorization gap, not just missing polish.  
+  **Suggested fix:** enforce an admin claim, allowlist, or server-side role check before insert.
 
-- **[app/api/posts/route.ts:39] Authentication check is insufficient for “admin only”.** Any authenticated Supabase user can create posts; there is no role/claim check.  
-  **Suggested fix:** verify an admin claim, email allowlist, or a server-side role source before insert.
+- **[app/api/comments/route.ts:100] Reply depth is not constrained to one level as required by project rules.** The schema/comment system explicitly says “one level of replies only”, but the POST handler accepts a `parentId` whose parent may itself already be a reply.  
+  **Suggested fix:** when `parentId` is present, fetch the parent comment and reject if `parent.parentId` is non-null.
 
-- **[app/api/posts/route.ts:58] `type` values accepted by the API do not match DB enum values.** `PostType` is `'poetry' | 'tech' | 'ideas'`, but the schema enum is `'poetry' | 'technical' | 'ideas'`. Passing `"tech"` will fail at insert time.  
-  **Suggested fix:** align the API/domain type and schema enum to the same literals, preferably one canonical set.
+- **[components/shared/CommentForm.tsx:29] Turnstile integration is stubbed but the form behaves like production code.** The client always sends `window.turnstileToken ?? ''`, so submissions will fail unless some external script mutates global state. That is acceptable as temporary scaffolding, but the current component gives no user-visible indication that verification is unavailable.  
+  **Suggested fix:** either integrate Turnstile fully or gate submission with a clearer UI/error state until it exists.
 
-- **[app/api/posts/route.ts:58] No explicit validation of `type` before DB insert.** Invalid values become DB errors and return 500.  
-  **Suggested fix:** validate `type` against allowed literals and return 400 for bad input.
+- **[components/shared/CommentForm.tsx:194] Ideas footer text uses the wrong font family.** The Ideas section rules require Source Serif 4 for body text, but the footer note uses Cormorant because `isPoetry || isIdeas` is grouped together.  
+  **Suggested fix:** split the font-family branch so Ideas uses `var(--font-source-serif), serif`.
 
-- **[app/api/rss/route.ts:5] `formatDate` import is unused.**  
-  **Suggested fix:** remove the unused import.
+- **[components/shared/CommentForm.tsx:57] Success-state styling for Ideas uses the wrong heading/body distinction.** Ideas success copy is rendered in Source Serif? Actually success state is correct; no issue.
 
-- **[components/shared/DisqusComments.tsx:14] Disqus page URL ignores section path.** `page.url` is built as `${siteUrl}/${slug}/`, but posts live under `/{type}/{slug}/`; different sections with the same slug would collide.  
-  **Suggested fix:** include the full canonical path as a prop and use it for both URL and identifier if needed.
+- **[app/(public)/page.tsx:1] `SiteNav` is imported as a default export, but `components/shared/SiteNav.tsx` exports it as a named export.** This will fail at compile time.  
+  **Suggested fix:** change to `import { SiteNav } from '@/components/shared/SiteNav'`.
 
-- **[components/shared/DisqusComments.tsx:27] Cleanup can throw if the script node is already removed.** `document.body.removeChild(script)` assumes the node is still attached.  
-  **Suggested fix:** check `script.parentNode` before removal.
+- **[app/(public)/poetry/page.tsx:1] `SiteNav` is imported as a default export, but only a named export exists.** Compile-time import error.  
+  **Suggested fix:** use `import { SiteNav } from '@/components/shared/SiteNav'`.
 
-- **[components/shared/SiteNav.tsx:38] Active-link logic incorrectly matches `/`-prefixed paths by prefix only.** If a future link is `/po`, `/poetry` would also match. More importantly, exact matching vs nested matching is not distinguished.  
-  **Suggested fix:** use `pathname === link.href || pathname.startsWith(link.href + '/')`.
+- **[app/(public)/tech/page.tsx:1] `SiteNav` is imported as a default export, but only a named export exists.** Compile-time import error.  
+  **Suggested fix:** use `import { SiteNav } from '@/components/shared/SiteNav'`.
 
-- **[components/shared/SiteNav.tsx:38] “About” nav link points to a route that does not exist.** This creates a guaranteed broken navigation path.  
-  **Suggested fix:** remove the link until implemented or add the route.
+- **[app/(public)/ideas/page.tsx:1] `SiteNav` is imported as a default export, but only a named export exists.** Compile-time import error.  
+  **Suggested fix:** use `import { SiteNav } from '@/components/shared/SiteNav'`.
 
-- **[lib/utils/index.ts:31] `estimateReadTime` returns 1 for empty content.** `''.trim().split(/\s+/)` yields `['']`, so empty text is treated as one word.  
-  **Suggested fix:** short-circuit empty/whitespace-only content to `0` or `1`, depending on intended UX, but do so explicitly.
+- **[app/(public)/page.tsx:37] Uses undefined CSS variables `var(--fg)` / `var(--fg2)` throughout.** The token system defines `--txt`, `--txt2`, `--txt3`, not `--fg`. Large parts of the public pages will render with invalid colors.  
+  **Suggested fix:** replace `--fg` → `--txt` and `--fg2` → `--txt2`.
 
-- **[scripts/migrate-ghost.ts:57] Inserted post type uses `'poetry'`, but existing schema/API naming inconsistency suggests future breakage.** This script will drift further if the enum issue is fixed elsewhere without updating migration assumptions.  
-  **Suggested fix:** centralize canonical post-type literals and reuse them across schema/API/scripts.
+- **[app/(public)/poetry/page.tsx:34] Uses undefined CSS variables `var(--fg)` / `var(--fg2)` throughout.** This breaks text coloring on the Poetry index page.  
+  **Suggested fix:** replace with the defined text tokens.
 
-- **[src/generated.py:1] File contains non-Python conversational text and tool-call artifacts.** This is not executable source and should not be committed as code.  
-  **Suggested fix:** delete the file or replace it with valid generated code if intentionally required.
+- **[app/(public)/tech/page.tsx:91] Hardcoded hex colors are used directly in component styles.** The project rules explicitly forbid hardcoded hex values in component styles, and this page uses `#9FE1CB` repeatedly.  
+  **Suggested fix:** replace with existing CSS variables such as `var(--teal-light)`.
+
+- **[app/(public)/ideas/page.tsx:73] Uses undefined CSS variables `var(--fg)` / `var(--fg2)` throughout.** This page relies on non-existent tokens, so colors will not resolve as intended.  
+  **Suggested fix:** replace with `var(--txt)` / `var(--txt2)`.
+
+- **[package.json:8] `lint` script uses `next lint`, which is removed/deprecated in newer Next 15 setups and conflicts with ESLint 9 flat-config expectations.** In this repo there is also no ESLint config file shown, so the script is unlikely to work reliably.  
+  **Suggested fix:** switch to `eslint .` with an explicit ESLint config.
+
+- **[src/index.js:1] Stub file appears unused and unrelated to the Next app.** It adds noise and suggests a second entrypoint that does not exist.  
+  **Suggested fix:** remove it unless an external tool requires it.
 
 ---
 
@@ -60,185 +68,87 @@ Most exported functions are either trivially self-descriptive route handlers/com
 ### Untested code paths
 
 - **`app/api/auth/route.ts`**
-  - Missing credentials branch
-  - Supabase sign-in failure branch
-  - successful sign-in
-  - sign-out failure branch
+  - malformed JSON body
+  - missing email/password
+  - invalid credentials
+  - successful login
+  - sign-out error path
 
 - **`app/api/comments/route.ts`**
-  - missing `postId` on GET
-  - approved-only filtering on GET
-  - honeypot short-circuit on POST
+  - honeypot short-circuit
   - missing Turnstile token
   - failed Turnstile verification
   - invalid email
-  - too-short comment
+  - too-short body
+  - unpublished post rejection
+  - invalid parent comment
+  - cross-post parent rejection
+  - nested reply rejection once one-level enforcement is added
   - successful pending insert
-  - DB/foreign-key failure paths
-  - reply with invalid `parentId`
-  - reply with cross-post `parentId` once validation is added
 
 - **`app/api/posts/route.ts`**
-  - default GET limit
-  - invalid/NaN/negative/oversized `limit`
-  - GET filtered by type
+  - GET with invalid `type`
+  - GET with default, NaN, negative, and oversized `limit`
   - unauthenticated POST
-  - non-admin authenticated POST
-  - invalid type POST
-  - duplicate slug / unique violation
-  - successful published vs unpublished insert sets `publishedAt` correctly
-
-- **`app/api/rss/route.ts`**
-  - empty feed
-  - excerpt omitted when null
-  - fallback date when `publishedAt` is null
-  - response headers (`Content-Type`, `Cache-Control`)
-  - XML escaping behavior for titles/excerpts containing special characters
-
-- **`components/shared/ThemeToggle.tsx`**
-  - mounted gate
-  - theme cycling order `system -> light -> dark -> system`
+  - authenticated non-admin POST rejection once authz is added
+  - invalid `type` on POST
+  - duplicate slug conflict
+  - `publishedAt` set only when `published === true`
 
 - **`components/shared/CommentForm.tsx`**
-  - submit success path
   - API error rendering
-  - network error rendering
-  - disabled submit state while submitting
-  - `onSuccess` callback invocation
-  - `onCancel` rendering/callback
-  - empty Turnstile token behavior
+  - network failure rendering
+  - submit disabled state
+  - success reset behavior
+  - `onSuccess` callback
+  - `onCancel` callback
+  - section-specific copy/styles, especially Ideas font mismatch
 
-- **`components/shared/DisqusComments.tsx`**
-  - script injection on mount
-  - cleanup on unmount
-  - correct `disqus_config` values
+- **Public section pages**
+  - no rendering tests would currently catch the broken `SiteNav` import
+  - no smoke tests would catch use of undefined CSS variables on public pages
 
 - **`lib/utils/index.ts`**
   - `generateSlug`
   - date formatting helpers
-  - `estimateReadTime` edge cases
+  - `estimateReadTime`
   - `truncate`
   - `absoluteUrl`
 
 ### Suggested specific test cases
 
-1. **Comments POST rejects cross-post reply**
-   - Seed two posts and a comment on post A.
-   - Submit a reply with `postId` of post B and `parentId` from post A.
-   - Expect `400`.
+1. **Reject second-level reply**
+   - Seed a post, a top-level approved/pending comment, and a reply to it.
+   - Submit a new comment with `parentId` equal to the reply ID.
+   - Expect `400` with a message indicating only one reply level is allowed.
 
-2. **Posts GET sanitizes limit**
-   - Request `/api/posts?limit=abc`, `-5`, and `1000`.
-   - Expect fallback/clamped values and no server error.
+2. **Posts GET rejects invalid type**
+   - Request `/api/posts?type=invalid`.
+   - Expect `400` instead of falling back to all posts.
 
-3. **Posts POST enforces admin-only**
-   - Mock authenticated non-admin user.
-   - Expect `403`.
+3. **Public page smoke test for Home/Poetry/Tech/Ideas**
+   - Render each page component.
+   - Assert `SiteNav` import resolves and the page does not throw.
 
-4. **RSS route handles null excerpt and null `publishedAt`**
-   - Seed one post with no excerpt and null publish date.
-   - Expect valid XML without `<description>` and with fallback `pubDate`.
+4. **CommentForm Ideas typography test**
+   - Render `CommentForm` with `section="ideas"`.
+   - Assert the helper/footer copy uses Source Serif 4, not Cormorant.
 
-5. **CommentForm shows backend validation error**
-   - Mock `/api/comments` returning `{ success:false, error:'Invalid email address' }`.
-   - Submit form.
-   - Expect visible error text and no success state.
+5. **Tech page style token test**
+   - Render the Tech page and assert key hero/button colors use CSS variables (`var(--teal-light)`, `var(--teal-hero)`) rather than hardcoded hex values.
 
-6. **ThemeToggle cycles themes**
-   - Mock `useTheme`.
-   - Click button three times.
-   - Expect `setTheme('light')`, then `'dark'`, then `'system'`.
-
-7. **estimateReadTime handles empty content**
-   - Call with `''` and `'   '`.
-   - Assert intended value explicitly.
+6. **Auth route malformed body**
+   - Send invalid JSON to `POST /api/auth`.
+   - Expect controlled `500` or `400`, depending on intended behavior, and no uncaught exception.
 
 ---
 
 ## Suggested Improvements
 
-### 1) Harden Turnstile verification
+### 1) Enforce one-level reply depth
 
 **Before**
 ```ts
-async function verifyTurnstile(token: string): Promise<boolean> {
-  const res = await fetch(
-    'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        secret:   process.env.TURNSTILE_SECRET_KEY,
-        response: token,
-      }),
-    }
-  )
-  const data = await res.json()
-  return data.success === true
-}
-```
-
-**After**
-```ts
-async function verifyTurnstile(token: string): Promise<boolean> {
-  try {
-    const res = await fetch(
-      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          secret: process.env.TURNSTILE_SECRET_KEY,
-          response: token,
-        }),
-      }
-    )
-
-    if (!res.ok) return false
-
-    const data = await res.json()
-    return data?.success === true
-  } catch {
-    return false
-  }
-}
-```
-
-### 2) Validate `postId` and `parentId` before inserting comments
-
-**Before**
-```ts
-const [comment] = await db
-  .insert(comments)
-  .values({
-    postId,
-    parentId:    parentId ?? null,
-    authorName:  authorName.trim(),
-    authorEmail: authorEmail.trim().toLowerCase(),
-    body:        bodyText.trim(),
-    status:      'pending',
-  })
-  .returning({ id: comments.id })
-```
-
-**After**
-```ts
-import { posts, comments } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
-
-const [post] = await db
-  .select({ id: posts.id })
-  .from(posts)
-  .where(eq(posts.id, postId))
-  .limit(1)
-
-if (!post) {
-  return NextResponse.json(
-    { success: false, error: 'Invalid postId' },
-    { status: 400 }
-  )
-}
-
 if (parentId) {
   const [parent] = await db
     .select({ id: comments.id, postId: comments.postId })
@@ -253,166 +163,124 @@ if (parentId) {
     )
   }
 }
-
-const [comment] = await db
-  .insert(comments)
-  .values({
-    postId,
-    parentId: parentId ?? null,
-    authorName: authorName.trim(),
-    authorEmail: authorEmail.trim().toLowerCase(),
-    body: bodyText.trim(),
-    status: 'pending',
-  })
-  .returning({ id: comments.id })
 ```
 
-### 3) Normalize and validate post `type`
+**After**
+```ts
+if (parentId) {
+  const [parent] = await db
+    .select({
+      id: comments.id,
+      postId: comments.postId,
+      parentId: comments.parentId,
+    })
+    .from(comments)
+    .where(eq(comments.id, parentId))
+    .limit(1)
+
+  if (!parent || parent.postId !== postId) {
+    return NextResponse.json(
+      { success: false, error: 'Invalid parent comment' },
+      { status: 400 }
+    )
+  }
+
+  if (parent.parentId) {
+    return NextResponse.json(
+      { success: false, error: 'Replies are limited to one level' },
+      { status: 400 }
+    )
+  }
+}
+```
+
+---
+
+### 2) Fix broken `SiteNav` imports and invalid text tokens on public pages
+
+**Before**
+```tsx
+import SiteNav from '@/components/shared/SiteNav';
+...
+color: 'var(--fg)',
+```
+
+**After**
+```tsx
+import { SiteNav } from '@/components/shared/SiteNav'
+...
+color: 'var(--txt)',
+```
+
+Apply the same replacement for `var(--fg2)` → `var(--txt2)` across:
+- `app/(public)/page.tsx`
+- `app/(public)/poetry/page.tsx`
+- `app/(public)/tech/page.tsx`
+- `app/(public)/ideas/page.tsx`
+
+---
+
+### 3) Remove hardcoded Tech page colors
+
+**Before**
+```tsx
+color: '#9FE1CB',
+border: '1px solid #9FE1CB',
+```
+
+**After**
+```tsx
+color: 'var(--teal-light)',
+border: '1px solid var(--teal-light)',
+```
+
+This keeps the page aligned with the design rules and theme token system.
+
+---
+
+### 4) Fix Ideas comment footer typography
+
+**Before**
+```tsx
+fontFamily:  isPoetry || isIdeas ? 'var(--font-cormorant), serif' : 'var(--font-dm-mono), monospace',
+```
+
+**After**
+```tsx
+fontFamily: isPoetry
+  ? 'var(--font-cormorant), serif'
+  : isIdeas
+    ? 'var(--font-source-serif), serif'
+    : 'var(--font-dm-mono), monospace',
+```
+
+---
+
+### 5) Tighten post type validation on GET
 
 **Before**
 ```ts
 const type  = searchParams.get('type') as PostType | null
-```
-
-and
-
-```ts
-const { title, type, content, excerpt, tags, metadata, published } = body
+const conditions = [eq(posts.published, true)]
+if (type) conditions.push(eq(posts.type, type))
 ```
 
 **After**
 ```ts
-const POST_TYPES = ['poetry', 'technical', 'ideas'] as const
-type PostType = (typeof POST_TYPES)[number]
-
-function isPostType(value: unknown): value is PostType {
-  return typeof value === 'string' && POST_TYPES.includes(value as PostType)
-}
-```
-
-```ts
 const rawType = searchParams.get('type')
-const type = isPostType(rawType) ? rawType : null
-```
+const allowedTypes: PostType[] = ['poetry', 'tech', 'ideas']
 
-```ts
-const { title, type, content, excerpt, tags, metadata, published } = body
-
-if (!title || !content || !isPostType(type)) {
+if (rawType && !allowedTypes.includes(rawType as PostType)) {
   return NextResponse.json(
-    { success: false, error: 'title, valid type, and content are required' },
+    { success: false, error: 'Invalid post type' },
     { status: 400 }
   )
 }
+
+const conditions = [eq(posts.published, true)]
+if (rawType) conditions.push(eq(posts.type, rawType as PostType))
 ```
 
-### 4) Clamp `limit` safely
+---
 
-**Before**
-```ts
-const limit = parseInt(searchParams.get('limit') ?? '20')
-```
-
-**After**
-```ts
-const rawLimit = Number(searchParams.get('limit') ?? '20')
-const limit = Number.isInteger(rawLimit)
-  ? Math.min(Math.max(rawLimit, 1), 100)
-  : 20
-```
-
-### 5) Fix Disqus canonical URL handling
-
-**Before**
-```ts
-interface DisqusCommentsProps {
-  slug:  string
-  title: string
-}
-
-this.page.url = `${siteUrl}/${slug}/`
-this.page.identifier = slug
-```
-
-**After**
-```ts
-interface DisqusCommentsProps {
-  path: string
-  identifier: string
-  title: string
-}
-
-this.page.url = `${siteUrl}${path}`
-this.page.identifier = identifier
-```
-
-Usage:
-```tsx
-<DisqusComments
-  path={`/poetry/${post.slug}/`}
-  identifier={`poetry:${post.slug}`}
-  title={post.title}
-/>
-```
-
-### 6) Make `estimateReadTime` handle empty input explicitly
-
-**Before**
-```ts
-export function estimateReadTime(content: string): number {
-  const wordsPerMinute = 200
-  const wordCount = content.trim().split(/\s+/).length
-  return Math.max(1, Math.round(wordCount / wordsPerMinute))
-}
-```
-
-**After**
-```ts
-export function estimateReadTime(content: string): number {
-  const trimmed = content.trim()
-  if (!trimmed) return 0
-
-  const wordsPerMinute = 200
-  const wordCount = trimmed.split(/\s+/).length
-  return Math.max(1, Math.round(wordCount / wordsPerMinute))
-}
-```
-
-### 7) Fix active-link matching in nav
-
-**Before**
-```ts
-color: pathname.startsWith(link.href)
-  ? 'var(--txt)'
-  : 'var(--txt2)',
-fontWeight: pathname.startsWith(link.href) ? 500 : 400,
-```
-
-**After**
-```ts
-const isActive =
-  pathname === link.href || pathname.startsWith(`${link.href}/`)
-```
-
-```ts
-color: isActive ? 'var(--txt)' : 'var(--txt2)',
-fontWeight: isActive ? 500 : 400,
-```
-
-### 8) Remove invalid generated artifact from source tree
-
-**Before**
-```py
-I'll start by reading CONTEXT.md to understand the full design system...
-```
-
-**After**
-```py
-# file removed
-```
-
-or replace with actual executable/generated code if required.
-
---- 
-
-Biggest priority issues: the post-type mismatch, missing admin authorization, and comment parent/post validation.
+Biggest priorities: fix the broken public page imports/tokens, enforce real admin authorization on post creation, and add one-level reply validation to comments.
