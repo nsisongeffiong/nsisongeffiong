@@ -2,98 +2,73 @@
 
 None worth flagging.
 
-The exported handlers/components shown here are either trivial placeholders or adequately contextualized by naming and nearby comments. Internal helpers are not public API.
-
----
+The exported functions/classes in the provided code are either:
+- trivial route/page placeholders, or
+- sufficiently self-explanatory for this codebase, with nearby comments where needed.
 
 ## Code Quality Issues
 
-- **[app/api/posts/route.ts:55] Admin-only write is not enforced.** Any authenticated Supabase user can create posts; the handler checks authentication but not authorization.  
-  **Suggested fix:** enforce an admin allowlist/claim check before insert.
+- **[app/api/posts/route.ts:55] Admin-only post creation is not enforced.** The handler allows any authenticated Supabase user to create and publish posts, which contradicts the stated admin-only requirement.  
+  **Suggested fix:** enforce authorization beyond authentication, e.g. admin email allowlist or Supabase custom claim check before insert.
 
-- **[components/shared/DisqusComments.tsx:31] Disqus embed can fail to reinitialize correctly on client-side navigation.** Cleanup deletes `window.DISQUS`, but the effect does not call `DISQUS.reset(...)` when the script is already loaded; subsequent post navigations may leave the old thread rendered.  
-  **Suggested fix:** if `window.DISQUS` exists, call `window.DISQUS.reset({ reload: true, config })` instead of appending a new script.
+- **[components/shared/CommentForm.tsx:35] Comment submission cannot succeed unless some external code sets `window.turnstileToken`, but no Turnstile integration is present in the provided app.** In the current repo state, all legitimate comment submissions will fail client-side.  
+  **Suggested fix:** explicitly render/manage the Turnstile widget and read its token in the form, or disable/hide comment submission until integration exists.
 
-- **[app/(public)/page.tsx:31] Uses `var(--txt-secondary)`, which is not defined in `app/globals.css`.** This falls back to invalid color values in multiple places on public pages.  
-  **Suggested fix:** replace with existing tokens like `var(--txt2)` / `var(--txt3)` or add the missing semantic alias in `globals.css`.
+- **[app/api/rss/route.ts:24] RSS item titles are inserted into CDATA without escaping the `]]>` terminator.** A post title or excerpt containing `]]>` would produce invalid XML. This is rare but a genuine correctness issue for feed generation.  
+  **Suggested fix:** sanitize CDATA content before interpolation, e.g. replace `]]>` with `]]]]><![CDATA[>`.
 
-- **[app/(public)/poetry/page.tsx:58] Uses `var(--txt-secondary)`, which is not defined in `app/globals.css`.** Text color declarations relying on it will not render as intended.  
-  **Suggested fix:** use `var(--txt2)`.
+- **[app/api/comments/route.ts:7] `verifyTurnstile` sends JSON to Cloudflare’s siteverify endpoint.** Cloudflare documents this endpoint as `application/x-www-form-urlencoded`; JSON may work inconsistently or fail depending on upstream behavior.  
+  **Suggested fix:** send a `URLSearchParams` body with form encoding.
 
-- **[app/(public)/tech/page.tsx:53] Uses `var(--txt-secondary)`, which is not defined in `app/globals.css`.** Same issue across filter chips, excerpts, and metadata.  
-  **Suggested fix:** use `var(--txt2)` / `var(--txt3)` consistently.
-
-- **[app/(public)/ideas/page.tsx:84] Uses `var(--txt-secondary)`, which is not defined in `app/globals.css`.** Multiple metadata and excerpt styles depend on an undefined token.  
-  **Suggested fix:** replace with `var(--txt2)`.
-
-- **[components/shared/CommentForm.tsx:35] Comment submission is blocked unless some external script sets `window.turnstileToken`, but no such integration is present in the provided code.** In the current repo state, real users cannot successfully submit comments.  
-  **Suggested fix:** render and manage Turnstile in the form/page, or hide/disable submission until integration exists.
-
-- **[components/shared/SiteNav.tsx:24] Root path is incorrectly marked active for all routes.** `pathname.startsWith(\`\${link.href}/\`)` makes `/` match every path when `link.href === '/'` is ever added; current nav avoids it, but the active-link logic is brittle.  
-  **Suggested fix:** special-case `'/'` or use exact matching for root paths.
-
-- **[package.json:7] `next lint` is not available in newer Next.js setups and is brittle with ESLint 9.** This commonly breaks CI/tooling even when ESLint is configured correctly.  
-  **Suggested fix:** switch to `eslint .`.
-
-- **[src/generated.py:1] Repository contains a generated artifact with embedded TSX in a `.py` file.** This is not runtime code and will confuse maintenance/review.  
-  **Suggested fix:** delete `src/generated.py`.
-
-- **[src/index.js:1] Unused non-Next entrypoint adds noise.** It does not participate in the app.  
-  **Suggested fix:** remove it unless external tooling depends on it.
-
----
+- **[scripts/migrate-ghost.ts:63] Migration failures are swallowed and the script still exits successfully.** Non-duplicate insert errors are logged, but the process always exits `0`, making automation/reporting incorrect.  
+  **Suggested fix:** track failures and exit non-zero if any record failed unexpectedly.
 
 ## Test Coverage
 
 ### Untested code paths
 
 - **`app/api/auth/route.ts`**
-  - malformed JSON body
+  - malformed JSON request body
   - missing email/password
   - invalid credentials
   - successful sign-in
-  - sign-out error path
+  - sign-out failure path
 
 - **`app/api/comments/route.ts`**
   - honeypot fake-success path
   - missing Turnstile token
-  - failed Turnstile verification
-  - invalid email
+  - Turnstile verification failure
+  - invalid email format
   - too-short comment
-  - nonexistent/unpublished post
+  - unpublished/nonexistent post
   - invalid `parentId`
-  - parent from another post
+  - `parentId` from another post
   - reply-to-reply rejection
-  - successful insert with `status: 'pending'`
+  - successful pending insert
 
 - **`app/api/posts/route.ts`**
-  - invalid `type` query
-  - limit coercion: NaN, negative, >100
+  - invalid query `type`
+  - limit coercion for NaN, negative, >100
   - unauthenticated POST
-  - authenticated-but-non-admin rejection once authz is added
-  - invalid POST `type`
+  - unauthorized authenticated POST once admin auth is added
+  - invalid `type` in body
   - duplicate slug conflict
-  - `publishedAt` only set when `published === true`
+  - `publishedAt` behavior when `published` is false vs true
 
 - **`app/api/rss/route.ts`**
-  - no posts
-  - posts without excerpts
-  - posts without `publishedAt`
-  - XML escaping behavior with special characters in title/excerpt
+  - empty feed
+  - post without excerpt
+  - post without `publishedAt`
+  - title/excerpt containing XML edge cases like `&`, `<`, and `]]>`
 
 - **`components/shared/CommentForm.tsx`**
-  - missing Turnstile token error
+  - missing Turnstile token branch
   - API error rendering
   - network error rendering
-  - success reset behavior
-  - disabled submitting state
+  - success reset
+  - submit button disabled state
   - `onSuccess` callback
   - `onCancel` callback
-
-- **`components/shared/DisqusComments.tsx`**
-  - initial script injection
-  - cleanup on unmount
-  - navigation from one Disqus-backed post to another
 
 - **`lib/utils/index.ts`**
   - `generateSlug`
@@ -102,46 +77,52 @@ The exported handlers/components shown here are either trivial placeholders or a
   - `truncate`
   - `absoluteUrl`
 
+- **`scripts/migrate-ghost.ts`**
+  - missing export file
+  - skipping drafts
+  - duplicate slug handling
+  - non-duplicate DB failure causing non-zero exit
+
 ### Suggested test cases
 
-1. **Posts API authz**
-   - POST without session → expect `401`.
-   - POST with authenticated non-admin user after authz fix → expect `403`.
+1. **Posts API authorization**
+   - POST without session → expect `401`
+   - POST with authenticated non-admin user → expect `403` after authz fix
 
 2. **Comments API honeypot**
-   - POST with `website` filled.
-   - Expect success payload with `pending: true` and verify no DB insert occurred.
+   - POST with `website` filled
+   - expect `{ success: true, data: { pending: true } }`
+   - verify no DB insert occurred
 
-3. **Comments API nested reply limit**
-   - Seed top-level comment and one reply.
-   - POST reply to that reply.
-   - Expect `400`.
+3. **Comments API nesting rule**
+   - seed top-level comment and a reply
+   - attempt reply to the reply
+   - expect `400`
 
 4. **Comments API cross-post parent**
-   - Seed two posts and a comment on post A.
-   - Submit comment on post B with parent from post A.
-   - Expect `400`.
+   - seed comment on post A
+   - submit reply on post B using parent from A
+   - expect `400`
 
-5. **RSS escaping**
-   - Seed a post title/excerpt containing `&`, `<`, `>`.
-   - Assert generated XML remains valid.
+5. **RSS CDATA safety**
+   - seed a post title/excerpt containing `]]>`
+   - assert generated feed remains valid XML
 
 6. **CommentForm missing token**
-   - Render form, submit valid fields with no `window.turnstileToken`.
-   - Assert user-facing verification error appears and no request is sent.
+   - submit valid fields without Turnstile token
+   - assert verification error is shown and no fetch occurs
 
-7. **Disqus navigation**
-   - Mount component for post A, then rerender for post B.
-   - Assert thread reinitializes with new identifier/url.
+7. **Turnstile verification request format**
+   - mock `fetch` in `verifyTurnstile`
+   - assert request uses form-encoded body
 
-8. **Undefined color token regression**
-   - Render public pages and assert computed styles resolve to valid colors after token fix.
-
----
+8. **Ghost migration exit status**
+   - mock one duplicate and one hard DB failure
+   - assert script exits non-zero when a real failure occurs
 
 ## Suggested Improvements
 
-### 1) Enforce real admin authorization for post creation
+### 1) Enforce admin authorization in `POST /api/posts`
 
 **Before**
 ```ts
@@ -181,106 +162,126 @@ if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
 }
 ```
 
----
-
-### 2) Stop using undefined semantic color tokens
+### 2) Use the documented Turnstile request format
 
 **Before**
-```tsx
-color: 'var(--txt-secondary)',
+```ts
+const res = await fetch(
+  'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      secret: process.env.TURNSTILE_SECRET_KEY,
+      response: token,
+    }),
+  }
+)
 ```
 
 **After**
-```tsx
-color: 'var(--txt2)',
+```ts
+const body = new URLSearchParams({
+  secret: process.env.TURNSTILE_SECRET_KEY ?? '',
+  response: token,
+})
+
+const res = await fetch(
+  'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+  }
+)
 ```
 
-Or define aliases once:
+### 3) Make RSS CDATA safe
 
-```css
-:root {
-  --txt-secondary: var(--txt2);
-  --txt-tertiary: var(--txt3);
+**Before**
+```ts
+<title><![CDATA[${post.title}]]></title>
+${post.excerpt ? `<description><![CDATA[${post.excerpt}]]></description>` : ''}
+```
+
+**After**
+```ts
+function toCdataSafe(value: string): string {
+  return value.replaceAll(']]>', ']]]]><![CDATA[>')
 }
 ```
 
-This is preferable if you want semantic naming in components without breaking existing styles.
+```ts
+<title><![CDATA[${toCdataSafe(post.title)}]]></title>
+${post.excerpt ? `<description><![CDATA[${toCdataSafe(post.excerpt)}]]></description>` : ''}
+```
 
----
-
-### 3) Make Disqus work reliably on post-to-post navigation
+### 4) Fail the Ghost migration script when real inserts fail
 
 **Before**
 ```ts
-const script = document.createElement('script')
-script.src = `https://${shortname}.disqus.com/embed.js`
-script.async = true
-document.body.appendChild(script)
+let migrated = 0
+let skipped  = 0
+```
+
+```ts
+} catch (error: any) {
+  if (error?.code === '23505') {
+    console.log(`  ↷ Already exists: "${ghost.title}" — skipping`)
+    skipped++
+  } else {
+    console.error(`  ✗ Failed: "${ghost.title}"`, error.message)
+  }
+}
+```
+
+```ts
+console.log(`\nMigration complete: ${migrated} migrated, ${skipped} skipped`)
+process.exit(0)
 ```
 
 **After**
 ```ts
-useEffect(() => {
-  const win = window as any
-
-  const config = function (this: any) {
-    this.page.url = `${siteUrl}${path}`
-    this.page.identifier = slug
-    this.page.title = title
-  }
-
-  win.disqus_config = config
-
-  if (win.DISQUS) {
-    win.DISQUS.reset({
-      reload: true,
-      config,
-    })
-    return
-  }
-
-  const script = document.createElement('script')
-  script.src = `https://${shortname}.disqus.com/embed.js`
-  script.async = true
-  script.setAttribute('data-timestamp', String(Date.now()))
-  document.body.appendChild(script)
-
-  return () => {
-    const thread = document.getElementById('disqus_thread')
-    if (thread) thread.innerHTML = ''
-  }
-}, [slug, title, path, siteUrl, shortname])
+let migrated = 0
+let skipped = 0
+let failed = 0
 ```
 
----
+```ts
+} catch (error: any) {
+  if (error?.code === '23505') {
+    console.log(`  ↷ Already exists: "${ghost.title}" — skipping`)
+    skipped++
+  } else {
+    console.error(`  ✗ Failed: "${ghost.title}"`, error.message)
+    failed++
+  }
+}
+```
 
-### 4) Replace brittle lint script
+```ts
+console.log(`\nMigration complete: ${migrated} migrated, ${skipped} skipped, ${failed} failed`)
+process.exit(failed > 0 ? 1 : 0)
+```
+
+### 5) Encapsulate Turnstile access instead of reading a global directly
 
 **Before**
-```json
-"lint": "next lint"
+```ts
+const turnstileToken = (window as any).turnstileToken ?? ''
 ```
 
 **After**
-```json
-"lint": "eslint ."
+```ts
+declare global {
+  interface Window {
+    turnstileToken?: string
+  }
+}
+
+const turnstileToken = window.turnstileToken ?? ''
 ```
 
-If needed, add an explicit ESLint config file so CI behavior is stable.
-
----
-
-### 5) Remove generated artifacts from the app repo
-
-**Before**
-```text
-src/generated.py
-src/index.js
-```
-
-**After**
-```text
-# delete both files if no external pipeline step requires them
-```
-
-This avoids reviewers and future contributors chasing code that is not part of the runtime app.
+This does not solve the missing integration by itself, but it removes the untyped global access and makes the dependency explicit.
