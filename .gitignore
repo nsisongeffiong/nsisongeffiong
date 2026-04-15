@@ -38,3 +38,5 @@ src/
 reviews/
 CONTEXT.md
 prompts/
+ghost-export.json
+scripts/run.py
