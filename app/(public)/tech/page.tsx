@@ -1,44 +1,33 @@
-import { SiteNav } from '@/components/shared/SiteNav';
+export const dynamic = 'force-dynamic'
 
-const filters = ['all', 'AI/ML', 'systems', 'web', 'devtools'];
+import { SiteNav } from '@/components/shared/SiteNav'
+import { db } from '@/lib/db'
+import { posts } from '@/lib/db/schema'
+import { desc, eq, and } from 'drizzle-orm'
 
-const articles = [
-  {
-    num: '01',
-    tag: 'AI/ML',
-    title: 'Building Resilient ML Pipelines at Scale',
-    excerpt:
-      'How to design machine learning infrastructure that survives the chaos of production — retry semantics, circuit breakers, and graceful degradation.',
-    date: '2024-12-10',
-    readTime: '12 min',
-  },
-  {
-    num: '02',
-    tag: 'systems',
-    title: 'Event Sourcing Beyond the Hype',
-    excerpt:
-      'A practical look at when event sourcing works, when it doesn\'t, and what the blog posts leave out about schema evolution.',
-    date: '2024-11-22',
-    readTime: '9 min',
-  },
-  {
-    num: '03',
-    tag: 'web',
-    title: 'Server Components and the Death of the Waterfall',
-    excerpt:
-      'React Server Components fundamentally change how we think about data fetching. Here\'s a migration path that won\'t break your app.',
-    date: '2024-11-05',
-    readTime: '8 min',
-  },
-];
+const filters = ['all', 'AI/ML', 'systems', 'web', 'devtools']
 
-const stats = [
-  { label: 'articles published', value: '24' },
-  { label: 'avg words', value: '2,400' },
-  { label: 'topics covered', value: '6' },
-];
+export default async function TechPage() {
+  const articles = await db
+    .select({
+      id:          posts.id,
+      title:       posts.title,
+      slug:        posts.slug,
+      excerpt:     posts.excerpt,
+      tags:        posts.tags,
+      publishedAt: posts.publishedAt,
+      metadata:    posts.metadata,
+    })
+    .from(posts)
+    .where(and(eq(posts.published, true), eq(posts.type, 'tech')))
+    .orderBy(desc(posts.publishedAt))
 
-export default function TechPage() {
+  const stats = [
+    { label: 'articles published', value: String(articles.length) },
+    { label: 'avg words',          value: '2,400' },
+    { label: 'topics covered',     value: '6' },
+  ]
+
   return (
     <div
       style={{
@@ -159,9 +148,9 @@ export default function TechPage() {
           padding: '1rem 1.5rem 4rem',
         }}
       >
-        {articles.map((a) => (
+        {articles.map((a, i) => (
           <article
-            key={a.num}
+            key={a.id}
             style={{
               display: 'grid',
               gridTemplateColumns: '3rem 1fr',
@@ -181,26 +170,28 @@ export default function TechPage() {
                 paddingTop: '0.15rem',
               }}
             >
-              {a.num}
+              {String(i + 1).padStart(2, '0')}
             </span>
 
             {/* Content */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              <span
-                style={{
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.65rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'var(--teal-hero)',
-                  border: '1px solid var(--teal-hero)',
-                  padding: '0.1rem 0.45rem',
-                  borderRadius: '2px',
-                  alignSelf: 'flex-start',
-                }}
-              >
-                {a.tag}
-              </span>
+              {a.tags?.[0] && (
+                <span
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '0.65rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'var(--teal-hero)',
+                    border: '1px solid var(--teal-hero)',
+                    padding: '0.1rem 0.45rem',
+                    borderRadius: '2px',
+                    alignSelf: 'flex-start',
+                  }}
+                >
+                  {a.tags[0]}
+                </span>
+              )}
               <h2
                 style={{
                   fontFamily: 'var(--font-syne), sans-serif',
@@ -211,22 +202,24 @@ export default function TechPage() {
                 }}
               >
                 <a
-                  href={`/tech/${a.title.toLowerCase().replace(/ /g, '-')}`}
+                  href={`/tech/${a.slug}`}
                   style={{ color: 'inherit', textDecoration: 'none' }}
                 >
                   {a.title}
                 </a>
               </h2>
-              <p
-                style={{
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.8rem',
-                  lineHeight: 1.7,
-                  color: 'var(--txt-secondary)',
-                }}
-              >
-                {a.excerpt}
-              </p>
+              {a.excerpt && (
+                <p
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '0.8rem',
+                    lineHeight: 1.7,
+                    color: 'var(--txt-secondary)',
+                  }}
+                >
+                  {a.excerpt}
+                </p>
+              )}
               <div
                 style={{
                   display: 'flex',
@@ -236,14 +229,18 @@ export default function TechPage() {
                   color: 'var(--txt-secondary)',
                 }}
               >
-                <time dateTime={a.date}>
-                  {new Date(a.date).toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </time>
-                <span>{a.readTime}</span>
+                {a.publishedAt && (
+                  <time dateTime={a.publishedAt.toISOString()}>
+                    {a.publishedAt.toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </time>
+                )}
+                {(a.metadata as any)?.readTime && (
+                  <span>{(a.metadata as any).readTime} min read</span>
+                )}
               </div>
             </div>
           </article>
@@ -303,5 +300,5 @@ export default function TechPage() {
         </div>
       </section>
     </div>
-  );
+  )
 }
