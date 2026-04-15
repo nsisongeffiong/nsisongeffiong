@@ -1,24 +1,23 @@
-Looking at the source code alongside both reviews and the previous final review, I need to carefully verify what's already been fixed and what still needs attention.
-
 ## A. Triage of All Findings
 
-| # | Finding | Decision | Rationale |
-|---|---------|----------|-----------|
-| G1 | Admin-only post creation not enforced (`POST /api/posts`) | **ESCALATE** | Critical security gap. Both reviewers flagged. Requires product decision on admin identity strategy. Code has TODO comment acknowledging it. |
-| G2 | `window.turnstileToken` — no Turnstile widget rendered | **REJECT** | Known incomplete feature. The guard logic is correct. Widget integration is a separate task. |
-| G3 | Hardcoded `#E1F5EE` in tech/[slug] hero title | **ACCEPT** | Violates brand rule. `#E1F5EE` matches `--teal-pale` in light mode. Replace with `var(--teal-pale)`. |
-| G4 | Hardcoded `#9FE1CB` in tech/[slug] code blocks | **ACCEPT** | Violates the explicit project rule "Never use hardcoded hex values in component styles." Replace with `var(--teal-light)` which resolves to `#9FE1CB` in dark mode and `#5DCAA5` in light — both appropriate on `--teal-hero` backgrounds. |
-| G5 | `app/globals.css` `.tiptap pre` uses `#9FE1CB` | **ACCEPT** | Same rule violation as G4. Replace with `var(--teal-light)`. |
-| G6 | Admin login error color `var(--danger)` | **REJECT** | Checking source: the current code already uses `color: 'var(--danger)'` which IS defined. No bug exists. Previous review already noted this was correct. |
-| G7 | Dead `/about` nav link | **REJECT** | Checking source: `NAV_LINKS` in `types/index.ts` does NOT contain an `/about` entry. It only has Poetry, Tech, Ideas. No dead link exists. |
-| G8 | `next lint` incompatibility | **REJECT** | Low priority, not a merge blocker. |
-| G9 | `next@15.0.0` security vulnerability | **ESCALATE** | Package upgrade, not a code change. Requires testing. |
-| G10 | De-duplicate local `slugify` in tech/[slug] | **ACCEPT** | Good hygiene. Local `slugify` diverges from `generateSlug`. |
-| G11 | Replace `window.turnstileToken` with component state | **REJECT** | Premature for incomplete feature. |
-| G12 | Improve admin login catch block error message | **REJECT** | Current behavior is acceptable for a login form. Distinguishing network vs auth errors can leak information. |
-| G13 | Poetry comment count drift (`post.commentCount` hardcoded 3) | **ACCEPT** | Should derive from rendered data like ideas page does. |
-| G14 | `dangerouslySetInnerHTML` in ideas/[slug] | **REJECT** | Current content is hardcoded placeholder. XSS concern is valid for future DB-backed content but not actionable now. |
-| Gem1 | Broken Access Control on POST /api/posts | **ESCALATE** | Same as G1. |
+| # | Source | Finding | Decision | Rationale |
+|---|--------|---------|----------|-----------|
+| G1 | GPT | Admin-only post creation not enforced (`POST /api/posts`) | **ESCALATE** | Critical security gap. Both reviewers flagged. Requires architecture decision on admin identity strategy. Code already has TODO comment. |
+| G2 | GPT | `window.turnstileToken` — no Turnstile widget rendered | **REJECT** | Known incomplete feature. The guard logic is correct and prevents submission without a token. Widget integration is a separate task. |
+| G3 | GPT | Hardcoded `#E1F5EE` in tech/[slug] hero title | **ACCEPT** | Violates explicit project rule: "Never use hardcoded hex values in component styles." `#E1F5EE` matches `--teal-pale` in light mode. |
+| G4 | GPT | Hardcoded `#9FE1CB` in tech/[slug] code blocks | **ACCEPT** | Same rule violation. Replace with `var(--teal-light)`. |
+| G5 | GPT | `app/globals.css` `.tiptap pre` uses hardcoded `#9FE1CB` | **ACCEPT** | Same rule violation. Replace with `var(--teal-light)`. |
+| G6 | GPT | `post.commentCount` is duplicated/hardcoded in poetry/[slug] | **ACCEPT** | Should derive from rendered data like the ideas page does. Prevents stale UI. |
+| G7 | GPT | Local `slugify()` duplicates shared logic in `lib/utils` | **ACCEPT** | Good hygiene. Local implementation diverges from `generateSlug` which uses the `slugify` npm package. |
+| G8 | GPT | `next lint` not reliable for Next 15 / ESLint 9 | **REJECT** | Low priority, not a merge blocker. |
+| G9 | GPT | `next@15.0.0` security vulnerability | **ESCALATE** | Package upgrade requires testing. Not a code change. |
+| G10 | GPT | Replace `window.turnstileToken` with component state | **REJECT** | Premature for incomplete feature. |
+| Gem1 | Gemini | Broken Access Control on POST /api/posts | **ESCALATE** | Same as G1. |
+| Gem2 | Gemini | XSS via `dangerouslySetInnerHTML` in ideas/[slug] | **REJECT** | Current content is hardcoded placeholder. Valid concern for future DB-backed content but not actionable now. |
+| Gem3 | Gemini | Missing `name` length constraint in POST /api/comments | **REJECT** | Low severity. The DB schema uses `text` type (no inherent limit). Adding length validation is good practice but not a merge blocker. Can be addressed in a follow-up. |
+| Gem4 | Gemini | `window.turnstileToken` prevents comment submission | **REJECT** | Same as G2. Known incomplete feature. |
+| Gem5 | Gemini | `next@15.0.0` flagged as vulnerable | **ESCALATE** | Same as G9. |
+| Gem6 | Gemini | Logging may expose PII | **REJECT** | Current `console.error` calls log generic error objects. No explicit PII logging found. Standard practice. |
 
 ## B. Corrected Files
 
@@ -1496,7 +1495,7 @@ body {
 
 ### 1. Tech hero title — hardcoded `#E1F5EE` → `var(--teal-pale)`
 **File:** `app/(public)/tech/[slug]/page.tsx`
-- `#E1F5EE` matches `--teal-pale` in light mode. Using the CSS variable ensures proper dark mode adaptation.
+- `#E1F5EE` matches `--teal-pale` in light mode. Using the CSS variable ensures proper dark mode adaptation and compliance with the "no hardcoded hex" rule.
 
 ### 2. Tech code blocks — hardcoded `#9FE1CB` → `var(--teal-light)`
 **File:** `app/(public)/tech/[slug]/page.tsx`
@@ -1527,14 +1526,17 @@ Both GPT and Gemini flagged this. Any authenticated Supabase user can create pos
 **Current state:** Code has a TODO comment acknowledging this.
 
 **Recommended approaches:**
-1. **Email allowlist** — `ADMIN_EMAILS` env var
+1. **Email allowlist** — `ADMIN_EMAILS` env var checked server-side
 2. **Supabase custom claims** — admin role in JWT
 3. **Supabase RLS** — Row Level Security on `posts` table
 
-**Why escalated:** Architecture decision needed before implementation.
+**Why escalated:** Architecture decision needed before implementation. This is a critical security vulnerability that must be resolved before production deployment.
 
 ### [HUMAN REVIEW NEEDED] Next.js Security Vulnerability
-`next@15.0.0` has CVE-2025-66478. Upgrade to patched release recommended. Requires dependency testing.
+`next@15.0.0` has CVE-2025-66478 (flagged in package-lock.json). Upgrade to a patched Next 15 release recommended. Requires dependency testing and build verification.
+
+### [HUMAN REVIEW NEEDED] XSS via `dangerouslySetInnerHTML` in ideas/[slug]
+The `ideas/[slug]` page uses `dangerouslySetInnerHTML` for the post body. While current data is static placeholder content (not a current vulnerability), this MUST be addressed with server-side HTML sanitization (e.g., DOMPurify) before any database-backed content is rendered through this path.
 
 ## Items Rejected
 
@@ -1543,20 +1545,19 @@ Both GPT and Gemini flagged this. Any authenticated Supabase user can create pos
 | Turnstile widget not rendered | Known incomplete feature. Guard logic correct. |
 | Replace `window.turnstileToken` with state | Premature for unfinished feature. |
 | ESLint 9 / `next lint` compatibility | Not a merge blocker. |
-| Admin login catch → network error message | Acceptable UX. Distinguishing errors can leak info. |
-| Dead `/about` nav link | Does not exist in current source. |
-| `var(--danger)` undefined | Already defined correctly in source. |
-| `dangerouslySetInnerHTML` XSS | Placeholder content only. Address when DB-backed. |
+| Missing `authorName` length constraint | Low severity. DB schema uses `text`. Follow-up item. |
+| Logging may expose PII | No explicit PII logging found in current code. |
 
 ## Files Modified
 1. `app/(public)/tech/[slug]/page.tsx` — hero title color, code block color, slugify dedup
-2. `app/(public)/poetry/[slug]/page.tsx` — derived comment count
+2. `app/(public)/poetry/[slug]/page.tsx` — derived comment count, removed hardcoded `commentCount`
 3. `app/globals.css` — tiptap pre color token
 
 ## Files NOT Modified (verified correct)
-- `app/admin/login/page.tsx` — already uses `var(--danger)` correctly
-- `types/index.ts` — no dead `/about` link exists
-- `app/api/comments/route.ts` — already uses URLSearchParams
+- `app/api/posts/route.ts` — admin auth is escalated, not auto-fixed
+- `app/api/comments/route.ts` — validation is adequate for current stage
 - `app/api/rss/route.ts` — already has CDATA escaping
-- All other files — no actionable issues
+- `app/(public)/ideas/[slug]/page.tsx` — XSS concern escalated for future work
+- `components/shared/CommentForm.tsx` — Turnstile integration is incomplete by design
+- All other files — no actionable issues found
 ```
