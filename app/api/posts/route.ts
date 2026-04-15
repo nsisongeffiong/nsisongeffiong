@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const limit = Number.isNaN(rawLimit) ? 20 : Math.min(Math.max(rawLimit, 1), 100)
 
     const conditions = [eq(posts.published, true)]
-    if (rawType) conditions.push(eq(posts.type, rawType))
+    if (rawType && isValidPostType(rawType)) conditions.push(eq(posts.type, rawType))
 
     const result = await db
       .select()
