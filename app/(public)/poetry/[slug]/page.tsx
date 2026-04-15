@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 /* ── static placeholder data ── */
 const post = {
+  id: 'placeholder-id',
   slug: 'the-weight-of-morning',
   title: 'The Weight of Morning',
   category: 'Lyric',

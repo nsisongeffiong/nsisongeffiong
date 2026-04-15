@@ -3,6 +3,7 @@ import { CommentForm } from '@/components/shared/CommentForm';
 
 /* ── static placeholder data ── */
 const post = {
+  id: 'placeholder-id',
   slug: 'building-a-comment-system-with-drizzle-and-supabase',
   title: 'Building a Comment System with Drizzle & Supabase',
   description: 'A walkthrough of the moderation pipeline, honeypot fields, and Turnstile integration for a spam-free comment system.',
