@@ -4,6 +4,7 @@ import { CommentForm } from '@/components/shared/CommentForm';
 /* ── static placeholder data ─────────────────────────────────── */
 
 const post = {
+  id: 'placeholder-id',
   slug: 'the-case-for-radical-incrementalism',
   kicker: 'Policy Framework',
   title: 'The Case for Radical Incrementalism',
@@ -539,7 +540,7 @@ export default function IdeasSinglePost() {
             }}
           />
 
-          <CommentForm section="ideas" />
+          <CommentForm postId={post.id} section="ideas" />
         </section>
       </main>
 
