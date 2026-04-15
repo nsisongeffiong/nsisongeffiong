@@ -14,7 +14,7 @@ import { relations } from 'drizzle-orm'
 
 export const postTypeEnum = pgEnum('post_type', [
   'poetry',
-  'technical',
+  'tech',
   'ideas',
 ])
 

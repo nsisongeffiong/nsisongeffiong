@@ -1,23 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { comments } from '@/lib/db/schema'
+import { posts, comments } from '@/lib/db/schema'
 import { eq, and, asc } from 'drizzle-orm'
 
 // ─── Turnstile verification ───────────────────────────────────────────────────
 async function verifyTurnstile(token: string): Promise<boolean> {
-  const res = await fetch(
-    'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        secret:   process.env.TURNSTILE_SECRET_KEY,
-        response: token,
-      }),
-    }
-  )
-  const data = await res.json()
-  return data.success === true
+  try {
+    const res = await fetch(
+      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          secret:   process.env.TURNSTILE_SECRET_KEY,
+          response: token,
+        }),
+      }
+    )
+    if (!res.ok) return false
+    const data = await res.json()
+    return data.success === true
+  } catch {
+    return false
+  }
 }
 
 // GET /api/comments?postId=xxx — fetch approved comments for a post
@@ -119,6 +124,36 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Comment is too short' },
         { status: 400 }
       )
+    }
+
+    // ── Validate postId refers to a real published post ───────────────────────
+    const [post] = await db
+      .select({ id: posts.id })
+      .from(posts)
+      .where(and(eq(posts.id, postId), eq(posts.published, true)))
+      .limit(1)
+
+    if (!post) {
+      return NextResponse.json(
+        { success: false, error: 'Post not found' },
+        { status: 404 }
+      )
+    }
+
+    // ── Validate parentId belongs to the same post ────────────────────────────
+    if (parentId) {
+      const [parent] = await db
+        .select({ id: comments.id, postId: comments.postId })
+        .from(comments)
+        .where(eq(comments.id, parentId))
+        .limit(1)
+
+      if (!parent || parent.postId !== postId) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid parent comment' },
+          { status: 400 }
+        )
+      }
     }
 
     // ── Layer 3: Save as pending — moderation queue ──────────────────────────

@@ -64,7 +64,7 @@ async function migrate() {
 
     try {
       await db.insert(posts).values({
-        type:        'poetry',          // All existing Ghost posts are poems
+        type:        'poetry',          // All existing Ghost posts are poems — matches DB enum
         title:       ghost.title,
         slug,
         content:     ghost.html ?? ghost.plaintext ?? '',

@@ -156,7 +156,7 @@ export function CommentForm({
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
     background:    'var(--teal-hero)',
-    color:         '#9FE1CB',
+    color:         'var(--teal-light)',
     border:        'none',
     padding:       '0.6rem 1.5rem',
     cursor:        'pointer',
@@ -223,7 +223,7 @@ export function CommentForm({
         <p style={{
           fontFamily: 'var(--font-dm-mono), monospace',
           fontSize:   '12px',
-          color:      '#E24B4A',
+          color:      'var(--color-text-danger, #E24B4A)',
           marginBottom: '1rem',
         }}>
           {errorMsg}

@@ -5,16 +5,17 @@ import { useEffect } from 'react'
 interface DisqusCommentsProps {
   slug:  string
   title: string
+  path:  string  // full canonical path e.g. /poetry/the-plea
 }
 
-export function DisqusComments({ slug, title }: DisqusCommentsProps) {
+export function DisqusComments({ slug, title, path }: DisqusCommentsProps) {
   const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nsisongeffiong.com'
   const shortname = process.env.NEXT_PUBLIC_DISQUS_SHORTNAME ?? 'nsisongeffiong'
 
   useEffect(() => {
     const win = window as any
     win.disqus_config = function () {
-      this.page.url        = `${siteUrl}/${slug}/`
+      this.page.url        = `${siteUrl}${path}`
       this.page.identifier = slug
       this.page.title      = title
     }
@@ -27,7 +28,7 @@ export function DisqusComments({ slug, title }: DisqusCommentsProps) {
 
     return () => {
       // Clean up the embed when navigating away
-      document.body.removeChild(script)
+      if (script.parentNode) script.parentNode.removeChild(script)
       const thread = document.getElementById('disqus_thread')
       if (thread) thread.innerHTML = ''
       delete win.DISQUS

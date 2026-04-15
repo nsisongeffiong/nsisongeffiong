@@ -59,7 +59,7 @@ export type SectionConfig = {
 }
 
 export const SECTIONS: SectionConfig[] = [
-  { type: 'poetry', label: 'Poetry', href: '/poetry', accentColor: '#534AB7' },
-  { type: 'tech',   label: 'Tech',   href: '/tech',   accentColor: '#1D9E75' },
-  { type: 'ideas',  label: 'Ideas',  href: '/ideas',  accentColor: '#BA7517' },
+  { type: 'poetry', label: 'Poetry', href: '/poetry', accentColor: 'var(--purple)'  },
+  { type: 'tech',   label: 'Tech',   href: '/tech',   accentColor: 'var(--teal-mid)' },
+  { type: 'ideas',  label: 'Ideas',  href: '/ideas',  accentColor: 'var(--amber)'    },
 ]

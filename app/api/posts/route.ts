@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const type  = searchParams.get('type') as PostType | null
-    const limit = parseInt(searchParams.get('limit') ?? '20')
+    const rawLimit = parseInt(searchParams.get('limit') ?? '20')
+    const limit = Number.isNaN(rawLimit) ? 20 : Math.min(Math.max(rawLimit, 1), 100)
 
     const conditions = [eq(posts.published, true)]
     if (type) conditions.push(eq(posts.type, type))
@@ -52,6 +53,14 @@ export async function POST(request: NextRequest) {
     if (!title || !type || !content) {
       return NextResponse.json(
         { success: false, error: 'title, type, and content are required' },
+        { status: 400 }
+      )
+    }
+
+    const ALLOWED_TYPES: PostType[] = ['poetry', 'tech', 'ideas']
+    if (!ALLOWED_TYPES.includes(type)) {
+      return NextResponse.json(
+        { success: false, error: `type must be one of: ${ALLOWED_TYPES.join(', ')}` },
         { status: 400 }
       )
     }

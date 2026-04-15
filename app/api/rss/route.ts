@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { eq, desc } from 'drizzle-orm'
-import { absoluteUrl, formatDate } from '@/lib/utils'
+import { absoluteUrl } from '@/lib/utils'
 
 export async function GET() {
   try {
