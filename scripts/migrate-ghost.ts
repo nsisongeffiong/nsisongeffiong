@@ -74,7 +74,7 @@ async function migrate() {
         publishedAt: ghost.published_at ? new Date(ghost.published_at) : new Date(),
         metadata: {
           legacyDisqus: true,           // Use Disqus embed for these posts
-          category:     ghost.tags?.[0]?.name ?? null,
+          category:     ghost.tags?.[0]?.name ?? undefined,
         },
       })
 
