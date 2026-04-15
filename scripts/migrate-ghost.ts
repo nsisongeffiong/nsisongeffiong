@@ -124,7 +124,6 @@ async function migrate() {
           authors:       authorsMeta.length > 0 ? authorsMeta : undefined,
           isGuestPost:   primaryAuthor?.slug !== 'nsisong' && primaryAuthor !== undefined,
         } as any),
-        },
       })
 
       const authorLabel = primaryAuthor ? ` [${primaryAuthor.name}]` : ''
