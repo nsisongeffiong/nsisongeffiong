@@ -2,73 +2,86 @@
 
 None worth flagging.
 
-The exported functions/classes in the provided code are either:
-- trivial route/page placeholders, or
-- sufficiently self-explanatory for this codebase, with nearby comments where needed.
+The exported APIs and components shown are either:
+- conventional Next.js page/route exports,
+- small internal utilities with clear names, or
+- already documented where non-obvious behavior exists (`app/api/comments/route.ts`, `lib/db/schema.ts`, `scripts/migrate-ghost.ts`).
 
 ## Code Quality Issues
 
-- **[app/api/posts/route.ts:55] Admin-only post creation is not enforced.** The handler allows any authenticated Supabase user to create and publish posts, which contradicts the stated admin-only requirement.  
-  **Suggested fix:** enforce authorization beyond authentication, e.g. admin email allowlist or Supabase custom claim check before insert.
+- **[app/api/posts/route.ts:40] Admin-only post creation is not enforced.** Any authenticated Supabase user can create posts, which contradicts the project’s admin-only requirement.  
+  **Suggested fix:** add an authorization check after authentication, e.g. email allowlist, custom claim, or DB/RLS-backed admin role.
 
-- **[components/shared/CommentForm.tsx:35] Comment submission cannot succeed unless some external code sets `window.turnstileToken`, but no Turnstile integration is present in the provided app.** In the current repo state, all legitimate comment submissions will fail client-side.  
-  **Suggested fix:** explicitly render/manage the Turnstile widget and read its token in the form, or disable/hide comment submission until integration exists.
+- **[components/shared/CommentForm.tsx:33] Legitimate comment submission cannot succeed in the current codebase because the form depends on `window.turnstileToken`, but no Turnstile widget/integration is rendered anywhere in the provided app.** Every real submission will hit the client-side “Verification is not ready yet” branch.  
+  **Suggested fix:** render and manage a Turnstile widget in the form or a parent component, and store its token in component state instead of relying on an implicit global.
 
-- **[app/api/rss/route.ts:24] RSS item titles are inserted into CDATA without escaping the `]]>` terminator.** A post title or excerpt containing `]]>` would produce invalid XML. This is rare but a genuine correctness issue for feed generation.  
-  **Suggested fix:** sanitize CDATA content before interpolation, e.g. replace `]]>` with `]]]]><![CDATA[>`.
+- **[app/(public)/tech/[slug]/page.tsx:127] Hardcoded hex color violates the project token rule.** `color: '#E1F5EE'` bypasses the required CSS variable system.  
+  **Suggested fix:** replace with an existing token such as `var(--teal-light)` or add a semantic token if a distinct shade is required.
 
-- **[app/api/comments/route.ts:7] `verifyTurnstile` sends JSON to Cloudflare’s siteverify endpoint.** Cloudflare documents this endpoint as `application/x-www-form-urlencoded`; JSON may work inconsistently or fail depending on upstream behavior.  
-  **Suggested fix:** send a `URLSearchParams` body with form encoding.
+- **[app/(public)/tech/[slug]/page.tsx:212] Hardcoded hex color violates the project token rule.** `color: '#9FE1CB'` is used directly in the code block.  
+  **Suggested fix:** use `var(--teal-light)`.
 
-- **[scripts/migrate-ghost.ts:63] Migration failures are swallowed and the script still exits successfully.** Non-duplicate insert errors are logged, but the process always exits `0`, making automation/reporting incorrect.  
-  **Suggested fix:** track failures and exit non-zero if any record failed unexpectedly.
+- **[app/globals.css:80] Hardcoded hex color violates the project token rule.** `.tiptap pre` uses `color: #9FE1CB` directly.  
+  **Suggested fix:** use `var(--teal-light)`.
+
+- **[app/admin/login/page.tsx:126] Uses undefined CSS variable `var(--color-text-danger)`.** This will render no intended danger color unless defined elsewhere. The project defines `--danger`, not `--color-text-danger`.  
+  **Suggested fix:** replace with `var(--danger)`.
+
+- **[types/index.ts:35] Navigation includes `/about`, but no `/about` route is present in the provided app.** This creates a dead navigation link.  
+  **Suggested fix:** either implement `/about` or remove the nav item until the route exists.
+
+- **[package.json:8] `next lint` is no longer the correct lint entrypoint for Next 15 / ESLint 9 setups.** This commonly breaks CI/tooling in current Next 15 projects.  
+  **Suggested fix:** switch to plain ESLint, e.g. `"lint": "eslint ."` with an appropriate config.
+
+- **[package.json:14, package-lock.json] Project is pinned to `next@15.0.0`, which is flagged in the lockfile as having a security vulnerability.**  
+  **Suggested fix:** upgrade to a patched Next 15 release.
 
 ## Test Coverage
 
 ### Untested code paths
 
 - **`app/api/auth/route.ts`**
-  - malformed JSON request body
-  - missing email/password
+  - malformed JSON body
+  - missing credentials
   - invalid credentials
-  - successful sign-in
-  - sign-out failure path
+  - successful login
+  - sign-out failure
 
 - **`app/api/comments/route.ts`**
   - honeypot fake-success path
   - missing Turnstile token
   - Turnstile verification failure
-  - invalid email format
-  - too-short comment
-  - unpublished/nonexistent post
+  - invalid email
+  - short comment body
+  - nonexistent/unpublished post
   - invalid `parentId`
-  - `parentId` from another post
+  - `parentId` from a different post
   - reply-to-reply rejection
-  - successful pending insert
+  - successful insert with `pending` status
 
 - **`app/api/posts/route.ts`**
   - invalid query `type`
-  - limit coercion for NaN, negative, >100
+  - limit clamping: NaN, negative, >100
   - unauthenticated POST
-  - unauthorized authenticated POST once admin auth is added
-  - invalid `type` in body
+  - non-admin authenticated POST once authz is added
+  - invalid body `type`
   - duplicate slug conflict
-  - `publishedAt` behavior when `published` is false vs true
+  - published vs unpublished `publishedAt` behavior
 
 - **`app/api/rss/route.ts`**
   - empty feed
   - post without excerpt
   - post without `publishedAt`
-  - title/excerpt containing XML edge cases like `&`, `<`, and `]]>`
+  - XML edge cases in title/excerpt, especially `]]>`
 
 - **`components/shared/CommentForm.tsx`**
-  - missing Turnstile token branch
+  - missing token error path
   - API error rendering
   - network error rendering
-  - success reset
-  - submit button disabled state
+  - successful reset
   - `onSuccess` callback
   - `onCancel` callback
+  - disabled submit state during submission
 
 - **`lib/utils/index.ts`**
   - `generateSlug`
@@ -79,50 +92,53 @@ The exported functions/classes in the provided code are either:
 
 - **`scripts/migrate-ghost.ts`**
   - missing export file
-  - skipping drafts
-  - duplicate slug handling
-  - non-duplicate DB failure causing non-zero exit
+  - draft skipping
+  - duplicate post skip
+  - hard DB failure increments `failed`
+  - non-zero exit on failure
 
 ### Suggested test cases
 
-1. **Posts API authorization**
-   - POST without session → expect `401`
-   - POST with authenticated non-admin user → expect `403` after authz fix
+1. **Comments API honeypot**
+   - POST with `website` populated
+   - assert `200` success with `{ pending: true }`
+   - assert no DB insert occurred
 
-2. **Comments API honeypot**
-   - POST with `website` filled
-   - expect `{ success: true, data: { pending: true } }`
-   - verify no DB insert occurred
-
-3. **Comments API nesting rule**
-   - seed top-level comment and a reply
-   - attempt reply to the reply
+2. **Comments API one-level reply rule**
+   - seed top-level comment and reply
+   - attempt reply to that reply
    - expect `400`
 
-4. **Comments API cross-post parent**
-   - seed comment on post A
-   - submit reply on post B using parent from A
+3. **Comments API cross-post parent validation**
+   - create comment on post A
+   - submit reply for post B using A’s comment ID
    - expect `400`
 
-5. **RSS CDATA safety**
-   - seed a post title/excerpt containing `]]>`
-   - assert generated feed remains valid XML
-
-6. **CommentForm missing token**
+4. **CommentForm current integration failure**
+   - render form
    - submit valid fields without Turnstile token
-   - assert verification error is shown and no fetch occurs
+   - assert verification error is shown
+   - assert no network request is made
 
-7. **Turnstile verification request format**
-   - mock `fetch` in `verifyTurnstile`
-   - assert request uses form-encoded body
+5. **Posts API authorization**
+   - POST without auth → `401`
+   - POST with authenticated non-admin user → `403` after authz fix
 
-8. **Ghost migration exit status**
-   - mock one duplicate and one hard DB failure
-   - assert script exits non-zero when a real failure occurs
+6. **RSS XML safety**
+   - seed a published post with title/excerpt containing `]]>`
+   - assert feed remains valid XML
+
+7. **Admin login error styling**
+   - render login page with an error state
+   - assert computed style uses the expected danger token after fix
+
+8. **Navigation integrity**
+   - render `SiteNav`
+   - assert every nav href resolves to an implemented route, or snapshot the intended set and fail on dead links like `/about`
 
 ## Suggested Improvements
 
-### 1) Enforce admin authorization in `POST /api/posts`
+### 1) Enforce real admin authorization in `POST /api/posts`
 
 **Before**
 ```ts
@@ -142,17 +158,17 @@ if (!user) {
 const supabase = await createClient()
 const { data: { user } } = await supabase.auth.getUser()
 
-const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-  .split(',')
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean)
-
 if (!user) {
   return NextResponse.json(
     { success: false, error: 'Unauthorised' },
     { status: 401 }
   )
 }
+
+const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+  .split(',')
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean)
 
 if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
   return NextResponse.json(
@@ -162,126 +178,115 @@ if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
 }
 ```
 
-### 2) Use the documented Turnstile request format
+### 2) Replace implicit global Turnstile dependency with explicit component state
 
 **Before**
-```ts
-const res = await fetch(
-  'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-  {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      secret: process.env.TURNSTILE_SECRET_KEY,
-      response: token,
-    }),
-  }
-)
-```
-
-**After**
-```ts
-const body = new URLSearchParams({
-  secret: process.env.TURNSTILE_SECRET_KEY ?? '',
-  response: token,
-})
-
-const res = await fetch(
-  'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-  {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-  }
-)
-```
-
-### 3) Make RSS CDATA safe
-
-**Before**
-```ts
-<title><![CDATA[${post.title}]]></title>
-${post.excerpt ? `<description><![CDATA[${post.excerpt}]]></description>` : ''}
-```
-
-**After**
-```ts
-function toCdataSafe(value: string): string {
-  return value.replaceAll(']]>', ']]]]><![CDATA[>')
-}
-```
-
-```ts
-<title><![CDATA[${toCdataSafe(post.title)}]]></title>
-${post.excerpt ? `<description><![CDATA[${toCdataSafe(post.excerpt)}]]></description>` : ''}
-```
-
-### 4) Fail the Ghost migration script when real inserts fail
-
-**Before**
-```ts
-let migrated = 0
-let skipped  = 0
-```
-
-```ts
-} catch (error: any) {
-  if (error?.code === '23505') {
-    console.log(`  ↷ Already exists: "${ghost.title}" — skipping`)
-    skipped++
-  } else {
-    console.error(`  ✗ Failed: "${ghost.title}"`, error.message)
-  }
-}
-```
-
-```ts
-console.log(`\nMigration complete: ${migrated} migrated, ${skipped} skipped`)
-process.exit(0)
-```
-
-**After**
-```ts
-let migrated = 0
-let skipped = 0
-let failed = 0
-```
-
-```ts
-} catch (error: any) {
-  if (error?.code === '23505') {
-    console.log(`  ↷ Already exists: "${ghost.title}" — skipping`)
-    skipped++
-  } else {
-    console.error(`  ✗ Failed: "${ghost.title}"`, error.message)
-    failed++
-  }
-}
-```
-
-```ts
-console.log(`\nMigration complete: ${migrated} migrated, ${skipped} skipped, ${failed} failed`)
-process.exit(failed > 0 ? 1 : 0)
-```
-
-### 5) Encapsulate Turnstile access instead of reading a global directly
-
-**Before**
-```ts
-const turnstileToken = (window as any).turnstileToken ?? ''
-```
-
-**After**
-```ts
-declare global {
-  interface Window {
-    turnstileToken?: string
-  }
-}
-
+```tsx
 const turnstileToken = window.turnstileToken ?? ''
+
+if (!turnstileToken) {
+  setStatus('error')
+  setErrorMsg('Verification is not ready yet. Please try again later.')
+  return
+}
 ```
 
-This does not solve the missing integration by itself, but it removes the untyped global access and makes the dependency explicit.
+**After**
+```tsx
+const [turnstileToken, setTurnstileToken] = useState('')
+
+if (!turnstileToken) {
+  setStatus('error')
+  setErrorMsg('Verification is required before submitting.')
+  return
+}
+```
+
+And render a real widget:
+```tsx
+<TurnstileWidget onVerify={setTurnstileToken} />
+```
+
+This removes hidden coupling and makes the form testable.
+
+### 3) Fix undefined admin login error token
+
+**Before**
+```tsx
+color: 'var(--color-text-danger)',
+```
+
+**After**
+```tsx
+color: 'var(--danger)',
+```
+
+### 4) Remove hardcoded tech colors
+
+**Before**
+```tsx
+color: '#E1F5EE',
+```
+
+```tsx
+color: '#9FE1CB',
+```
+
+**After**
+```tsx
+color: 'var(--teal-pale)',
+```
+
+```tsx
+color: 'var(--teal-light)',
+```
+
+Or, if `var(--teal-pale)` is semantically wrong for text in that spot, add a named semantic token and use that consistently.
+
+### 5) De-duplicate local slug generation
+
+`app/(public)/tech/[slug]/page.tsx` defines a local `slugify` even though `lib/utils` already exports `generateSlug`.
+
+**Before**
+```ts
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+```
+
+**After**
+```ts
+import { generateSlug } from '@/lib/utils'
+```
+
+```ts
+const id = generateSlug(block.text)
+```
+
+This avoids divergent slug behavior across pages and APIs.
+
+### 6) Remove or defer dead nav links
+
+**Before**
+```ts
+export const NAV_LINKS: NavLink[] = [
+  { label: 'Poetry', href: '/poetry' },
+  { label: 'Tech',   href: '/tech'   },
+  { label: 'Ideas',  href: '/ideas'  },
+  { label: 'About',  href: '/about'  },
+]
+```
+
+**After**
+```ts
+export const NAV_LINKS: NavLink[] = [
+  { label: 'Poetry', href: '/poetry' },
+  { label: 'Tech',   href: '/tech'   },
+  { label: 'Ideas',  href: '/ideas'  },
+]
+```
+
+Or add the missing `/about` route if it is intended.
