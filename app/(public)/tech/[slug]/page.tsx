@@ -3,7 +3,7 @@ import { posts } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
-import { CommentForm } from '@/components/comments/CommentForm'
+import { CommentForm } from '@/components/shared/CommentForm'
 
 export default async function TechPost({
   params,
