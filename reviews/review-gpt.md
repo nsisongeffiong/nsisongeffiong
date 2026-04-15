@@ -2,39 +2,46 @@
 
 None worth flagging.
 
-The exported APIs and components shown are either:
-- conventional Next.js page/route exports,
-- small internal utilities with clear names, or
-- already documented where non-obvious behavior exists (`app/api/comments/route.ts`, `lib/db/schema.ts`, `scripts/migrate-ghost.ts`).
+The public exports shown are Next.js page/route entrypoints or small utilities/components with either obvious intent or adequate inline documentation where behavior is non-obvious (`app/api/comments/route.ts`, `lib/db/schema.ts`, `scripts/migrate-ghost.ts`).
+
+---
 
 ## Code Quality Issues
 
-- **[app/api/posts/route.ts:40] Admin-only post creation is not enforced.** Any authenticated Supabase user can create posts, which contradicts the project’s admin-only requirement.  
-  **Suggested fix:** add an authorization check after authentication, e.g. email allowlist, custom claim, or DB/RLS-backed admin role.
+- **[app/api/posts/route.ts:40] Admin-only post creation is not enforced.** Any authenticated Supabase user can create posts, which violates the project’s admin-only requirement.  
+  **Suggested fix:** add a real authorization check after authentication (email allowlist, custom claim, or DB/RLS-backed admin role).
 
-- **[components/shared/CommentForm.tsx:33] Legitimate comment submission cannot succeed in the current codebase because the form depends on `window.turnstileToken`, but no Turnstile widget/integration is rendered anywhere in the provided app.** Every real submission will hit the client-side “Verification is not ready yet” branch.  
-  **Suggested fix:** render and manage a Turnstile widget in the form or a parent component, and store its token in component state instead of relying on an implicit global.
+- **[components/shared/CommentForm.tsx:33] Legitimate comment submission cannot succeed with the provided code because the form depends on `window.turnstileToken`, but no Turnstile widget or token-population code is rendered anywhere in the app.** All real submissions will hit the client-side “Verification is not ready yet” path.  
+  **Suggested fix:** render Turnstile in the form (or parent), capture the token in component state, and submit that explicitly.
 
-- **[app/(public)/tech/[slug]/page.tsx:127] Hardcoded hex color violates the project token rule.** `color: '#E1F5EE'` bypasses the required CSS variable system.  
-  **Suggested fix:** replace with an existing token such as `var(--teal-light)` or add a semantic token if a distinct shade is required.
+- **[app/admin/login/page.tsx:113] Error text uses `var(--danger)`, which is defined correctly, but the catch block collapses all failures into "Invalid credentials".** This hides server/network failures and makes debugging harder.  
+  **Suggested fix:** distinguish transport errors from auth failures, e.g. show a generic network/server message in the `catch` branch.
 
-- **[app/(public)/tech/[slug]/page.tsx:212] Hardcoded hex color violates the project token rule.** `color: '#9FE1CB'` is used directly in the code block.  
-  **Suggested fix:** use `var(--teal-light)`.
+- **[app/(public)/tech/page.tsx:74] Hardcoded color `#9FE1CB` is used directly multiple times.** This violates the project rule against hardcoded hex values in component styles.  
+  **Suggested fix:** add/use an appropriate semantic token for text rendered on `var(--teal-hero)` backgrounds.
 
-- **[app/globals.css:80] Hardcoded hex color violates the project token rule.** `.tiptap pre` uses `color: #9FE1CB` directly.  
-  **Suggested fix:** use `var(--teal-light)`.
+- **[app/(public)/tech/[slug]/page.tsx:127] Hardcoded color `#E1F5EE` is used directly.** This bypasses the token system.  
+  **Suggested fix:** replace with an existing token such as `var(--teal-pale)` or a dedicated semantic token.
 
-- **[app/admin/login/page.tsx:126] Uses undefined CSS variable `var(--color-text-danger)`.** This will render no intended danger color unless defined elsewhere. The project defines `--danger`, not `--color-text-danger`.  
-  **Suggested fix:** replace with `var(--danger)`.
+- **[app/(public)/tech/[slug]/page.tsx:212] Hardcoded color `#9FE1CB` is used directly in code blocks.** This bypasses the token system.  
+  **Suggested fix:** use a semantic token for code text on teal backgrounds.
 
-- **[types/index.ts:35] Navigation includes `/about`, but no `/about` route is present in the provided app.** This creates a dead navigation link.  
-  **Suggested fix:** either implement `/about` or remove the nav item until the route exists.
+- **[app/globals.css:80] `.tiptap pre` uses hardcoded `#9FE1CB`.** Same token-system violation.  
+  **Suggested fix:** move this to a semantic CSS variable used consistently across tech/code surfaces.
 
-- **[package.json:8] `next lint` is no longer the correct lint entrypoint for Next 15 / ESLint 9 setups.** This commonly breaks CI/tooling in current Next 15 projects.  
-  **Suggested fix:** switch to plain ESLint, e.g. `"lint": "eslint ."` with an appropriate config.
+- **[app/(public)/ideas/[slug]/page.tsx:131] `dangerouslySetInnerHTML` renders HTML from content without any sanitization boundary in this file.** If this placeholder becomes DB-backed content without server-side sanitization, it creates an XSS risk.  
+  **Suggested fix:** sanitize stored/rendered HTML before passing it to `dangerouslySetInnerHTML`, or restrict content to trusted editor output with sanitization on save.
 
-- **[package.json:14, package-lock.json] Project is pinned to `next@15.0.0`, which is flagged in the lockfile as having a security vulnerability.**  
+- **[app/(public)/poetry/[slug]/page.tsx:291] Displayed `post.commentCount` can drift from the rendered `comments` array.** The page shows a hardcoded count (`3`) while only two top-level comments plus one reply are present.  
+  **Suggested fix:** derive the displayed count from the rendered comment data, as done in the ideas page.
+
+- **[package.json:8] `next lint` is not a safe default for a Next 15 + ESLint 9 setup.** This commonly breaks automation/tooling.  
+  **Suggested fix:** switch to plain ESLint, e.g. `"lint": "eslint ."` with project config.
+
+- **[package.json / package-lock.json] Project is pinned to `next@15.0.0`, which is flagged in the lockfile as vulnerable.**  
   **Suggested fix:** upgrade to a patched Next 15 release.
+
+---
 
 ## Test Coverage
 
@@ -42,71 +49,69 @@ The exported APIs and components shown are either:
 
 - **`app/api/auth/route.ts`**
   - malformed JSON body
-  - missing credentials
+  - missing email/password
   - invalid credentials
   - successful login
-  - sign-out failure
+  - sign-out failure path
 
 - **`app/api/comments/route.ts`**
-  - honeypot fake-success path
+  - honeypot fake-success branch
   - missing Turnstile token
   - Turnstile verification failure
   - invalid email
-  - short comment body
+  - too-short body
   - nonexistent/unpublished post
   - invalid `parentId`
-  - `parentId` from a different post
+  - `parentId` from another post
   - reply-to-reply rejection
   - successful insert with `pending` status
 
 - **`app/api/posts/route.ts`**
-  - invalid query `type`
-  - limit clamping: NaN, negative, >100
+  - invalid `type` query param
+  - limit clamping (`NaN`, negative, >100)
   - unauthenticated POST
-  - non-admin authenticated POST once authz is added
+  - authenticated non-admin POST once authz is added
   - invalid body `type`
   - duplicate slug conflict
-  - published vs unpublished `publishedAt` behavior
+  - `published`/`publishedAt` interaction
 
 - **`app/api/rss/route.ts`**
   - empty feed
   - post without excerpt
   - post without `publishedAt`
-  - XML edge cases in title/excerpt, especially `]]>`
+  - title/excerpt containing `]]>` or XML-sensitive content
 
 - **`components/shared/CommentForm.tsx`**
   - missing token error path
   - API error rendering
   - network error rendering
-  - successful reset
+  - success reset behavior
   - `onSuccess` callback
   - `onCancel` callback
-  - disabled submit state during submission
+  - disabled state during submit
 
 - **`lib/utils/index.ts`**
   - `generateSlug`
-  - `formatDate`, `formatDateShort`, `formatDateRelative`
+  - date formatters
   - `estimateReadTime`
   - `truncate`
   - `absoluteUrl`
 
-- **`scripts/migrate-ghost.ts`**
-  - missing export file
-  - draft skipping
-  - duplicate post skip
-  - hard DB failure increments `failed`
-  - non-zero exit on failure
+- **`components/shared/DisqusComments.tsx`**
+  - initial script injection
+  - `DISQUS.reset` path on client navigation
+  - cleanup behavior on unmount
 
 ### Suggested test cases
 
 1. **Comments API honeypot**
    - POST with `website` populated
-   - assert `200` success with `{ pending: true }`
-   - assert no DB insert occurred
+   - assert `200` with `{ success: true, data: { pending: true } }`
+   - assert no DB insert
 
 2. **Comments API one-level reply rule**
-   - seed top-level comment and reply
-   - attempt reply to that reply
+   - seed top-level comment and a reply
+   - attempt to reply to the reply
    - expect `400`
 
 3. **Comments API cross-post parent validation**
@@ -114,7 +119,7 @@ The exported APIs and components shown are either:
    - submit reply for post B using A’s comment ID
    - expect `400`
 
-4. **CommentForm current integration failure**
+4. **CommentForm current failure mode**
    - render form
    - submit valid fields without Turnstile token
    - assert verification error is shown
@@ -125,16 +130,18 @@ The exported APIs and components shown are either:
    - POST with authenticated non-admin user → `403` after authz fix
 
 6. **RSS XML safety**
-   - seed a published post with title/excerpt containing `]]>`
-   - assert feed remains valid XML
+   - seed a post with `title`/`excerpt` containing `]]>`
+   - assert generated feed remains valid XML
 
-7. **Admin login error styling**
-   - render login page with an error state
-   - assert computed style uses the expected danger token after fix
+7. **Poetry comment count correctness**
+   - render poetry single page
+   - assert displayed response count matches rendered comments + replies
 
-8. **Navigation integrity**
-   - render `SiteNav`
-   - assert every nav href resolves to an implemented route, or snapshot the intended set and fail on dead links like `/about`
+8. **Disqus client navigation**
+   - mount `DisqusComments` with one slug, then rerender with another
+   - assert `DISQUS.reset` is called instead of injecting duplicate scripts
+
+---
 
 ## Suggested Improvements
 
@@ -156,7 +163,9 @@ if (!user) {
 **After**
 ```ts
 const supabase = await createClient()
-const { data: { user } } = await supabase.auth.getUser()
+const {
+  data: { user },
+} = await supabase.auth.getUser()
 
 if (!user) {
   return NextResponse.json(
@@ -177,6 +186,8 @@ if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
   )
 }
 ```
+
+---
 
 ### 2) Replace implicit global Turnstile dependency with explicit component state
 
@@ -202,48 +213,69 @@ if (!turnstileToken) {
 }
 ```
 
-And render a real widget:
+Render a real widget:
 ```tsx
 <TurnstileWidget onVerify={setTurnstileToken} />
 ```
 
 This removes hidden coupling and makes the form testable.
 
-### 3) Fix undefined admin login error token
+---
+
+### 3) Use a semantic token for tech-on-hero text instead of hardcoded hex
 
 **Before**
-```tsx
-color: 'var(--color-text-danger)',
-```
-
-**After**
-```tsx
-color: 'var(--danger)',
-```
-
-### 4) Remove hardcoded tech colors
-
-**Before**
-```tsx
-color: '#E1F5EE',
-```
-
 ```tsx
 color: '#9FE1CB',
 ```
 
 **After**
-```tsx
-color: 'var(--teal-pale)',
+```css
+:root {
+  --teal-on-hero: #9FE1CB;
+}
+
+.dark {
+  --teal-on-hero: #9FE1CB;
+}
 ```
 
 ```tsx
-color: 'var(--teal-light)',
+color: 'var(--teal-on-hero)',
 ```
 
-Or, if `var(--teal-pale)` is semantically wrong for text in that spot, add a named semantic token and use that consistently.
+This keeps the intended fixed contrast while still respecting the token rule.
 
-### 5) De-duplicate local slug generation
+---
+
+### 4) Derive poetry comment count from rendered data
+
+**Before**
+```tsx
+<span>
+  {post.commentCount} responses
+</span>
+```
+
+**After**
+```tsx
+const commentCount = comments.reduce(
+  (acc, comment) => acc + 1 + comment.replies.length,
+  0
+)
+```
+
+```tsx
+<span>
+  {commentCount} responses
+</span>
+```
+
+This prevents stale UI when placeholder data changes.
+
+---
+
+### 5) De-duplicate slug generation
 
 `app/(public)/tech/[slug]/page.tsx` defines a local `slugify` even though `lib/utils` already exports `generateSlug`.
 
@@ -266,27 +298,24 @@ import { generateSlug } from '@/lib/utils'
 const id = generateSlug(block.text)
 ```
 
-This avoids divergent slug behavior across pages and APIs.
+This avoids divergent slug behavior between UI and API code.
 
-### 6) Remove or defer dead nav links
+---
+
+### 6) Improve admin login error handling
 
 **Before**
 ```ts
-export const NAV_LINKS: NavLink[] = [
-  { label: 'Poetry', href: '/poetry' },
-  { label: 'Tech',   href: '/tech'   },
-  { label: 'Ideas',  href: '/ideas'  },
-  { label: 'About',  href: '/about'  },
-]
+} catch {
+  setError('Invalid credentials')
+}
 ```
 
 **After**
 ```ts
-export const NAV_LINKS: NavLink[] = [
-  { label: 'Poetry', href: '/poetry' },
-  { label: 'Tech',   href: '/tech'   },
-  { label: 'Ideas',  href: '/ideas'  },
-]
+} catch {
+  setError('Unable to reach the server. Please try again.')
+}
 ```
 
-Or add the missing `/about` route if it is intended.
+This preserves the intentional credential message for 401 responses while not mislabeling network failures as auth failures.
