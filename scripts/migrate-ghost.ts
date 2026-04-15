@@ -68,7 +68,7 @@ async function migrate() {
         title:       ghost.title,
         slug,
         content:     ghost.html ?? ghost.plaintext ?? '',
-        excerpt:     ghost.custom_excerpt ?? null,
+        excerpt:     ghost.custom_excerpt ?? undefined,
         tags:        ghost.tags?.map((t) => t.name) ?? [],
         published:   true,
         publishedAt: ghost.published_at ? new Date(ghost.published_at) : new Date(),
