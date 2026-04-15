@@ -1,42 +1,51 @@
-
-
-Looking at the source code carefully, I need to reconcile the reviews against the actual codebase. Let me trace through each finding methodically.
-
-**Key observation:** The `lib/db/schema.ts` enum is `['poetry', 'tech', 'ideas']` — NOT `'technical'`. The previous review's final-review.md incorrectly changed `PostType` to `'technical'`. The DB enum, types, and routes all use `'tech'`, which is correct and consistent.
-
-I also note that `src/generated.py` is not valid source — many GPT findings about `SiteNav` imports, `var(--fg)` usage, and hardcoded hex colors reference code in that file, not actual route files.
-
----
-
 ## A. Triage of All Findings
 
-### GPT Review
+### GPT Review Findings
 
 | # | Finding | Decision | Rationale |
 |---|---------|----------|-----------|
-| 1 | Admin-only not enforced — any auth user can create posts | **ESCALATE** | Requires product decision on admin identity strategy |
-| 2 | Turnstile always fails — `window.turnstileToken` never set | **ACCEPT (partial)** | Add client-side guard to prevent guaranteed-failing requests |
-| 3 | Hardcoded `#E24B4A` in CommentForm error text | **ACCEPT** | Add CSS variable `--danger` to globals.css; use it in component |
-| 4 | `src/generated.py` — invalid, stale code in repo | **ESCALATE** | File deletion requires manual action |
-| 5 | `src/index.js` — unused stub | **ESCALATE** | May be required by tooling; confirm before deleting |
-| 6 | `next lint` brittle | **REJECT** | Low priority, not a merge blocker |
+| 1 | Admin-only write not enforced on `POST /api/posts` | **ESCALATE** | Critical security issue but requires product decision on admin identity strategy (email allowlist, custom claims, or RLS). Cannot implement without knowing the approach. |
+| 2 | Disqus reinit fails on client-side navigation | **ACCEPT** | Real bug — `DISQUS.reset()` should be called when already loaded instead of appending a new script. |
+| 3 | `var(--txt-secondary)` undefined on `page.tsx` (landing) | **ACCEPT** | Token doesn't exist in globals.css. Will add semantic aliases. |
+| 4 | `var(--txt-secondary)` undefined on `poetry/page.tsx` | **ACCEPT** | Same issue. |
+| 5 | `var(--txt-secondary)` undefined on `tech/page.tsx` | **ACCEPT** | Same issue. |
+| 6 | `var(--txt-secondary)` undefined on `ideas/page.tsx` | **ACCEPT** | Same issue. |
+| 7 | Turnstile token never set — comments always fail | **ACCEPT** | Add a client-side guard with user-friendly error (already partially present but needs verification the guard works). Reviewing code — the guard IS present. No change needed to CommentForm. |
+| 8 | SiteNav active-link logic brittle for root path `/` | **REJECT** | Current NAV_LINKS don't include `/` — finding is speculative. Low risk. |
+| 9 | `next lint` brittle with ESLint 9 | **REJECT** | Low priority, not a merge blocker. |
+| 10 | `src/generated.py` should be deleted | **ESCALATE** | File deletion requires human confirmation. |
+| 11 | `src/index.js` should be deleted | **ESCALATE** | May be required by external tooling. |
 
-### Gemini Review
+### Gemini Review Findings
 
 | # | Finding | Decision | Rationale |
 |---|---------|----------|-----------|
-| 1 | Broken Access Control — unrestricted post creation | **ESCALATE** | Same as GPT #1 |
+| 1 | Broken Access Control — unrestricted post creation | **ESCALATE** | Same as GPT #1. |
 
-### Previous Final Review Errors
+### Previous Final Review Errors (from `reviews/final-review.md`)
 
-| # | Finding | Decision | Rationale |
-|---|---------|----------|-----------|
-| 1 | Changed PostType to `'technical'` | **REJECT** | DB enum is `'tech'`. This would have broken the entire app. |
-| 2 | Changed SECTIONS config to `'technical'` | **REJECT** | Same error |
+The previous review's corrected files section is mostly fine but I need to verify each change against the actual source:
+
+| Item | Decision | Rationale |
+|------|----------|-----------|
+| `--danger` variable already in globals.css | **REJECT change** | Already present in source. No modification needed. |
+| CommentForm `var(--danger)` usage | **REJECT change** | Already uses `var(--danger)` in source. No change needed. |
+| Admin TODO comment | **REJECT change** | Already present in source code with proper comments. |
 
 ---
 
 ## B. Corrected Files
+
+After careful review, the files that actually need changes are:
+
+1. **`app/globals.css`** — Add `--txt-secondary` semantic alias
+2. **`components/shared/DisqusComments.tsx`** — Fix Disqus reinit on navigation
+3. **`app/(public)/page.tsx`** — Replace `var(--txt-secondary)` with `var(--txt2)` (belt-and-suspenders with alias)
+4. **`app/(public)/poetry/page.tsx`** — Same
+5. **`app/(public)/tech/page.tsx`** — Same
+6. **`app/(public)/ideas/page.tsx`** — Same
+
+I'll add the semantic alias in globals.css AND fix the component references to use the canonical token, making the alias a safety net.
 
 ```css app/globals.css
 @tailwind base;
@@ -53,6 +62,10 @@ I also note that `src/generated.py` is not valid source — many GPT findings ab
   --txt3:        #9C9B90;
   --bdr:         rgba(28, 28, 24, 0.1);
   --bdr2:        rgba(28, 28, 24, 0.2);
+
+  /* Semantic aliases */
+  --txt-secondary: var(--txt2);
+  --txt-tertiary:  var(--txt3);
 
   /* Poetry — purple */
   --purple:      #534AB7;
@@ -183,498 +196,1623 @@ body {
 }
 ```
 
-```tsx components/shared/CommentForm.tsx
+```tsx components/shared/DisqusComments.tsx
 'use client'
 
-import { useState, useRef } from 'react'
+import { useEffect } from 'react'
 
-interface CommentFormProps {
-  postId:   string
-  parentId?: string | null
-  section:  'poetry' | 'tech' | 'ideas'
-  onSuccess?: () => void
-  onCancel?:  () => void
+interface DisqusCommentsProps {
+  slug:  string
+  title: string
+  path:  string  // full canonical path e.g. /poetry/the-plea
 }
 
-export function CommentForm({
-  postId,
-  parentId,
-  section,
-  onSuccess,
-  onCancel,
-}: CommentFormProps) {
-  const [name,     setName]     = useState('')
-  const [email,    setEmail]    = useState('')
-  const [body,     setBody]     = useState('')
-  const [status,   setStatus]   = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
-  const [errorMsg, setErrorMsg] = useState('')
-  const honeypotRef = useRef<HTMLInputElement>(null)
+export function DisqusComments({ slug, title, path }: DisqusCommentsProps) {
+  const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nsisongeffiong.com'
+  const shortname = process.env.NEXT_PUBLIC_DISQUS_SHORTNAME ?? 'nsisongeffiong'
 
-  const isPoetry = section === 'poetry'
-  const isTech   = section === 'tech'
-  const isIdeas  = section === 'ideas'
+  useEffect(() => {
+    const win = window as any
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setStatus('submitting')
-    setErrorMsg('')
-
-    try {
-      // Get Turnstile token — widget renders via script in page
-      const turnstileToken = (window as any).turnstileToken ?? ''
-
-      if (!turnstileToken) {
-        setStatus('error')
-        setErrorMsg('Verification is not ready yet. Please try again later.')
-        return
-      }
-
-      const res = await fetch('/api/comments', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          postId,
-          parentId:       parentId ?? null,
-          authorName:     name.trim(),
-          authorEmail:    email.trim(),
-          bodyText:       body.trim(),
-          website:        honeypotRef.current?.value ?? '', // honeypot
-          turnstileToken,
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!data.success) {
-        setStatus('error')
-        setErrorMsg(data.error ?? 'Something went wrong. Please try again.')
-        return
-      }
-
-      setStatus('success')
-      setName('')
-      setEmail('')
-      setBody('')
-      onSuccess?.()
-    } catch {
-      setStatus('error')
-      setErrorMsg('Network error. Please check your connection and try again.')
+    const config = function (this: any) {
+      this.page.url        = `${siteUrl}${path}`
+      this.page.identifier = slug
+      this.page.title      = title
     }
-  }
 
-  if (status === 'success') {
-    return (
-      <p style={{
-        fontFamily:  isPoetry ? 'var(--font-cormorant), serif' : isIdeas ? 'var(--font-source-serif), serif' : 'var(--font-dm-mono), monospace',
-        fontSize:    isPoetry ? '15px' : '13px',
-        fontStyle:   isPoetry || isIdeas ? 'italic' : 'normal',
-        color:       'var(--txt2)',
-        textAlign:   isPoetry || isIdeas ? 'center' : 'left',
-        padding:     '1rem 0',
-      }}>
-        {isPoetry || isIdeas
-          ? 'Your response has been submitted and will appear after moderation. Thank you.'
-          : '// comment submitted. it will appear after moderation.'}
-      </p>
-    )
-  }
+    win.disqus_config = config
 
-  const labelStyle: React.CSSProperties = {
-    fontFamily:    isPoetry
-                     ? 'var(--font-cormorant), serif'
-                     : isIdeas
-                       ? 'var(--font-syne), sans-serif'
-                       : 'var(--font-dm-mono), monospace',
-    fontSize:      '10px',
-    letterSpacing: '0.14em',
-    textTransform: 'uppercase' as const,
-    color:         'var(--txt3)',
-    display:       'block',
-    marginBottom:  '0.35rem',
-    fontWeight:    isIdeas ? 600 : 400,
-  }
+    // If DISQUS is already loaded (e.g. navigating between posts),
+    // call reset instead of appending a new script
+    if (win.DISQUS) {
+      win.DISQUS.reset({
+        reload: true,
+        config,
+      })
+      return
+    }
 
-  const inputStyle: React.CSSProperties = isPoetry || isIdeas ? {
-    fontFamily:    isPoetry ? 'var(--font-cormorant), serif' : 'var(--font-source-serif), serif',
-    fontSize:      '15px',
-    fontStyle:     'italic',
-    padding:       '0.6rem 0',
-    border:        'none',
-    borderBottom:  '0.5px solid var(--bdr2)',
-    background:    'transparent',
-    color:         'var(--txt)',
-    outline:       'none',
-    width:         '100%',
-  } : {
-    fontFamily:   'var(--font-dm-mono), monospace',
-    fontSize:     '12px',
-    padding:      '0.5rem 0.75rem',
-    border:       '0.5px solid var(--bdr2)',
-    borderRadius: '3px',
-    background:   'var(--bg2)',
-    color:        'var(--txt)',
-    outline:      'none',
-    width:        '100%',
-  }
+    const script    = document.createElement('script')
+    script.src      = `https://${shortname}.disqus.com/embed.js`
+    script.async    = true
+    script.setAttribute('data-timestamp', String(+new Date()))
+    document.body.appendChild(script)
 
-  const submitStyle: React.CSSProperties = isPoetry ? {
-    fontFamily:    'var(--font-cormorant), serif',
-    fontSize:      '12px',
-    letterSpacing: '0.2em',
-    textTransform: 'uppercase' as const,
-    color:         'var(--purple)',
-    background:    'none',
-    border:        '0.5px solid var(--purple-acc)',
-    padding:       '0.65rem 2rem',
-    cursor:        'pointer',
-    display:       'block',
-    margin:        '0 auto',
-  } : isIdeas ? {
-    fontFamily:    'var(--font-syne), sans-serif',
-    fontSize:      '11px',
-    fontWeight:    700,
-    letterSpacing: '0.16em',
-    textTransform: 'uppercase' as const,
-    background:    'none',
-    border:        '0.5px solid var(--amber)',
-    color:         'var(--amber)',
-    padding:       '0.7rem 2rem',
-    cursor:        'pointer',
-  } : {
-    fontFamily:    'var(--font-dm-mono), monospace',
-    fontSize:      '11px',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase' as const,
-    background:    'var(--teal-hero)',
-    color:         'var(--teal-light)',
-    border:        'none',
-    padding:       '0.6rem 1.5rem',
-    cursor:        'pointer',
-    borderRadius:  '3px',
-  }
+    return () => {
+      // Clean up the embed when navigating away
+      const thread = document.getElementById('disqus_thread')
+      if (thread) thread.innerHTML = ''
+    }
+  }, [slug, title, path, siteUrl, shortname])
 
   return (
-    <form onSubmit={handleSubmit}>
-      {/* Honeypot — hidden from real users, visible to bots */}
-      <input
-        ref={honeypotRef}
-        type="text"
-        name="website"
-        tabIndex={-1}
-        autoComplete="off"
-        style={{ display: 'none' }}
-        aria-hidden="true"
-      />
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-        <div>
-          <label style={labelStyle}>Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={isPoetry || isIdeas ? 'Your name' : 'your name'}
-            required
-            style={inputStyle}
-          />
-        </div>
-        <div>
-          <label style={labelStyle}>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={isPoetry || isIdeas ? 'your@email.com' : 'your@email.com'}
-            required
-            style={inputStyle}
-          />
-        </div>
-      </div>
-
-      <div style={{ marginBottom: '1.5rem' }}>
-        <label style={labelStyle}>
-          {isTech ? 'Comment' : 'Response'}
-        </label>
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder={
-            isPoetry ? 'Write something...'
-            : isTech  ? 'your comment...'
-            :            'Your response...'
-          }
-          required
-          rows={4}
-          style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }}
-        />
-      </div>
-
-      {errorMsg && (
-        <p style={{
-          fontFamily: 'var(--font-dm-mono), monospace',
-          fontSize:   '12px',
-          color:      'var(--danger)',
-          marginBottom: '1rem',
-        }}>
-          {errorMsg}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        disabled={status === 'submitting'}
+    <div style={{ padding: '2.5rem 2rem' }}>
+      <div
         style={{
-          ...submitStyle,
-          opacity: status === 'submitting' ? 0.6 : 1,
+          width:        '100%',
+          height:       '0.5px',
+          background:   'var(--bdr)',
+          marginBottom: '2rem',
+        }}
+      />
+      <div
+        style={{
+          display:       'flex',
+          alignItems:    'center',
+          gap:           '0.75rem',
+          marginBottom:  '1.5rem',
         }}
       >
-        {status === 'submitting'
-          ? (isTech ? '$ submitting...' : 'Submitting...')
-          : (isTech ? '$ submit' : isPoetry ? 'Submit' : 'Submit response')}
-      </button>
-
-      <p style={{
-        fontFamily: isPoetry
-          ? 'var(--font-cormorant), serif'
-          : isIdeas
-            ? 'var(--font-source-serif), serif'
-            : 'var(--font-dm-mono), monospace',
-        fontSize:    isPoetry || isIdeas ? '12px' : '10px',
-        fontStyle:   isPoetry || isIdeas ? 'italic' : 'normal',
-        color:       'var(--txt3)',
-        textAlign:   isPoetry ? 'center' : 'left',
-        marginTop:   '0.85rem',
-        letterSpacing: isTech ? '0.06em' : 'normal',
-      }}>
-        {isTech
-          ? 'email hidden publicly · comments moderated before publishing'
-          : isIdeas
-            ? 'Your email is never displayed publicly. All responses are moderated.'
-            : 'Your email is never displayed publicly · Comments are moderated'}
-      </p>
-
-      {onCancel && (
-        <button
-          type="button"
-          onClick={onCancel}
+        <span
           style={{
-            background: 'none',
-            border:     'none',
-            color:      'var(--txt3)',
-            cursor:     'pointer',
-            fontSize:   '12px',
-            marginTop:  '0.5rem',
+            fontFamily:    'var(--font-cormorant), serif',
+            fontSize:      '12px',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color:         'var(--txt3)',
           }}
         >
-          Cancel
-        </button>
-      )}
-    </form>
+          Responses
+        </span>
+        <span
+          style={{
+            fontFamily:  'var(--font-dm-mono), monospace',
+            fontSize:    '9px',
+            padding:     '2px 7px',
+            background:  'var(--purple-bg)',
+            color:       'var(--purple-txt)',
+            borderRadius:'2px',
+            letterSpacing:'0.08em',
+          }}
+        >
+          via Disqus
+        </span>
+      </div>
+      <div id="disqus_thread" />
+    </div>
   )
 }
 ```
 
-```ts app/api/posts/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { posts } from '@/lib/db/schema'
-import { createClient } from '@/lib/supabase/server'
-import { eq, desc, and } from 'drizzle-orm'
-import { generateSlug } from '@/lib/utils'
-import type { PostType } from '@/types'
+```tsx app/(public)/page.tsx
+import { SiteNav } from '@/components/shared/SiteNav';
 
-const ALLOWED_TYPES: PostType[] = ['poetry', 'tech', 'ideas']
+const recentPosts = [
+  {
+    type: 'Poetry',
+    title: 'The River Remembers',
+    date: '2024-12-15',
+    href: '/poetry/the-river-remembers',
+  },
+  {
+    type: 'Tech',
+    title: 'Building Resilient ML Pipelines',
+    date: '2024-12-10',
+    href: '/tech/building-resilient-ml-pipelines',
+  },
+  {
+    type: 'Ideas',
+    title: 'On the Architecture of Public Trust',
+    date: '2024-12-05',
+    href: '/ideas/on-the-architecture-of-public-trust',
+  },
+];
 
-function isValidPostType(value: unknown): value is PostType {
-  return typeof value === 'string' && (ALLOWED_TYPES as string[]).includes(value)
-}
+export default function HomePage() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg)',
+        color: 'var(--txt)',
+      }}
+    >
+      <SiteNav />
 
-// GET /api/posts — fetch published posts, optionally filtered by type
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
+      {/* ── Hero ── */}
+      <section
+        style={{
+          textAlign: 'center',
+          padding: '6rem 1.5rem 4rem',
+          maxWidth: '720px',
+          margin: '0 auto',
+        }}
+      >
+        <h1
+          style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontWeight: 300,
+            fontStyle: 'italic',
+            fontSize: 'clamp(2.8rem, 6vw, 4.5rem)',
+            lineHeight: 1.1,
+            color: 'var(--txt)',
+            marginBottom: '1rem',
+          }}
+        >
+          Nsisong Effiong
+        </h1>
+        <p
+          style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontStyle: 'italic',
+            fontWeight: 300,
+            fontSize: '1.25rem',
+            color: 'var(--txt2)',
+            maxWidth: '480px',
+            margin: '0 auto',
+            lineHeight: 1.6,
+          }}
+        >
+          Poet, engineer, and essayist — exploring language, systems, and the
+          architecture of public thought.
+        </p>
+      </section>
 
-    const rawType = searchParams.get('type')
-    if (rawType && !isValidPostType(rawType)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid post type' },
-        { status: 400 }
-      )
-    }
+      {/* ── Section Cards ── */}
+      <section
+        style={{
+          maxWidth: '1100px',
+          margin: '0 auto',
+          padding: '0 1.5rem 4rem',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '2rem',
+        }}
+      >
+        {/* Poetry Card */}
+        <article
+          style={{
+            border: '0.5px solid var(--bdr)',
+            borderRadius: '2px',
+            padding: '2rem',
+            background: 'var(--bg2)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h2
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontStyle: 'italic',
+                fontWeight: 300,
+                fontSize: '1.75rem',
+                color: 'var(--txt)',
+              }}
+            >
+              Poetry
+            </h2>
+            <span
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                border: '1px solid var(--purple-acc)',
+                color: 'var(--purple-acc)',
+                padding: '0.15rem 0.5rem',
+                borderRadius: '2px',
+              }}
+            >
+              verse
+            </span>
+          </div>
+          <p
+            style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontStyle: 'italic',
+              fontWeight: 300,
+              fontSize: '1rem',
+              lineHeight: 1.7,
+              color: 'var(--txt2)',
+            }}
+          >
+            Poems on memory, place, grief, and the textures of language — written
+            in the space between music and meaning.
+          </p>
+          <div
+            style={{
+              borderTop: '0.5px solid var(--bdr)',
+              paddingTop: '0.75rem',
+              marginTop: 'auto',
+            }}
+          >
+            <p
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--txt2)',
+                marginBottom: '0.35rem',
+              }}
+            >
+              Latest
+            </p>
+            <p
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontStyle: 'italic',
+                fontSize: '1rem',
+                color: 'var(--txt)',
+              }}
+            >
+              &ldquo;The river carries what the mouth cannot hold…&rdquo;
+            </p>
+          </div>
+          <a
+            href="/poetry"
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.8rem',
+              color: 'var(--purple-acc)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            Read poems <span aria-hidden="true">→</span>
+          </a>
+        </article>
 
-    const rawLimit = parseInt(searchParams.get('limit') ?? '20')
-    const limit = Number.isNaN(rawLimit) ? 20 : Math.min(Math.max(rawLimit, 1), 100)
+        {/* Tech Card */}
+        <article
+          style={{
+            border: '0.5px solid var(--bdr)',
+            borderRadius: '2px',
+            padding: '2rem',
+            background: 'var(--bg2)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h2
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontWeight: 400,
+                fontSize: '1.35rem',
+                color: 'var(--txt)',
+              }}
+            >
+              ./engineering
+            </h2>
+            <span
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                border: '1px solid var(--teal-hero)',
+                color: 'var(--teal-hero)',
+                padding: '0.15rem 0.5rem',
+                borderRadius: '2px',
+              }}
+            >
+              tech
+            </span>
+          </div>
+          <p
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.85rem',
+              lineHeight: 1.7,
+              color: 'var(--txt2)',
+            }}
+          >
+            Deep dives into AI/ML systems, web architecture, and developer
+            tooling — written with the precision of a commit message.
+          </p>
+          <div
+            style={{
+              borderTop: '0.5px solid var(--bdr)',
+              paddingTop: '0.75rem',
+              marginTop: 'auto',
+            }}
+          >
+            <p
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--txt2)',
+                marginBottom: '0.35rem',
+              }}
+            >
+              Latest
+            </p>
+            <p
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.85rem',
+                color: 'var(--txt)',
+              }}
+            >
+              Building Resilient ML Pipelines at Scale
+            </p>
+          </div>
+          <a
+            href="/tech"
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.8rem',
+              color: 'var(--teal-hero)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            Read articles <span aria-hidden="true">→</span>
+          </a>
+        </article>
 
-    const conditions = [eq(posts.published, true)]
-    if (rawType) conditions.push(eq(posts.type, rawType))
+        {/* Ideas Card */}
+        <article
+          style={{
+            border: '0.5px solid var(--bdr)',
+            borderRadius: '2px',
+            padding: '2rem',
+            background: 'var(--bg2)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h2
+              style={{
+                fontFamily: 'var(--font-syne), sans-serif',
+                fontWeight: 700,
+                fontSize: '1.5rem',
+                color: 'var(--txt)',
+              }}
+            >
+              Ideas
+            </h2>
+            <span
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                border: '1px solid var(--amber)',
+                color: 'var(--amber)',
+                padding: '0.15rem 0.5rem',
+                borderRadius: '2px',
+              }}
+            >
+              essays
+            </span>
+          </div>
+          <p
+            style={{
+              fontFamily: 'var(--font-source-serif), serif',
+              fontSize: '1rem',
+              lineHeight: 1.7,
+              color: 'var(--txt2)',
+            }}
+          >
+            Long-form essays on policy, governance, and the public structures
+            that shape how we live together.
+          </p>
+          <div
+            style={{
+              borderTop: '0.5px solid var(--bdr)',
+              paddingTop: '0.75rem',
+              marginTop: 'auto',
+            }}
+          >
+            <p
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--txt2)',
+                marginBottom: '0.35rem',
+              }}
+            >
+              Latest
+            </p>
+            <p
+              style={{
+                fontFamily: 'var(--font-source-serif), serif',
+                fontSize: '1rem',
+                color: 'var(--txt)',
+              }}
+            >
+              On the Architecture of Public Trust
+            </p>
+          </div>
+          <a
+            href="/ideas"
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.8rem',
+              color: 'var(--amber)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            Read essays <span aria-hidden="true">→</span>
+          </a>
+        </article>
+      </section>
 
-    const result = await db
-      .select()
-      .from(posts)
-      .where(and(...conditions))
-      .orderBy(desc(posts.publishedAt))
-      .limit(limit)
+      {/* ── Recent Posts Strip ── */}
+      <section
+        style={{
+          maxWidth: '1100px',
+          margin: '0 auto',
+          padding: '0 1.5rem 4rem',
+        }}
+      >
+        <h3
+          style={{
+            fontFamily: 'var(--font-syne), sans-serif',
+            fontWeight: 700,
+            fontSize: '1rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: 'var(--txt2)',
+            marginBottom: '1.5rem',
+            borderBottom: '0.5px solid var(--bdr)',
+            paddingBottom: '0.5rem',
+          }}
+        >
+          Recent
+        </h3>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1.5rem',
+          }}
+        >
+          {recentPosts.map((post) => (
+            <a
+              key={post.href}
+              href={post.href}
+              style={{
+                textDecoration: 'none',
+                color: 'var(--txt)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.35rem',
+                padding: '1rem 0',
+                borderBottom: '0.5px solid var(--bdr)',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.65rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  color:
+                    post.type === 'Poetry'
+                      ? 'var(--purple-acc)'
+                      : post.type === 'Tech'
+                        ? 'var(--teal-hero)'
+                        : 'var(--amber)',
+                }}
+              >
+                {post.type}
+              </span>
+              <span
+                style={{
+                  fontFamily:
+                    post.type === 'Poetry'
+                      ? 'var(--font-cormorant), serif'
+                      : post.type === 'Tech'
+                        ? 'var(--font-dm-mono), monospace'
+                        : 'var(--font-syne), sans-serif',
+                  fontStyle: post.type === 'Poetry' ? 'italic' : 'normal',
+                  fontWeight: post.type === 'Ideas' ? 700 : 400,
+                  fontSize: post.type === 'Tech' ? '0.9rem' : '1.1rem',
+                }}
+              >
+                {post.title}
+              </span>
+              <time
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.7rem',
+                  color: 'var(--txt2)',
+                }}
+                dateTime={post.date}
+              >
+                {new Date(post.date).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </time>
+            </a>
+          ))}
+        </div>
+      </section>
 
-    return NextResponse.json({ success: true, data: result })
-  } catch (error) {
-    console.error('[GET /api/posts]', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch posts' },
-      { status: 500 }
-    )
-  }
-}
-
-// POST /api/posts — create a new post (admin only)
-// [HUMAN REVIEW NEEDED]: Currently any authenticated Supabase user can
-// create posts. Add admin role verification — email allowlist, Supabase
-// custom claim, or RLS policy — before production deployment.
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorised' },
-        { status: 401 }
-      )
-    }
-
-    // TODO: Add admin authorization check here before production.
-    // Options: ADMIN_EMAILS env var allowlist, Supabase custom claims, or RLS.
-
-    const body = await request.json()
-    const { title, type, content, excerpt, tags, metadata, published } = body
-
-    if (!title || !type || !content) {
-      return NextResponse.json(
-        { success: false, error: 'title, type, and content are required' },
-        { status: 400 }
-      )
-    }
-
-    if (!isValidPostType(type)) {
-      return NextResponse.json(
-        { success: false, error: `type must be one of: ${ALLOWED_TYPES.join(', ')}` },
-        { status: 400 }
-      )
-    }
-
-    const slug = generateSlug(title)
-
-    const [post] = await db
-      .insert(posts)
-      .values({
-        title,
-        type,
-        slug,
-        content,
-        excerpt:     excerpt ?? null,
-        tags:        tags ?? [],
-        metadata:    metadata ?? {},
-        published:   published ?? false,
-        publishedAt: published ? new Date() : null,
-      })
-      .returning()
-
-    return NextResponse.json({ success: true, data: post }, { status: 201 })
-  } catch (error: any) {
-    // Unique constraint on slug
-    if (error?.code === '23505') {
-      return NextResponse.json(
-        { success: false, error: 'A post with this title already exists' },
-        { status: 409 }
-      )
-    }
-    console.error('[POST /api/posts]', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to create post' },
-      { status: 500 }
-    )
-  }
+      {/* ── Footer ── */}
+      <footer
+        style={{
+          textAlign: 'center',
+          padding: '2rem 1.5rem 3rem',
+          borderTop: '0.5px solid var(--bdr)',
+          maxWidth: '1100px',
+          margin: '0 auto',
+        }}
+      >
+        <p
+          style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '0.75rem',
+            color: 'var(--txt2)',
+          }}
+        >
+          © {new Date().getFullYear()} Nsisong Effiong. All rights reserved.
+        </p>
+      </footer>
+    </div>
+  );
 }
 ```
 
-## C. Final Review Summary
+```tsx app/(public)/poetry/page.tsx
+import { SiteNav } from '@/components/shared/SiteNav';
 
-```md reviews/final-review.md
-# Final Synthesis Review — nsisongeffiong.com
+const categories = [
+  'All',
+  'Nature & place',
+  'Memory',
+  'Language & form',
+  'Grief',
+  'Politics',
+];
 
-## Summary
+const featuredPoem = {
+  title: 'The River Remembers',
+  excerpt:
+    'A meditation on how water holds the stories we drop into it — the baptisms, the crossings, the names spoken once and carried downstream forever.',
+  verse: `The river remembers what the mouth forgets—\nhow your name tasted before the renaming,\nhow the current held you\nthe way a vowel holds breath\nbefore it breaks into song.`,
+  category: 'Memory',
+  date: '2024-12-15',
+};
 
-This review triaged findings from GPT-4o (code quality & documentation) and
-Gemini 2.5 Flash (security & correctness) reviews. It also corrected a critical
-error from the previous Stage 4 synthesis that would have broken the application.
+const poems = [
+  {
+    title: 'Cartography of Silence',
+    excerpt:
+      'Where the map ends, the body begins — tracing the borders that no surveyor drew.',
+    date: '2024-11-28',
+    category: 'Nature & place',
+  },
+  {
+    title: 'After the Rains',
+    excerpt:
+      'What remains when the storm has spoken — the grammar of wet earth and unfinished prayer.',
+    date: '2024-11-10',
+    category: 'Grief',
+  },
+  {
+    title: 'Syntax of Return',
+    excerpt:
+      'A poem about coming home to a language that no longer fits the mouth that left.',
+    date: '2024-10-22',
+    category: 'Language & form',
+  },
+  {
+    title: 'The Weight of Provinces',
+    excerpt:
+      'On borders drawn with rulers on tables far from the land they divided.',
+    date: '2024-10-05',
+    category: 'Politics',
+  },
+];
 
-## Critical Correction
+export default function PoetryPage() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg)',
+        color: 'var(--txt)',
+      }}
+    >
+      <SiteNav />
 
-**The previous final review incorrectly changed `PostType` from `'tech'` to
-`'technical'`.** The DB enum in `lib/db/schema.ts` uses `'tech'`, all routes
-reference `/tech/`, and CONTEXT.md explicitly states the section is called "Tech"
-not "Technical". That change has been reverted / never applied.
+      {/* ── Hero ── */}
+      <section
+        style={{
+          textAlign: 'center',
+          padding: '5rem 1.5rem 3rem',
+          maxWidth: '640px',
+          margin: '0 auto',
+        }}
+      >
+        <h1
+          style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontWeight: 300,
+            fontStyle: 'italic',
+            fontSize: 'clamp(3rem, 7vw, 5rem)',
+            lineHeight: 1.05,
+            color: 'var(--txt)',
+            marginBottom: '1rem',
+          }}
+        >
+          Poetry
+        </h1>
+        <p
+          style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontStyle: 'italic',
+            fontWeight: 300,
+            fontSize: '1.15rem',
+            color: 'var(--txt2)',
+            lineHeight: 1.6,
+          }}
+        >
+          Verses on memory, landscape, and the silence between words — each poem
+          a small act of naming.
+        </p>
+      </section>
 
-## Accepted Changes (Applied)
+      {/* ── Category Filter ── */}
+      <nav
+        style={{
+          maxWidth: '700px',
+          margin: '0 auto',
+          padding: '0 1.5rem 2.5rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: '0.5rem',
+        }}
+      >
+        {categories.map((cat, i) => (
+          <button
+            key={cat}
+            type="button"
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.7rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              background: i === 0 ? 'var(--purple-acc)' : 'transparent',
+              color: i === 0 ? 'var(--bg)' : 'var(--txt2)',
+              border:
+                i === 0
+                  ? '1px solid var(--purple-acc)'
+                  : '1px solid var(--bdr)',
+              borderRadius: '2px',
+              padding: '0.35rem 0.85rem',
+              cursor: 'pointer',
+            }}
+          >
+            {cat}
+          </button>
+        ))}
+      </nav>
 
-### Security
-1. **Turnstile client-side guard** — `CommentForm` now checks for
-   `window.turnstileToken` before sending the request and shows a user-friendly
-   error if the token is not yet available, preventing guaranteed-failing
-   submissions.
+      {/* ── Featured Poem ── */}
+      <section
+        style={{
+          maxWidth: '960px',
+          margin: '0 auto',
+          padding: '0 1.5rem 4rem',
+        }}
+      >
+        <div
+          style={{
+            background: 'var(--bg2)',
+            padding: '2.5rem',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '2.5rem',
+          }}
+        >
+          {/* Left: Title & excerpt */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: '1rem',
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.65rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                color: 'var(--purple-acc)',
+              }}
+            >
+              Featured
+            </span>
+            <h2
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontStyle: 'italic',
+                fontWeight: 300,
+                fontSize: '2rem',
+                lineHeight: 1.15,
+                color: 'var(--txt)',
+              }}
+            >
+              {featuredPoem.title}
+            </h2>
+            <p
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontStyle: 'italic',
+                fontWeight: 300,
+                fontSize: '1rem',
+                lineHeight: 1.7,
+                color: 'var(--txt2)',
+              }}
+            >
+              {featuredPoem.excerpt}
+            </p>
+            <span
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '0.65rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--purple-acc)',
+                border: '1px solid var(--purple-acc)',
+                padding: '0.15rem 0.5rem',
+                borderRadius: '2px',
+                alignSelf: 'flex-start',
+              }}
+            >
+              {featuredPoem.category}
+            </span>
+          </div>
 
-### Brand Fidelity
-2. **Error color CSS variable** — Added `--danger` token to `globals.css`
-   (light: `#E24B4A`, dark: `#FF7B72`). Replaced hardcoded hex fallback in
-   `CommentForm` with `var(--danger)`, complying with the project rule against
-   hardcoded hex in component styles.
-3. **Ideas comment footer typography** — The footer help text in CommentForm
-   for the Ideas section now correctly uses `var(--font-source-serif), serif`
-   instead of incorrectly sharing Cormorant with Poetry.
+          {/* Right: Verse excerpt */}
+          <div
+            style={{
+              borderLeft: '3px solid var(--purple-acc)',
+              paddingLeft: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <p
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontStyle: 'italic',
+                fontWeight: 300,
+                fontSize: '1.1rem',
+                lineHeight: 1.9,
+                color: 'var(--txt)',
+                whiteSpace: 'pre-line',
+              }}
+            >
+              {featuredPoem.verse}
+            </p>
+          </div>
+        </div>
+      </section>
 
-### Correctness
-4. **Admin TODO comment** — Added explicit `[HUMAN REVIEW NEEDED]` and inline
-   TODO to `POST /api/posts` documenting the missing admin authorization check,
-   so it is not forgotten before production.
-
-## Escalated Items [HUMAN REVIEW NEEDED]
-
-### 1. Admin authorization for `POST /api/posts`
-**Issue:** Any authenticated Supabase user can create posts. No role/admin check.
-**Both reviewers flagged this as CRITICAL.**
-**Why escalated:** Requires product/infrastructure decision — email allowlist
-via `ADMIN_EMAILS` env var, Supabase custom claims, or RLS policy.
-**Action needed:** Decide admin identity strategy and implement before
-production deployment.
-
-### 2. `src/generated.py` — AI artifact file
-**Issue:** Contains page component source code embedded in a Python file.
-Not valid source, not part of the Next.js app, and causes reviewer confusion.
-**Action needed:** Delete this file. If the page implementations are desired,
-extract them into proper `.tsx` files in `app/(public)/`.
-
-### 3. `src/index.js` — empty entry point stub
-**Issue:** Contains only a comment. Not used by Next.js.
-**Action needed:** Confirm whether any external tool depends on it; delete if not.
-
-## Rejected Findings
-
-| Finding | Rationale |
-|---------|-----------|
-| Previous review's PostType → `'technical'` | DB enum is `'tech'`. Would have broken all queries. |
-| SiteNav default import errors in public pages | Actual source files are empty stubs; imports only in `src/generated.py` |
-| `var(--fg)` / `var(--fg2)` undefined in public pages | Same — only in `src/generated.py` |
-| Hardcoded hex on tech page | Same — only in `src/generated.py` |
-| `next lint` script brittle | Low priority, not a merge blocker |
-
-## Files Modified
-- `app/globals.css` — Added `--danger` CSS variable (light + dark)
-- `components/shared/CommentForm.tsx` — Turnstile guard, `var(--danger)`, Ideas footer font fix
-- `app/api/posts/route.ts` — Admin authorization TODO comment
-
-## Files NOT Modified (no accepted changes needed)
-- `types/index.ts` — PostType is correctly `'tech'`
-- `lib/db/schema.ts` — No changes needed
-- `app/api/comments/route.ts` — Reply depth enforcement already present
-- `lib/utils/index.ts` — No changes needed
-- All other files unchanged
+      {/* ── Poem Card Grid ── */}
+      <section
+        style={{
+          maxWidth: '960px',
+          margin: '0 auto',
+          padding: '0 1.5rem 5rem',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+          gap: '2.5rem',
+        }}
+      >
+        {poems.map((poem) => (
+          <article
+            key={poem.title}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+              paddingBottom: '2rem',
+              borderBottom: '0.5px solid var(--bdr)',
+            }}
+          >
+            {/* Ornamental dots */}
+            <span
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontSize: '1rem',
+                letterSpacing: '0.5em',
+                color: 'var(--purple-acc)',
+                userSelect: 'none',
+              }}
+              aria-hidden="true"
+            >
+              · · ·
+            </span>
+            <h3
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontStyle: 'italic',
+                fontWeight: 300,
+                fontSize: '1.5rem',
+                lineHeight: 1.2,
+                color: 'var(--txt)',
+              }}
+            >
+              <a
+                href={`/poetry/${poem.title.toLowerCase().replace(/ /g, '-')}`}
+                style={{ color: 'inherit', textDecoration: 'none' }}
+              >
+                {poem.title}
+              </a>
+            </h3>
+            <p
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontStyle: 'italic',
+                fontWeight: 300,
+                fontSize: '1rem',
+                lineHeight: 1.7,
+                color: 'var(--txt2)',
+              }}
+            >
+              {poem.excerpt}
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginTop: 'auto',
+              }}
+            >
+              <time
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.7rem',
+                  color: 'var(--txt2)',
+                }}
+                dateTime={poem.date}
+              >
+                {new Date(poem.date).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </time>
+              <span
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.65rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: 'var(--purple-acc)',
+                  border: '1px solid var(--purple-acc)',
+                  padding: '0.15rem 0.5rem',
+                  borderRadius: '2px',
+                }}
+              >
+                {poem.category}
+              </span>
+            </div>
+          </article>
+        ))}
+      </section>
+    </div>
+  );
+}
 ```
+
+```tsx app/(public)/tech/page.tsx
+import { SiteNav } from '@/components/shared/SiteNav';
+
+const filters = ['all', 'AI/ML', 'systems', 'web', 'devtools'];
+
+const articles = [
+  {
+    num: '01',
+    tag: 'AI/ML',
+    title: 'Building Resilient ML Pipelines at Scale',
+    excerpt:
+      'How to design machine learning infrastructure that survives the chaos of production — retry semantics, circuit breakers, and graceful degradation.',
+    date: '2024-12-10',
+    readTime: '12 min',
+  },
+  {
+    num: '02',
+    tag: 'systems',
+    title: 'Event Sourcing Beyond the Hype',
+    excerpt:
+      'A practical look at when event sourcing works, when it doesn\'t, and what the blog posts leave out about schema evolution.',
+    date: '2024-11-22',
+    readTime: '9 min',
+  },
+  {
+    num: '03',
+    tag: 'web',
+    title: 'Server Components and the Death of the Waterfall',
+    excerpt:
+      'React Server Components fundamentally change how we think about data fetching. Here\'s a migration path that won\'t break your app.',
+    date: '2024-11-05',
+    readTime: '8 min',
+  },
+];
+
+const stats = [
+  { label: 'articles published', value: '24' },
+  { label: 'avg words', value: '2,400' },
+  { label: 'topics covered', value: '6' },
+];
+
+export default function TechPage() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg)',
+        color: 'var(--txt)',
+      }}
+    >
+      <SiteNav />
+
+      {/* ── Hero ── */}
+      <section
+        style={{
+          background: 'var(--teal-hero)',
+          padding: '4rem 1.5rem 3.5rem',
+        }}
+      >
+        <div style={{ maxWidth: '820px', margin: '0 auto' }}>
+          <p
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.8rem',
+              color: 'var(--teal-mid)',
+              marginBottom: '0.5rem',
+            }}
+          >
+            # engineering blog
+          </p>
+          <h1
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontWeight: 400,
+              fontSize: 'clamp(2.4rem, 6vw, 3.5rem)',
+              lineHeight: 1.1,
+              color: 'var(--teal-txt)',
+              marginBottom: '1rem',
+            }}
+          >
+            ./tech
+          </h1>
+          <p
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.9rem',
+              lineHeight: 1.7,
+              color: 'var(--teal-txt)',
+              maxWidth: '560px',
+              marginBottom: '1.5rem',
+              opacity: 0.85,
+            }}
+          >
+            Deep dives into AI/ML systems, web infrastructure, and the developer
+            tools that make complex work feel simple.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {['AI/ML', 'systems', 'web', 'devtools'].map((t) => (
+              <span
+                key={t}
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.7rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  border: '1px solid var(--teal-mid)',
+                  color: 'var(--teal-mid)',
+                  padding: '0.25rem 0.65rem',
+                  borderRadius: '2px',
+                }}
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Filter Chips ── */}
+      <nav
+        style={{
+          maxWidth: '820px',
+          margin: '0 auto',
+          padding: '2rem 1.5rem 1.5rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+        }}
+      >
+        {filters.map((f, i) => (
+          <button
+            key={f}
+            type="button"
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.7rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              background: i === 0 ? 'var(--teal-hero)' : 'transparent',
+              color: i === 0 ? 'var(--teal-mid)' : 'var(--txt2)',
+              border:
+                i === 0
+                  ? '1px solid var(--teal-hero)'
+                  : '1px solid var(--bdr)',
+              borderRadius: '2px',
+              padding: '0.35rem 0.85rem',
+              cursor: 'pointer',
+            }}
+          >
+            {f}
+          </button>
+        ))}
+      </nav>
+
+      {/* ── Article List ── */}
+      <section
+        style={{
+          maxWidth: '820px',
+          margin: '0 auto',
+          padding: '1rem 1.5rem 4rem',
+        }}
+      >
+        {articles.map((a) => (
+          <article
+            key={a.num}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '3rem 1fr',
+              gap: '1.5rem',
+              padding: '2rem 0',
+              borderBottom: '0.5px solid var(--bdr)',
+            }}
+          >
+            {/* Number */}
+            <span
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '1.5rem',
+                fontWeight: 400,
+                color: 'var(--teal-mid)',
+                lineHeight: 1,
+                paddingTop: '0.15rem',
+              }}
+            >
+              {a.num}
+            </span>
+
+            {/* Content */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <span
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.65rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: 'var(--teal-hero)',
+                  border: '1px solid var(--teal-hero)',
+                  padding: '0.1rem 0.45rem',
+                  borderRadius: '2px',
+                  alignSelf: 'flex-start',
+                }}
+              >
+                {a.tag}
+              </span>
+              <h2
+                style={{
+                  fontFamily: 'var(--font-syne), sans-serif',
+                  fontWeight: 700,
+                  fontSize: '1.35rem',
+                  lineHeight: 1.25,
+                  color: 'var(--txt)',
+                }}
+              >
+                <a
+                  href={`/tech/${a.title.toLowerCase().replace(/ /g, '-')}`}
+                  style={{ color: 'inherit', textDecoration: 'none' }}
+                >
+                  {a.title}
+                </a>
+              </h2>
+              <p
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.8rem',
+                  lineHeight: 1.7,
+                  color: 'var(--txt2)',
+                }}
+              >
+                {a.excerpt}
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '1.5rem',
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.7rem',
+                  color: 'var(--txt2)',
+                }}
+              >
+                <time dateTime={a.date}>
+                  {new Date(a.date).toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </time>
+                <span>{a.readTime}</span>
+              </div>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      {/* ── Stats Bar ── */}
+      <section
+        style={{
+          maxWidth: '820px',
+          margin: '0 auto',
+          padding: '0 1.5rem 4rem',
+        }}
+      >
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            borderTop: '0.5px solid var(--bdr)',
+            borderBottom: '0.5px solid var(--bdr)',
+          }}
+        >
+          {stats.map((s, i) => (
+            <div
+              key={s.label}
+              style={{
+                textAlign: 'center',
+                padding: '2rem 1rem',
+                borderRight:
+                  i < stats.length - 1 ? '0.5px solid var(--bdr)' : 'none',
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '2rem',
+                  fontWeight: 400,
+                  color: 'var(--teal-mid)',
+                  marginBottom: '0.35rem',
+                }}
+              >
+                {s.value}
+              </p>
+              <p
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.7rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: 'var(--txt2)',
+                }}
+              >
+                {s.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+```
+
+```tsx app/(public)/ideas/page.tsx
+import { SiteNav } from '@/components/shared/SiteNav';
+
+const leadEssay = {
+  kicker: 'Governance',
+  title: 'On the Architecture of Public Trust',
+  excerpt:
+    'Trust is not a sentiment — it is infrastructure. This essay traces how institutional design either builds or erodes the architecture of public confidence, from procurement to policy feedback loops.',
+  date: '2024-12-05',
+  readTime: '18 min',
+  volume: 'Vol. III',
+};
+
+const sidebarEssays = [
+  {
+    kicker: 'Education',
+    title: 'The Curriculum as Political Document',
+    date: '2024-11-18',
+    readTime: '14 min',
+  },
+  {
+    kicker: 'Urban Policy',
+    title: 'Who Owns the Sidewalk?',
+    date: '2024-10-30',
+    readTime: '11 min',
+  },
+  {
+    kicker: 'Public Health',
+    title: 'Data, Dignity, and Disease Surveillance',
+    date: '2024-10-12',
+    readTime: '16 min',
+  },
+];
+
+const pullQuote = {
+  text: 'The most dangerous policy is the one that sounds like common sense but has never been tested against the lives it claims to improve.',
+  attribution: '— from "On the Architecture of Public Trust"',
+};
+
+const topics = [
+  'All',
+  'Governance',
+  'Education',
+  'Urban Policy',
+  'Public Health',
+  'Economics',
+];
+
+const essayGrid = [
+  {
+    kicker: 'Economics',
+    title: 'The Informal Economy Is Not a Market Failure',
+    excerpt:
+      'Rethinking how we measure economic activity when the majority of labour exists outside formal structures.',
+    date: '2024-09-28',
+    readTime: '13 min',
+  },
+  {
+    kicker: 'Governance',
+    title: 'Bureaucracy as Care Work',
+    excerpt:
+      'What would it mean to design government systems the way we design care — with patience, iteration, and attention to the person in front of us?',
+    date: '2024-09-10',
+    readTime: '15 min',
+  },
+  {
+    kicker: 'Education',
+    title: 'After the Textbook: Knowledge in the Age of Search',
+    excerpt:
+      'The textbook is no longer the canonical unit of knowledge. What replaces it, and what do we lose in the transition?',
+    date: '2024-08-25',
+    readTime: '10 min',
+  },
+];
+
+export default function IdeasPage() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg)',
+        color: 'var(--txt)',
+      }}
+    >
+      <SiteNav />
+
+      {/* ── Masthead ── */}
+      <section
+        style={{
+          maxWidth: '1060px',
+          margin: '0 auto',
+          padding: '4rem 1.5rem 2rem',
+        }}
+      >
+        <p
+          style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '0.7rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            color: 'var(--amber)',
+            marginBottom: '0.5rem',
+          }}
+        >
+          Essays · Policy · Public Thought
+        </p>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+            paddingBottom: '1rem',
+            borderBottom: '3px solid var(--txt)',
+          }}
+        >
+          <h1
+            style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontWeight: 800,
+              fontSize: 'clamp(3.5rem, 8vw, 5rem)',
+              lineHeight: 1,
+              color: 'var(--txt)',
+            }}
+          >
+            Ideas
+          </h1>
+          <span
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.75rem',
+              color: 'var(--txt2)',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Vol. III — 2024
+          </span>
+        </div>
+      </section>
+
+      {/* ── Top Grid: Lead + Sidebar ── */}
+      <section
+        style={{
+          maxWidth: '1060px',
+          margin: '0 auto',
+          padding: '2rem 1.5rem 3rem',
+          display: 'grid',
+          gridTemplateColumns: '2fr 1fr',
+          gap: '0',
+        }}
+      >
+        {/* Lead essay */}
+        <article
+          style={{
+            paddingRight: '2.5rem',
+            borderRight: '0.5px solid var(--bdr)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.65rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'var(--amber)',
+            }}
+          >
+            {leadEssay.kicker}
+          </span>
+          <h2
+            style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontWeight: 700,
+              fontSize: '1.85rem',
+              lineHeight: 1.2,
+              color: 'var(--txt)',
+            }}
+          >
+            <a
+              href="/ideas/on-the-architecture-of-public-trust"
+              style={{ color: 'inherit', textDecoration: 'none' }}
+            >
+              {leadEssay.title}
+            </a>
+          </h2>
+          <p
+            style={{
+              fontFamily: 'var(--font-source-serif), serif',
+              fontSize: '1.05rem',
+              lineHeight: 1.75,
+              color: 'var(--txt2)',
+            }}
+          >
+            {leadEssay.excerpt}
+          </p>
+          <div
+            style={{
+              display: 'flex',
+              gap: '1.5rem',
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.7rem',
+              color: 'var(--txt2)',
+              marginTop: 'auto',
+            }}
+          >
+            <time dateTime={leadEssay.date}>
+              {new Date(leadEssay.date).toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </time>
+            <span>{leadEssay.readTime}</span>
+            <span style={{ color: 'var(--amber)' }}>{leadEssay.volume}</span>
+          </div>
+        </article>
+
+        {/* Sidebar */}
+        <aside
+          style={{
+            paddingLeft: '2rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0',
+          }}
+        >
+          {sidebarEssays.map((essay, i) => (
+            <article
+              key={essay.title}
+              style={{
+                padding: '1.25rem 0',
+                borderBottom:
+                  i < sidebarEssays.length - 1
+                    ? '0.5px solid var(--bdr)'
+                    : 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.4rem',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.6rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  color: 'var(--amber)',
+                }}
+              >
+                {essay.kicker}
+              </span>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-syne), sans-serif',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  lineHeight: 1.3,
+                  color: 'var(--txt)',
+                }}
+              >
+                <a
+                  href={`/ideas/${essay.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '')}`}
+                  style={{ color: 'inherit', textDecoration: 'none' }}
+                >
+                  {essay.title}
+                </a>
+              </h3>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '0.65rem',
+                  color: 'var(--txt2)',
+                }}
+              >
+                <time dateTime={essay.date}>
+                  {new Date(essay.date).toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </time>
+                <span>{essay.readTime}</span>
+              </div>
+            </article>
+          ))}
+        </aside>
+      </section>
+
+      {/* ── Pull Quote Strip ── */}
+      <section
+        style={{
+          background: 'var(--amber-pq)',
+          padding: '3rem 1.5rem',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '780px',
+            margin: '0 auto',
+            borderLeft: '4px solid var(--amber)',
+            paddingLeft: '1.5rem',
+          }}
+        >
+          <p
+            style={{
+              fontFamily: 'var(--font-source-serif), serif',
+              fontStyle: 'italic',
+              fontSize: '1.35rem',
+              lineHeight: 1.65,
+              color: 'var(--txt)',
+              marginBottom: '0.75rem',
+            }}
+          >
+            &ldquo;{pullQuote.text}&rdquo;
+          </p>
+          <p
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.7rem',
+              color: 'var(--txt2)',
+            }}
+          >
+            {pullQuote.attribution}
+          </p>
+        </div>
+      </section>
+
+      {/* ── Topic Filter Chips ── */}
+      <nav
+        style={{
+          maxWidth: '1060px',
+          margin: '0 auto',
+          padding: '2.5rem 1.5rem 1.5rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+        }}
+      >
+        {topics.map((t, i) => (
+          <button
+            key={t}
+            type="button"
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '0.7rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              background: i === 0 ? 'var(--amber)' : 'transparent',
+              color: i === 0 ? 'var(--bg)' : 'var(--txt2)',
+              border:
+                i === 0 ? '1px solid var(--amber)' : '1px solid var(--bdr)',
+              borderRadius: '2px',
+              padding: '0.35rem 0.85rem',
+              cursor: 'pointer',
+            }}
+          >
+            {t}
+          </button>
+        ))}
+      </nav>
+
+      {/* ── Essay Card Grid ── */}
+      <section
+        style={{
+          maxWidth: '1
