@@ -1,8 +1,9 @@
-The following is a comprehensive security and correctness audit of the provided codebase.
-
 ## Security Findings
 
 ---
 
-**[CRITICAL] Broken Access Control (CWE-284) – Unrestricted Post Creation**
-*   **Description**: The `POST /api/posts` endpoint is intended for "admin only" operations as indicated by comments in `CONTEXT.md` and `app/api/posts/route.ts`. However, the current implementation only verifies that *any* user is authenticated via Supabase (`supabase.auth.getUser()`). There is no further authorization check to confirm if the authenticated user has administrative privileges (e.g., a specific role, or is on an allowlist). This allows any logged-in user to create new blog posts, which is a critical breach
+### [CRITICAL] Broken Access Control (A01:2021) -- Unrestricted Post Creation
+
+*   **Description**: The `POST /api/posts` endpoint, intended for "admin only" operations as indicated in `CONTEXT.md` and inline comments, currently only verifies that *any* user is authenticated via Supabase. There is no additional authorization check to confirm if the authenticated user possesses administrative privileges (e.g., a specific role, or is on an allowlist). This critical vulnerability allows any logged-in Supabase user to create, and potentially publish, new blog posts.
+*   **Remediation**: Implement a robust authorization mechanism. This could involve:
+    *   **Email Allowlist**: Maintain a
