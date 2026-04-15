@@ -84,14 +84,14 @@ async function backfill() {
         .set({
           published:   ghost.status === 'published',
           publishedAt: ghost.published_at ? new Date(ghost.published_at) : null,
-          metadata: {
+          metadata: ({
             legacyDisqus: true,
             category:     ghost.tags?.[0]?.name ?? undefined,
             authorName:   primaryAuthor?.name ?? 'Nsisong Effiong',
             authorSlug:   primaryAuthor?.slug ?? 'nsisong',
             authors:      authorsMeta.length > 0 ? authorsMeta : undefined,
             isGuestPost:  primaryAuthor?.slug !== 'nsisong' && primaryAuthor !== undefined,
-          },
+          } as any),
         })
         .where(eq(posts.slug, ghost.slug))
 
