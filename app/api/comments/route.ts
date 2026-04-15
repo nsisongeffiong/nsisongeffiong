@@ -140,10 +140,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ── Validate parentId belongs to the same post ────────────────────────────
+    // ── Validate parentId belongs to the same post & enforce one-level depth ──
     if (parentId) {
       const [parent] = await db
-        .select({ id: comments.id, postId: comments.postId })
+        .select({
+          id:       comments.id,
+          postId:   comments.postId,
+          parentId: comments.parentId,
+        })
         .from(comments)
         .where(eq(comments.id, parentId))
         .limit(1)
@@ -151,6 +155,14 @@ export async function POST(request: NextRequest) {
       if (!parent || parent.postId !== postId) {
         return NextResponse.json(
           { success: false, error: 'Invalid parent comment' },
+          { status: 400 }
+        )
+      }
+
+      // One level of replies only — reject if parent is itself a reply
+      if (parent.parentId) {
+        return NextResponse.json(
+          { success: false, error: 'Replies are limited to one level' },
           { status: 400 }
         )
       }

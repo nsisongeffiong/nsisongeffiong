@@ -32,9 +32,10 @@ export function formatDateRelative(date: Date | string): string {
 
 // ─── Read time estimate ───────────────────────────────────────────────────────
 export function estimateReadTime(content: string): number {
-  const wordsPerMinute = 200
   const trimmed = content.trim()
   if (!trimmed) return 0
+
+  const wordsPerMinute = 200
   const wordCount = trimmed.split(/\s+/).length
   return Math.max(1, Math.round(wordCount / wordsPerMinute))
 }

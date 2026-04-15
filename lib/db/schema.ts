@@ -6,7 +6,6 @@ import {
   timestamp,
   jsonb,
   pgEnum,
-  integer,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
@@ -43,9 +42,9 @@ export const posts = pgTable('posts', {
    * metadata jsonb — type-specific fields
    *
    * Poetry:
-   *   { poemNumber: 24, category: "Nature & place", poetNote: "...", legacyDisqus: true }
+   *   { category: "Nature & place", poetNote: "...", legacyDisqus: true }
    *
-   * Technical:
+   * Tech:
    *   { readTime: 12, featured: true, codeLanguages: ["python"], legacyDisqus: false }
    *
    * Ideas:
@@ -91,16 +90,15 @@ export type NewPost = typeof posts.$inferInsert
 export type Comment    = typeof comments.$inferSelect
 export type NewComment = typeof comments.$inferInsert
 
-export type PostMetadata = PoetryMetadata | TechnicalMetadata | IdeasMetadata
+export type PostMetadata = PoetryMetadata | TechMetadata | IdeasMetadata
 
 export type PoetryMetadata = {
-  poemNumber?:  number
   category?:    string
   poetNote?:    string
   legacyDisqus?: boolean
 }
 
-export type TechnicalMetadata = {
+export type TechMetadata = {
   readTime?:      number
   featured?:      boolean
   codeLanguages?: string[]

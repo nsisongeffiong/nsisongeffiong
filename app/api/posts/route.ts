@@ -6,16 +6,30 @@ import { eq, desc, and } from 'drizzle-orm'
 import { generateSlug } from '@/lib/utils'
 import type { PostType } from '@/types'
 
+const ALLOWED_TYPES: PostType[] = ['poetry', 'tech', 'ideas']
+
+function isValidPostType(value: unknown): value is PostType {
+  return typeof value === 'string' && (ALLOWED_TYPES as string[]).includes(value)
+}
+
 // GET /api/posts — fetch published posts, optionally filtered by type
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const type  = searchParams.get('type') as PostType | null
+
+    const rawType = searchParams.get('type')
+    if (rawType && !isValidPostType(rawType)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid post type' },
+        { status: 400 }
+      )
+    }
+
     const rawLimit = parseInt(searchParams.get('limit') ?? '20')
     const limit = Number.isNaN(rawLimit) ? 20 : Math.min(Math.max(rawLimit, 1), 100)
 
     const conditions = [eq(posts.published, true)]
-    if (type) conditions.push(eq(posts.type, type))
+    if (rawType) conditions.push(eq(posts.type, rawType))
 
     const result = await db
       .select()
@@ -35,6 +49,9 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/posts — create a new post (admin only)
+// [HUMAN REVIEW NEEDED]: Currently any authenticated Supabase user can
+// create posts. Add admin role verification — email allowlist, Supabase
+// custom claim, or RLS policy — before production deployment.
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -47,6 +64,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // TODO: Add admin authorization check here before production.
+    // Options: ADMIN_EMAILS env var allowlist, Supabase custom claims, or RLS.
+
     const body = await request.json()
     const { title, type, content, excerpt, tags, metadata, published } = body
 
@@ -57,8 +77,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const ALLOWED_TYPES: PostType[] = ['poetry', 'tech', 'ideas']
-    if (!ALLOWED_TYPES.includes(type)) {
+    if (!isValidPostType(type)) {
       return NextResponse.json(
         { success: false, error: `type must be one of: ${ALLOWED_TYPES.join(', ')}` },
         { status: 400 }

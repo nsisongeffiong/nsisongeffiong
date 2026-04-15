@@ -35,9 +35,13 @@ export function CommentForm({
 
     try {
       // Get Turnstile token — widget renders via script in page
-      // For now we pass an empty string; the script integration
-      // will populate window.turnstileToken before submit
       const turnstileToken = (window as any).turnstileToken ?? ''
+
+      if (!turnstileToken) {
+        setStatus('error')
+        setErrorMsg('Verification is not ready yet. Please try again later.')
+        return
+      }
 
       const res = await fetch('/api/comments', {
         method:  'POST',
@@ -223,7 +227,7 @@ export function CommentForm({
         <p style={{
           fontFamily: 'var(--font-dm-mono), monospace',
           fontSize:   '12px',
-          color:      'var(--color-text-danger, #E24B4A)',
+          color:      'var(--danger)',
           marginBottom: '1rem',
         }}>
           {errorMsg}
@@ -244,7 +248,11 @@ export function CommentForm({
       </button>
 
       <p style={{
-        fontFamily:  isPoetry || isIdeas ? 'var(--font-cormorant), serif' : 'var(--font-dm-mono), monospace',
+        fontFamily: isPoetry
+          ? 'var(--font-cormorant), serif'
+          : isIdeas
+            ? 'var(--font-source-serif), serif'
+            : 'var(--font-dm-mono), monospace',
         fontSize:    isPoetry || isIdeas ? '12px' : '10px',
         fontStyle:   isPoetry || isIdeas ? 'italic' : 'normal',
         color:       'var(--txt3)',
