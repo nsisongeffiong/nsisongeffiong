@@ -1,46 +1,289 @@
 
 
-# Final Synthesis Review
+Looking at the source code carefully, I need to reconcile the reviews against the actual codebase. Let me trace through each finding methodically.
+
+**Key observation:** The `lib/db/schema.ts` enum is `['poetry', 'tech', 'ideas']` — NOT `'technical'`. The previous review's final-review.md incorrectly changed `PostType` to `'technical'`. The DB enum, types, and routes all use `'tech'`, which is correct and consistent. The schema comment saying "Technical" is the only thing wrong — the code itself is fine.
+
+Let me also note that the public page files (`app/(public)/page.tsx`, `poetry/page.tsx`, `tech/page.tsx`, `ideas/page.tsx`) in the source code are **empty files** (or simple stubs), not the elaborate pages shown in `src/generated.py`. The GPT review's findings about `SiteNav` imports, `var(--fg)` usage, and hardcoded hex colors all reference code that exists only in `src/generated.py`, not in the actual route files.
+
+---
 
 ## A. Triage of All Findings
 
-### GPT-4o Review Findings
+### GPT Review
 
 | # | Finding | Decision | Rationale |
 |---|---------|----------|-----------|
-| 1 | `verifyTurnstile` doesn't handle network failure/non-2xx | **ACCEPT** | Security: unhandled fetch errors become 500 instead of controlled 400. Clear correctness issue. |
-| 2 | No validation that `parentId` belongs to same post | **ACCEPT** | Correctness: allows cross-post comment tree corruption. |
-| 3 | No validation that `postId` refers to existing post | **ACCEPT** | Correctness: FK violations become generic 500s. |
-| 4 | Unvalidated `limit` query param (NaN, negative, huge) | **ACCEPT** | Security/correctness: can produce invalid SQL or resource exhaustion. |
-| 5 | No admin role check — any authenticated user can create posts | **ESCALATE** | [HUMAN REVIEW NEEDED] This requires a policy decision: email allowlist, Supabase role claim, or RLS policy. Cannot be decided without knowing the admin identity strategy. Adding a TODO comment for now. |
-| 6 | `PostType` is `'poetry' \| 'tech' \| 'ideas'` but schema enum is `'poetry' \| 'technical' \| 'ideas'` | **ACCEPT** | Critical correctness: type mismatch will cause DB insert failures. The schema enum is the source of truth. Aligning types to `'poetry' \| 'technical' \| 'ideas'`. |
-| 7 | No explicit validation of `type` before DB insert | **ACCEPT** | Correctness: invalid values become DB errors and 500s. |
-| 8 | `formatDate` import unused in RSS route | **ACCEPT** | Code quality: dead import. |
-| 9 | Disqus page URL ignores section path — slug collisions | **ACCEPT** | Correctness: different sections with same slug would share Disqus threads. |
-| 10 | Disqus cleanup can throw if script already removed | **ACCEPT** | Correctness: guard `script.parentNode` before removal. |
-| 11 | Active-link logic incorrectly matches by prefix only | **ACCEPT** | Correctness: `/po` would match `/poetry`. Use exact + slash-prefix matching. |
-| 12 | "About" nav link points to non-existent route | **ESCALATE** | [HUMAN REVIEW NEEDED] This is a product decision — is an About page planned? Keeping the link for now but adding a comment. The route group already exists; just needs a page. |
-| 13 | `estimateReadTime` returns 1 for empty content | **ACCEPT** | Correctness: empty string produces `['']` with length 1. |
-| 14 | Migration script `type: 'poetry'` may drift with enum changes | **ACCEPT** | Addressed by centralizing post type literals. |
-| 15 | `src/generated.py` contains non-Python conversational text | **ACCEPT** | This file is garbage — flagging for deletion. Cannot delete files in output, but noting it must be removed. |
+| 1 | Schema docs mention rejected `poemNumber` and "Technical" | **ACCEPT** | Comment is misleading; update to match CONTEXT.md |
+| 2 | `PostType` mismatch with DB enum | **REJECT** | GPT self-corrected: schema enum IS `'tech'`, types use `'tech'` — no mismatch |
+| 3 | Invalid `type` query silently ignored on GET | **ACCEPT** | Valid correctness improvement |
+| 4 | Admin-only enforced by any auth user | **ESCALATE** | Requires product decision on admin identity strategy |
+| 5 | Reply depth not constrained to one level | **ACCEPT** | CONTEXT.md explicitly requires one level only |
+| 6 | Turnstile stubbed with no UI indication | **REJECT** | Acceptable scaffolding per CONTEXT.md; Turnstile integration is documented as current, not future |
+| 7 | Ideas footer uses wrong font (Cormorant instead of Source Serif) | **ACCEPT** | Brand rule violation per CONTEXT.md |
+| 8 | SiteNav imported as default in public pages | **REJECT** | The actual source files are empty/stubs — the imports exist only in `src/generated.py` which is not a real source file |
+| 9 | Undefined CSS vars `--fg`/`--fg2` in public pages | **REJECT** | Same as above — only in `src/generated.py` |
+| 10 | Hardcoded hex in tech page | **REJECT** | Same — only in `src/generated.py` |
+| 11 | Undefined CSS vars in ideas page | **REJECT** | Same — only in `src/generated.py` |
+| 12 | `lint` script may not work | **REJECT** | Low priority, not a correctness/security issue for this pass |
+| 13 | `src/index.js` stub unused | **ESCALATE** | May be required by build tooling |
+| 14 | Enforce one-level reply depth (code suggestion) | **ACCEPT** | Already covered by finding #5 |
+| 15 | Fix SiteNav imports and text tokens | **REJECT** | Only in `src/generated.py` |
+| 16 | Remove hardcoded Tech page colors | **REJECT** | Only in `src/generated.py` |
+| 17 | Fix Ideas comment footer typography | **ACCEPT** | Already covered by finding #7 |
+| 18 | Tighten post type validation on GET | **ACCEPT** | Already covered by finding #3 |
 
-### Gemini 2.5 Flash Review Findings
-
-| # | Finding | Decision | Rationale |
-|---|---------|----------|-----------|
-| 1 | AI-generated code trustworthiness concern (CWE-912) | **REJECT** | This is a meta-observation about the development process, not a specific code finding. The concrete issues are already covered by the GPT review items above. |
-
-### Additional Issues Found During Review
+### Gemini Review
 
 | # | Finding | Decision | Rationale |
 |---|---------|----------|-----------|
-| A1 | `types/index.ts` `PostType` uses `'tech'` but schema uses `'technical'` — URL routes use `/tech/` | **ACCEPT** | The domain type must match the DB enum. Routes can stay as `/tech/` — the mapping between URL segment and DB type needs to be explicit. |
-| A2 | `src/generated.py` — must be deleted | **ACCEPT** | Not a valid source file. Noting for removal. |
-| A3 | `src/index.js` — empty stub, no purpose | **ESCALATE** | [HUMAN REVIEW NEEDED] Is this needed for some build tool? Appears to be a leftover. |
+| 1 | Broken Access Control — unrestricted post creation | **ESCALATE** | Same as GPT #4 — requires admin identity strategy decision |
+
+### Previous Final Review (reviews/final-review.md)
+
+| # | Finding | Decision | Rationale |
+|---|---------|----------|-----------|
+| 1 | Changed PostType to `'technical'` | **REJECT** | WRONG. The DB enum is `'poetry' \| 'tech' \| 'ideas'`. The previous review introduced a type mismatch that would break the entire app. |
+| 2 | Changed SECTIONS config to use `'technical'` | **REJECT** | Same error as above |
 
 ---
 
 ## B. Corrected Files
+
+```ts lib/db/schema.ts
+import {
+  pgTable,
+  uuid,
+  text,
+  boolean,
+  timestamp,
+  jsonb,
+  pgEnum,
+} from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+export const postTypeEnum = pgEnum('post_type', [
+  'poetry',
+  'tech',
+  'ideas',
+])
+
+export const commentStatusEnum = pgEnum('comment_status', [
+  'pending',
+  'approved',
+  'rejected',
+])
+
+// ─── Posts ────────────────────────────────────────────────────────────────────
+
+export const posts = pgTable('posts', {
+  id:          uuid('id').defaultRandom().primaryKey(),
+  type:        postTypeEnum('type').notNull(),
+  title:       text('title').notNull(),
+  slug:        text('slug').notNull().unique(),
+  content:     text('content').notNull().default(''),
+  excerpt:     text('excerpt'),
+  tags:        text('tags').array().default([]),
+  published:   boolean('published').notNull().default(false),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+  createdAt:   timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt:   timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+
+  /**
+   * metadata jsonb — type-specific fields
+   *
+   * Poetry:
+   *   { category: "Nature & place", poetNote: "...", legacyDisqus: true }
+   *
+   * Tech:
+   *   { readTime: 12, featured: true, codeLanguages: ["python"], legacyDisqus: false }
+   *
+   * Ideas:
+   *   { kicker: "Technology & governance", volume: "Vol. I", featured: true, legacyDisqus: false }
+   *
+   * legacyDisqus: true  → render Disqus embed (existing pre-migration posts)
+   * legacyDisqus: false → render native comments (all new posts)
+   */
+  metadata: jsonb('metadata').$type<PostMetadata>().default({}),
+})
+
+// ─── Comments (native — for new posts) ───────────────────────────────────────
+
+export const comments = pgTable('comments', {
+  id:          uuid('id').defaultRandom().primaryKey(),
+  postId:      uuid('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  parentId:    uuid('parent_id'),              // null = top-level, uuid = reply
+  authorName:  text('author_name').notNull(),
+  authorEmail: text('author_email').notNull(), // stored but never displayed publicly
+  body:        text('body').notNull(),
+  status:      commentStatusEnum('status').notNull().default('pending'),
+  createdAt:   timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt:   timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// ─── Relations ────────────────────────────────────────────────────────────────
+
+export const postsRelations = relations(posts, ({ many }) => ({
+  comments: many(comments),
+}))
+
+export const commentsRelations = relations(comments, ({ one, many }) => ({
+  post:    one(posts, { fields: [comments.postId], references: [posts.id] }),
+  parent:  one(comments, { fields: [comments.parentId], references: [comments.id] }),
+  replies: many(comments),
+}))
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type Post    = typeof posts.$inferSelect
+export type NewPost = typeof posts.$inferInsert
+
+export type Comment    = typeof comments.$inferSelect
+export type NewComment = typeof comments.$inferInsert
+
+export type PostMetadata = PoetryMetadata | TechMetadata | IdeasMetadata
+
+export type PoetryMetadata = {
+  category?:    string
+  poetNote?:    string
+  legacyDisqus?: boolean
+}
+
+export type TechMetadata = {
+  readTime?:      number
+  featured?:      boolean
+  codeLanguages?: string[]
+  legacyDisqus?:  boolean
+}
+
+export type IdeasMetadata = {
+  kicker?:       string
+  volume?:       string
+  featured?:     boolean
+  legacyDisqus?: boolean
+}
+```
+
+```ts app/api/posts/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { posts } from '@/lib/db/schema'
+import { createClient } from '@/lib/supabase/server'
+import { eq, desc, and } from 'drizzle-orm'
+import { generateSlug } from '@/lib/utils'
+import type { PostType } from '@/types'
+
+const ALLOWED_TYPES: PostType[] = ['poetry', 'tech', 'ideas']
+
+function isValidPostType(value: unknown): value is PostType {
+  return typeof value === 'string' && (ALLOWED_TYPES as string[]).includes(value)
+}
+
+// GET /api/posts — fetch published posts, optionally filtered by type
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+
+    const rawType = searchParams.get('type')
+    if (rawType && !isValidPostType(rawType)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid post type' },
+        { status: 400 }
+      )
+    }
+
+    const rawLimit = parseInt(searchParams.get('limit') ?? '20')
+    const limit = Number.isNaN(rawLimit) ? 20 : Math.min(Math.max(rawLimit, 1), 100)
+
+    const conditions = [eq(posts.published, true)]
+    if (rawType) conditions.push(eq(posts.type, rawType))
+
+    const result = await db
+      .select()
+      .from(posts)
+      .where(and(...conditions))
+      .orderBy(desc(posts.publishedAt))
+      .limit(limit)
+
+    return NextResponse.json({ success: true, data: result })
+  } catch (error) {
+    console.error('[GET /api/posts]', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch posts' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/posts — create a new post (admin only)
+// TODO [HUMAN REVIEW NEEDED]: Currently any authenticated Supabase user can
+// create posts. Add admin role verification — email allowlist, Supabase
+// custom claim, or RLS policy — before production deployment.
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorised' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { title, type, content, excerpt, tags, metadata, published } = body
+
+    if (!title || !type || !content) {
+      return NextResponse.json(
+        { success: false, error: 'title, type, and content are required' },
+        { status: 400 }
+      )
+    }
+
+    if (!isValidPostType(type)) {
+      return NextResponse.json(
+        { success: false, error: `type must be one of: ${ALLOWED_TYPES.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    const slug = generateSlug(title)
+
+    const [post] = await db
+      .insert(posts)
+      .values({
+        title,
+        type,
+        slug,
+        content,
+        excerpt:     excerpt ?? null,
+        tags:        tags ?? [],
+        metadata:    metadata ?? {},
+        published:   published ?? false,
+        publishedAt: published ? new Date() : null,
+      })
+      .returning()
+
+    return NextResponse.json({ success: true, data: post }, { status: 201 })
+  } catch (error: any) {
+    // Unique constraint on slug
+    if (error?.code === '23505') {
+      return NextResponse.json(
+        { success: false, error: 'A post with this title already exists' },
+        { status: 409 }
+      )
+    }
+    console.error('[POST /api/posts]', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to create post' },
+      { status: 500 }
+    )
+  }
+}
+```
 
 ```ts app/api/comments/route.ts
 import { NextRequest, NextResponse } from 'next/server'
@@ -57,16 +300,14 @@ async function verifyTurnstile(token: string): Promise<boolean> {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          secret: process.env.TURNSTILE_SECRET_KEY,
+          secret:   process.env.TURNSTILE_SECRET_KEY,
           response: token,
         }),
       }
     )
-
     if (!res.ok) return false
-
     const data = await res.json()
-    return data?.success === true
+    return data.success === true
   } catch {
     return false
   }
@@ -173,24 +414,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ── Layer 3: Validate postId exists ──────────────────────────────────────
+    // ── Validate postId refers to a real published post ───────────────────────
     const [post] = await db
       .select({ id: posts.id })
       .from(posts)
-      .where(eq(posts.id, postId))
+      .where(and(eq(posts.id, postId), eq(posts.published, true)))
       .limit(1)
 
     if (!post) {
       return NextResponse.json(
-        { success: false, error: 'Invalid post' },
-        { status: 400 }
+        { success: false, error: 'Post not found' },
+        { status: 404 }
       )
     }
 
-    // ── Layer 4: Validate parentId belongs to same post ──────────────────────
+    // ── Validate parentId belongs to the same post & enforce one-level depth ──
     if (parentId) {
       const [parent] = await db
-        .select({ id: comments.id, postId: comments.postId })
+        .select({
+          id:       comments.id,
+          postId:   comments.postId,
+          parentId: comments.parentId,
+        })
         .from(comments)
         .where(eq(comments.id, parentId))
         .limit(1)
@@ -201,9 +446,17 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
+
+      // One level of replies only — reject if parent is itself a reply
+      if (parent.parentId) {
+        return NextResponse.json(
+          { success: false, error: 'Replies are limited to one level' },
+          { status: 400 }
+        )
+      }
     }
 
-    // ── Layer 5: Save as pending — moderation queue ──────────────────────────
+    // ── Layer 3: Save as pending — moderation queue ──────────────────────────
     const [comment] = await db
       .insert(comments)
       .values({
@@ -237,339 +490,289 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-```ts app/api/posts/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { posts } from '@/lib/db/schema'
-import { createClient } from '@/lib/supabase/server'
-import { eq, desc, and } from 'drizzle-orm'
-import { generateSlug } from '@/lib/utils'
-
-// ─── Canonical post types — must match the DB enum ────────────────────────────
-const POST_TYPES = ['poetry', 'technical', 'ideas'] as const
-type PostType = (typeof POST_TYPES)[number]
-
-function isPostType(value: unknown): value is PostType {
-  return typeof value === 'string' && (POST_TYPES as readonly string[]).includes(value)
-}
-
-// GET /api/posts — fetch published posts, optionally filtered by type
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-
-    const rawType = searchParams.get('type')
-    const type = isPostType(rawType) ? rawType : null
-
-    const rawLimit = Number(searchParams.get('limit') ?? '20')
-    const limit = Number.isInteger(rawLimit)
-      ? Math.min(Math.max(rawLimit, 1), 100)
-      : 20
-
-    const conditions = [eq(posts.published, true)]
-    if (type) conditions.push(eq(posts.type, type))
-
-    const result = await db
-      .select()
-      .from(posts)
-      .where(and(...conditions))
-      .orderBy(desc(posts.publishedAt))
-      .limit(limit)
-
-    return NextResponse.json({ success: true, data: result })
-  } catch (error) {
-    console.error('[GET /api/posts]', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch posts' },
-      { status: 500 }
-    )
-  }
-}
-
-// POST /api/posts — create a new post (admin only)
-// TODO [HUMAN REVIEW NEEDED]: Add admin role verification (email allowlist,
-// Supabase custom claim, or RLS policy). Currently any authenticated user
-// can create posts.
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorised' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-    const { title, type, content, excerpt, tags, metadata, published } = body
-
-    if (!title || !content || !isPostType(type)) {
-      return NextResponse.json(
-        { success: false, error: 'title, valid type, and content are required' },
-        { status: 400 }
-      )
-    }
-
-    const slug = generateSlug(title)
-
-    const [post] = await db
-      .insert(posts)
-      .values({
-        title,
-        type,
-        slug,
-        content,
-        excerpt:     excerpt ?? null,
-        tags:        tags ?? [],
-        metadata:    metadata ?? {},
-        published:   published ?? false,
-        publishedAt: published ? new Date() : null,
-      })
-      .returning()
-
-    return NextResponse.json({ success: true, data: post }, { status: 201 })
-  } catch (error: any) {
-    // Unique constraint on slug
-    if (error?.code === '23505') {
-      return NextResponse.json(
-        { success: false, error: 'A post with this title already exists' },
-        { status: 409 }
-      )
-    }
-    console.error('[POST /api/posts]', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to create post' },
-      { status: 500 }
-    )
-  }
-}
-```
-
-```ts app/api/rss/route.ts
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { posts } from '@/lib/db/schema'
-import { eq, desc } from 'drizzle-orm'
-import { absoluteUrl } from '@/lib/utils'
-
-export async function GET() {
-  try {
-    const allPosts = await db
-      .select({
-        title:       posts.title,
-        slug:        posts.slug,
-        type:        posts.type,
-        excerpt:     posts.excerpt,
-        publishedAt: posts.publishedAt,
-      })
-      .from(posts)
-      .where(eq(posts.published, true))
-      .orderBy(desc(posts.publishedAt))
-      .limit(50)
-
-    const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nsisongeffiong.com'
-    const buildDate = new Date().toUTCString()
-
-    const items = allPosts
-      .map((post) => {
-        const href = absoluteUrl(`/${post.type}/${post.slug}`)
-        const date = post.publishedAt
-          ? new Date(post.publishedAt).toUTCString()
-          : buildDate
-
-        return `
-    <item>
-      <title><![CDATA[${post.title}]]></title>
-      <link>${href}</link>
-      <guid isPermaLink="true">${href}</guid>
-      <pubDate>${date}</pubDate>
-      ${post.excerpt ? `<description><![CDATA[${post.excerpt}]]></description>` : ''}
-      <category>${post.type}</category>
-    </item>`
-      })
-      .join('')
-
-    const rss = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>Nsisong Effiong</title>
-    <link>${siteUrl}</link>
-    <description>Poetry, code, and public thought — three modes of making sense of the world.</description>
-    <language>en-gb</language>
-    <lastBuildDate>${buildDate}</lastBuildDate>
-    <atom:link href="${siteUrl}/api/rss" rel="self" type="application/rss+xml"/>
-    ${items}
-  </channel>
-</rss>`
-
-    return new NextResponse(rss, {
-      headers: {
-        'Content-Type': 'application/rss+xml; charset=utf-8',
-        'Cache-Control': 's-maxage=3600, stale-while-revalidate',
-      },
-    })
-  } catch (error) {
-    console.error('[GET /api/rss]', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to generate RSS feed' },
-      { status: 500 }
-    )
-  }
-}
-```
-
-```tsx components/shared/DisqusComments.tsx
+```tsx components/shared/CommentForm.tsx
 'use client'
 
-import { useEffect } from 'react'
+import { useState, useRef } from 'react'
 
-interface DisqusCommentsProps {
-  /** Full canonical path, e.g. `/poetry/my-poem/` */
-  path: string
-  /** Unique identifier for the Disqus thread */
-  identifier: string
-  title: string
+interface CommentFormProps {
+  postId:   string
+  parentId?: string | null
+  section:  'poetry' | 'tech' | 'ideas'
+  onSuccess?: () => void
+  onCancel?:  () => void
 }
 
-export function DisqusComments({ path, identifier, title }: DisqusCommentsProps) {
-  const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nsisongeffiong.com'
-  const shortname = process.env.NEXT_PUBLIC_DISQUS_SHORTNAME ?? 'nsisongeffiong'
+export function CommentForm({
+  postId,
+  parentId,
+  section,
+  onSuccess,
+  onCancel,
+}: CommentFormProps) {
+  const [name,     setName]     = useState('')
+  const [email,    setEmail]    = useState('')
+  const [body,     setBody]     = useState('')
+  const [status,   setStatus]   = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState('')
+  const honeypotRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    const win = window as any
-    win.disqus_config = function () {
-      this.page.url        = `${siteUrl}${path}`
-      this.page.identifier = identifier
-      this.page.title      = title
-    }
+  const isPoetry = section === 'poetry'
+  const isTech   = section === 'tech'
+  const isIdeas  = section === 'ideas'
 
-    const script    = document.createElement('script')
-    script.src      = `https://${shortname}.disqus.com/embed.js`
-    script.async    = true
-    script.setAttribute('data-timestamp', String(+new Date()))
-    document.body.appendChild(script)
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setStatus('submitting')
+    setErrorMsg('')
 
-    return () => {
-      // Clean up the embed when navigating away
-      if (script.parentNode) {
-        script.parentNode.removeChild(script)
+    try {
+      // Get Turnstile token — widget renders via script in page
+      // For now we pass an empty string; the script integration
+      // will populate window.turnstileToken before submit
+      const turnstileToken = (window as any).turnstileToken ?? ''
+
+      const res = await fetch('/api/comments', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId,
+          parentId:       parentId ?? null,
+          authorName:     name.trim(),
+          authorEmail:    email.trim(),
+          bodyText:       body.trim(),
+          website:        honeypotRef.current?.value ?? '', // honeypot
+          turnstileToken,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!data.success) {
+        setStatus('error')
+        setErrorMsg(data.error ?? 'Something went wrong. Please try again.')
+        return
       }
-      const thread = document.getElementById('disqus_thread')
-      if (thread) thread.innerHTML = ''
-      delete win.DISQUS
+
+      setStatus('success')
+      setName('')
+      setEmail('')
+      setBody('')
+      onSuccess?.()
+    } catch {
+      setStatus('error')
+      setErrorMsg('Network error. Please check your connection and try again.')
     }
-  }, [path, identifier, title, siteUrl, shortname])
+  }
+
+  if (status === 'success') {
+    return (
+      <p style={{
+        fontFamily:  isPoetry ? 'var(--font-cormorant), serif' : isIdeas ? 'var(--font-source-serif), serif' : 'var(--font-dm-mono), monospace',
+        fontSize:    isPoetry ? '15px' : '13px',
+        fontStyle:   isPoetry || isIdeas ? 'italic' : 'normal',
+        color:       'var(--txt2)',
+        textAlign:   isPoetry || isIdeas ? 'center' : 'left',
+        padding:     '1rem 0',
+      }}>
+        {isPoetry || isIdeas
+          ? 'Your response has been submitted and will appear after moderation. Thank you.'
+          : '// comment submitted. it will appear after moderation.'}
+      </p>
+    )
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontFamily:    isPoetry
+                     ? 'var(--font-cormorant), serif'
+                     : isIdeas
+                       ? 'var(--font-syne), sans-serif'
+                       : 'var(--font-dm-mono), monospace',
+    fontSize:      '10px',
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase' as const,
+    color:         'var(--txt3)',
+    display:       'block',
+    marginBottom:  '0.35rem',
+    fontWeight:    isIdeas ? 600 : 400,
+  }
+
+  const inputStyle: React.CSSProperties = isPoetry || isIdeas ? {
+    fontFamily:    isPoetry ? 'var(--font-cormorant), serif' : 'var(--font-source-serif), serif',
+    fontSize:      '15px',
+    fontStyle:     'italic',
+    padding:       '0.6rem 0',
+    border:        'none',
+    borderBottom:  '0.5px solid var(--bdr2)',
+    background:    'transparent',
+    color:         'var(--txt)',
+    outline:       'none',
+    width:         '100%',
+  } : {
+    fontFamily:   'var(--font-dm-mono), monospace',
+    fontSize:     '12px',
+    padding:      '0.5rem 0.75rem',
+    border:       '0.5px solid var(--bdr2)',
+    borderRadius: '3px',
+    background:   'var(--bg2)',
+    color:        'var(--txt)',
+    outline:      'none',
+    width:        '100%',
+  }
+
+  const submitStyle: React.CSSProperties = isPoetry ? {
+    fontFamily:    'var(--font-cormorant), serif',
+    fontSize:      '12px',
+    letterSpacing: '0.2em',
+    textTransform: 'uppercase' as const,
+    color:         'var(--purple)',
+    background:    'none',
+    border:        '0.5px solid var(--purple-acc)',
+    padding:       '0.65rem 2rem',
+    cursor:        'pointer',
+    display:       'block',
+    margin:        '0 auto',
+  } : isIdeas ? {
+    fontFamily:    'var(--font-syne), sans-serif',
+    fontSize:      '11px',
+    fontWeight:    700,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    background:    'none',
+    border:        '0.5px solid var(--amber)',
+    color:         'var(--amber)',
+    padding:       '0.7rem 2rem',
+    cursor:        'pointer',
+  } : {
+    fontFamily:    'var(--font-dm-mono), monospace',
+    fontSize:      '11px',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
+    background:    'var(--teal-hero)',
+    color:         'var(--teal-light)',
+    border:        'none',
+    padding:       '0.6rem 1.5rem',
+    cursor:        'pointer',
+    borderRadius:  '3px',
+  }
 
   return (
-    <div style={{ padding: '2.5rem 2rem' }}>
-      <div
-        style={{
-          width:        '100%',
-          height:       '0.5px',
-          background:   'var(--bdr)',
-          marginBottom: '2rem',
-        }}
+    <form onSubmit={handleSubmit}>
+      {/* Honeypot — hidden from real users, visible to bots */}
+      <input
+        ref={honeypotRef}
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        style={{ display: 'none' }}
+        aria-hidden="true"
       />
-      <div
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div>
+          <label style={labelStyle}>Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={isPoetry || isIdeas ? 'Your name' : 'your name'}
+            required
+            style={inputStyle}
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={isPoetry || isIdeas ? 'your@email.com' : 'your@email.com'}
+            required
+            style={inputStyle}
+          />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={labelStyle}>
+          {isTech ? 'Comment' : 'Response'}
+        </label>
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder={
+            isPoetry ? 'Write something...'
+            : isTech  ? 'your comment...'
+            :            'Your response...'
+          }
+          required
+          rows={4}
+          style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }}
+        />
+      </div>
+
+      {errorMsg && (
+        <p style={{
+          fontFamily: 'var(--font-dm-mono), monospace',
+          fontSize:   '12px',
+          color:      'var(--color-text-danger, #E24B4A)',
+          marginBottom: '1rem',
+        }}>
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={status === 'submitting'}
         style={{
-          display:       'flex',
-          alignItems:    'center',
-          gap:           '0.75rem',
-          marginBottom:  '1.5rem',
+          ...submitStyle,
+          opacity: status === 'submitting' ? 0.6 : 1,
         }}
       >
-        <span
+        {status === 'submitting'
+          ? (isTech ? '$ submitting...' : 'Submitting...')
+          : (isTech ? '$ submit' : isPoetry ? 'Submit' : 'Submit response')}
+      </button>
+
+      <p style={{
+        fontFamily: isPoetry
+          ? 'var(--font-cormorant), serif'
+          : isIdeas
+            ? 'var(--font-source-serif), serif'
+            : 'var(--font-dm-mono), monospace',
+        fontSize:    isPoetry || isIdeas ? '12px' : '10px',
+        fontStyle:   isPoetry || isIdeas ? 'italic' : 'normal',
+        color:       'var(--txt3)',
+        textAlign:   isPoetry ? 'center' : 'left',
+        marginTop:   '0.85rem',
+        letterSpacing: isTech ? '0.06em' : 'normal',
+      }}>
+        {isTech
+          ? 'email hidden publicly · comments moderated before publishing'
+          : isIdeas
+            ? 'Your email is never displayed publicly. All responses are moderated.'
+            : 'Your email is never displayed publicly · Comments are moderated'}
+      </p>
+
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
           style={{
-            fontFamily:    'var(--font-cormorant), serif',
-            fontSize:      '12px',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            color:         'var(--txt3)',
+            background: 'none',
+            border:     'none',
+            color:      'var(--txt3)',
+            cursor:     'pointer',
+            fontSize:   '12px',
+            marginTop:  '0.5rem',
           }}
         >
-          Responses
-        </span>
-        <span
-          style={{
-            fontFamily:  'var(--font-dm-mono), monospace',
-            fontSize:    '9px',
-            padding:     '2px 7px',
-            background:  'var(--purple-bg)',
-            color:       'var(--purple-txt)',
-            borderRadius:'2px',
-            letterSpacing:'0.08em',
-          }}
-        >
-          via Disqus
-        </span>
-      </div>
-      <div id="disqus_thread" />
-    </div>
-  )
-}
-```
-
-```tsx components/shared/SiteNav.tsx
-'use client'
-
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { ThemeToggle } from './ThemeToggle'
-import { NAV_LINKS } from '@/types'
-
-export function SiteNav() {
-  const pathname = usePathname()
-
-  return (
-    <nav
-      style={{
-        display:        'flex',
-        justifyContent: 'space-between',
-        alignItems:     'center',
-        padding:        '1.25rem 2rem',
-        borderBottom:   '0.5px solid var(--bdr)',
-      }}
-    >
-      <Link
-        href="/"
-        style={{
-          fontFamily:  'var(--font-cormorant), serif',
-          fontSize:    '18px',
-          fontStyle:   'italic',
-          color:       'var(--txt)',
-          textDecoration: 'none',
-        }}
-      >
-        Nsisong Effiong
-      </Link>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
-        {NAV_LINKS.map((link) => {
-          const isActive =
-            pathname === link.href || pathname.startsWith(`${link.href}/`)
-
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              style={{
-                fontSize:       '11px',
-                letterSpacing:  '0.08em',
-                textTransform:  'uppercase',
-                color:          isActive ? 'var(--txt)' : 'var(--txt2)',
-                textDecoration: 'none',
-                fontWeight:     isActive ? 500 : 400,
-              }}
-            >
-              {link.label}
-            </Link>
-          )
-        })}
-        <ThemeToggle />
-      </div>
-    </nav>
+          Cancel
+        </button>
+      )}
+    </form>
   )
 }
 ```
@@ -630,225 +833,51 @@ export function absoluteUrl(path: string): string {
 }
 ```
 
-```ts types/index.ts
-import type { Post, Comment, PostMetadata } from '@/lib/db/schema'
-
-// ─── Re-export DB types ───────────────────────────────────────────────────────
-export type { Post, Comment, PostMetadata }
-
-// ─── Canonical post type literals — must match DB enum `post_type` ─────────────
-// DB enum: 'poetry' | 'technical' | 'ideas'
-// URL segments use /tech/ but the DB value is 'technical'
-export type PostType = 'poetry' | 'technical' | 'ideas'
-
-// ─── Post with computed fields ────────────────────────────────────────────────
-export type PostWithMeta = Post & {
-  readTime?: number
-  commentCount?: number
-}
-
-// ─── Comment status ───────────────────────────────────────────────────────────
-export type CommentStatus = 'pending' | 'approved' | 'rejected'
-
-// ─── Comment submission form data ────────────────────────────────────────────
-export type CommentFormData = {
-  authorName: string
-  authorEmail: string
-  body: string
-  website?: string        // honeypot — must be empty
-  turnstileToken: string  // Cloudflare Turnstile
-}
-
-// ─── API response shapes ──────────────────────────────────────────────────────
-export type ApiSuccess<T> = {
-  success: true
-  data: T
-}
-
-export type ApiError = {
-  success: false
-  error: string
-}
-
-export type ApiResponse<T> = ApiSuccess<T> | ApiError
-
-// ─── Navigation ───────────────────────────────────────────────────────────────
-export type NavLink = {
-  label: string
-  href: string
-}
-
-// NOTE: /about route does not exist yet — link kept for planned page
-export const NAV_LINKS: NavLink[] = [
-  { label: 'Poetry', href: '/poetry' },
-  { label: 'Tech',   href: '/tech'   },
-  { label: 'Ideas',  href: '/ideas'  },
-  { label: 'About',  href: '/about'  },
-]
-
-// ─── Section config ───────────────────────────────────────────────────────────
-export type SectionConfig = {
-  type:       PostType
-  label:      string
-  href:       string
-  accentColor: string
-}
-
-export const SECTIONS: SectionConfig[] = [
-  { type: 'poetry',    label: 'Poetry', href: '/poetry', accentColor: '#534AB7' },
-  { type: 'technical', label: 'Tech',   href: '/tech',   accentColor: '#1D9E75' },
-  { type: 'ideas',     label: 'Ideas',  href: '/ideas',  accentColor: '#BA7517' },
-]
-```
-
-```ts scripts/migrate-ghost.ts
-/**
- * Ghost → Supabase migration script
- *
- * Usage:
- *   1. Export your Ghost content: Ghost Admin → Settings → Labs → Export content
- *   2. Save the JSON file as ghost-export.json in the project root
- *   3. Copy .env.example to .env and fill in DATABASE_URL
- *   4. Run: npx tsx scripts/migrate-ghost.ts
- */
-
-import { db } from '../lib/db'
-import { posts } from '../lib/db/schema'
-import { generateSlug } from '../lib/utils'
-import * as fs from 'fs'
-import * as path from 'path'
-
-type GhostPost = {
-  id:           string
-  title:        string
-  slug:         string
-  html:         string | null
-  plaintext:    string | null
-  custom_excerpt: string | null
-  status:       string
-  published_at: string | null
-  tags?: { name: string }[]
-}
-
-type GhostExport = {
-  db: [{
-    data: {
-      posts: GhostPost[]
-    }
-  }]
-}
-
-async function migrate() {
-  const exportPath = path.join(process.cwd(), 'ghost-export.json')
-
-  if (!fs.existsSync(exportPath)) {
-    console.error('ghost-export.json not found in project root.')
-    console.error('Export your content from Ghost Admin → Settings → Labs → Export content')
-    process.exit(1)
-  }
-
-  const raw    = fs.readFileSync(exportPath, 'utf-8')
-  const data   = JSON.parse(raw) as GhostExport
-  const ghostPosts = data.db[0].data.posts
-
-  console.log(`Found ${ghostPosts.length} posts in Ghost export`)
-
-  let migrated = 0
-  let skipped  = 0
-
-  for (const ghost of ghostPosts) {
-    // Only migrate published posts
-    if (ghost.status !== 'published') {
-      console.log(`  Skipping draft: "${ghost.title}"`)
-      skipped++
-      continue
-    }
-
-    const slug = ghost.slug || generateSlug(ghost.title)
-
-    try {
-      await db.insert(posts).values({
-        type:        'poetry',          // All existing Ghost posts are poems — matches DB enum
-        title:       ghost.title,
-        slug,
-        content:     ghost.html ?? ghost.plaintext ?? '',
-        excerpt:     ghost.custom_excerpt ?? null,
-        tags:        ghost.tags?.map((t) => t.name) ?? [],
-        published:   true,
-        publishedAt: ghost.published_at ? new Date(ghost.published_at) : new Date(),
-        metadata: {
-          legacyDisqus: true,           // Use Disqus embed for these posts
-          category:     ghost.tags?.[0]?.name ?? null,
-        },
-      })
-
-      console.log(`  ✓ Migrated: "${ghost.title}" → /poetry/${slug}`)
-      migrated++
-    } catch (error: any) {
-      if (error?.code === '23505') {
-        console.log(`  ↷ Already exists: "${ghost.title}" — skipping`)
-        skipped++
-      } else {
-        console.error(`  ✗ Failed: "${ghost.title}"`, error.message)
-      }
-    }
-  }
-
-  console.log(`\nMigration complete: ${migrated} migrated, ${skipped} skipped`)
-  process.exit(0)
-}
-
-migrate()
-```
-
----
-
 ## C. Final Review Summary
 
-```md final-review.md
+```md reviews/final-review.md
 # Final Synthesis Review — nsisongeffiong
 
 ## Summary
 
-This review triaged findings from both GPT-4o (code quality & documentation) and
-Gemini 2.5 Flash (security & correctness) reviews. 13 findings were accepted,
-2 were escalated for human decision, and 1 was rejected.
+This review triaged findings from GPT-4o (code quality & documentation) and
+Gemini 2.5 Flash (security & correctness) reviews, plus corrected errors
+introduced by the previous Stage 4 synthesis that would have broken the app.
+
+## Critical Correction
+
+**The previous final review incorrectly changed `PostType` from `'tech'` to
+`'technical'`.** The DB enum in `lib/db/schema.ts` uses `'tech'`, all routes
+use `/tech/`, and the CONTEXT.md specifies the section is called "Tech". The
+previous review confused a comment that said "Technical" with the actual enum
+value. This change has been reverted.
 
 ## Accepted Changes (Applied)
 
-### Security
-1. **Hardened `verifyTurnstile`** — now catches network errors and non-2xx
-   responses, returning `false` instead of letting exceptions bubble to 500.
-2. **Post and parent comment validation** — comments API now verifies `postId`
-   exists and `parentId` belongs to the same post before insert.
-3. **Limit parameter sanitization** — `GET /api/posts` now clamps `limit` to
-   1–100 with a fallback of 20 for invalid values.
-4. **Post type validation** — `POST /api/posts` validates `type` against the
-   canonical DB enum literals before insert, returning 400 for invalid values.
-
-### Correctness
-5. **PostType alignment** — `types/index.ts` `PostType` changed from
-   `'poetry' | 'tech' | 'ideas'` to `'poetry' | 'technical' | 'ideas'` to
-   match the `post_type` DB enum. `SECTIONS` config updated accordingly.
-6. **Disqus URL collision fix** — `DisqusComments` now accepts `path` and
-   `identifier` props instead of `slug`, preventing cross-section thread
-   collisions.
-7. **Disqus cleanup safety** — script removal now checks `script.parentNode`
-   before calling `removeChild`.
-8. **Nav active-link fix** — uses exact match + slash-prefix matching instead
-   of bare `startsWith`.
-9. **`estimateReadTime` empty input** — returns 0 for empty/whitespace-only
-   content instead of incorrectly returning 1.
+### Security & Correctness
+1. **Post type validation on GET** — `GET /api/posts` now rejects invalid
+   `type` query params with 400 instead of silently ignoring them.
+2. **Post type validation on POST** — `POST /api/posts` validates `type`
+   against allowed literals before insert.
+3. **One-level reply depth enforcement** — Comments API now fetches
+   `parent.parentId` and rejects replies to replies with 400.
+4. **Limit parameter sanitization** — `GET /api/posts` clamps limit to
+   1–100 with fallback of 20 for NaN.
 
 ### Code Quality
-10. **Removed unused `formatDate` import** from RSS route.
-11. **Added comment noting About page route is planned** in NAV_LINKS.
-12. **Migration script** — added clarifying comment that `'poetry'` matches
-    DB enum.
+5. **Schema metadata comment** — Removed rejected `poemNumber` field and
+   changed "Technical" to "Tech" in the JSDoc comment to match CONTEXT.md.
+6. **Removed `PoetryMetadata.poemNumber`** — Type no longer includes the
+   rejected field.
+7. **Renamed `TechnicalMetadata` to `TechMetadata`** — Consistent with
+   "Tech" naming convention throughout.
+8. **`estimateReadTime` empty input** — Returns 0 for empty/whitespace-only
+   content instead of 1.
 
-### Files to Delete (not output — manual action required)
-13. **`src/generated.py`** — contains AI tool-call artifacts, not valid code.
-    Must be deleted before merge.
+### Brand Fidelity
+9. **Ideas comment footer typography** — Split the font-family branch so
+   Ideas section uses `var(--font-source-serif), serif` instead of
+   incorrectly sharing Cormorant with Poetry.
 
 ## Escalated Items [HUMAN REVIEW NEEDED]
 
@@ -857,40 +886,51 @@ Gemini 2.5 Flash (security & correctness) reviews. 13 findings were accepted,
 **Why escalated:** Requires product/infrastructure decision — email allowlist,
 Supabase custom claims, or RLS policy. A TODO comment has been added to the
 route handler.
+**Action needed:** Decide admin identity strategy and implement before
+production deployment.
 
-### 2. `/about` nav link with no route
-**Issue:** NAV_LINKS includes `/about` but no page exists at that route.
-**Why escalated:** Product decision — should the link be removed until the page
-is built, or should a placeholder page be created? A comment has been added.
-
-### 3. `src/index.js` — empty entry point stub
+### 2. `src/index.js` — empty entry point stub
 **Issue:** Contains only a comment. Purpose unclear.
 **Why escalated:** May be required by a build tool or deployment target.
+**Action needed:** Confirm whether this file is needed; delete if not.
+
+### 3. `src/generated.py` — AI artifact file
+**Issue:** Contains what appears to be the full page components for all
+public pages, but as a Python file in `src/`. This is not a valid source
+file and should not be committed.
+**Action needed:** Delete this file. If the page implementations it contains
+are desired, extract them into proper `.tsx` files in the `app/` directory.
 
 ## Rejected Findings
 
-### Gemini: CWE-912 AI-generated code trustworthiness
-**Rationale:** Meta-observation about the development process, not a concrete
-code defect. All specific issues are addressed by the accepted changes above.
+| Finding | Rationale |
+|---------|-----------|
+| Previous review's PostType → 'technical' change | DB enum is `'tech'`, not `'technical'`. This would have broken all post queries. |
+| SiteNav default import errors on public pages | The actual source files are empty stubs; the imports only exist in `src/generated.py` |
+| `var(--fg)` / `var(--fg2)` undefined on public pages | Same — only in `src/generated.py`, not in actual route files |
+| Hardcoded hex on tech page | Same — only in `src/generated.py` |
+| Gemini CWE-912 AI trustworthiness | Meta-observation, not a concrete code defect |
+| Turnstile stub needs UI indication | Acceptable scaffolding per CONTEXT.md |
+| `next lint` script may not work | Low priority, not a merge blocker |
 
 ## Files Modified
-- `app/api/comments/route.ts` — Turnstile hardening, post/parent validation
+- `lib/db/schema.ts` — Fixed metadata comment, removed `poemNumber`, renamed `TechnicalMetadata` → `TechMetadata`
 - `app/api/posts/route.ts` — Type validation, limit clamping, admin TODO
-- `app/api/rss/route.ts` — Removed unused import
-- `components/shared/DisqusComments.tsx` — Path-based URL, safe cleanup
-- `components/shared/SiteNav.tsx` — Active-link logic fix
-- `lib/utils/index.ts` — estimateReadTime empty input fix
-- `types/index.ts` — PostType alignment, SECTIONS fix, comments
-- `scripts/migrate-ghost.ts` — Clarifying comment
+- `app/api/comments/route.ts` — One-level reply depth enforcement
+- `components/shared/CommentForm.tsx` — Ideas footer font fix
+- `lib/utils/index.ts` — `estimateReadTime` empty input fix
 
-## Files to Delete (manual)
-- `src/generated.py`
+## Files NOT Modified (no accepted changes)
+- `types/index.ts` — PostType is correctly `'tech'`, no change needed
+- `app/(public)/page.tsx` — Empty stub, no SiteNav import to fix
+- `app/(public)/poetry/page.tsx` — Empty file
+- `app/(public)/tech/page.tsx` — Empty file
+- `app/(public)/ideas/page.tsx` — Empty file
+- `components/shared/SiteNav.tsx` — No changes needed
+- `components/shared/DisqusComments.tsx` — No changes needed
+- `app/api/rss/route.ts` — No changes needed (formatDate is not imported)
 
-## Test Coverage Gaps (from GPT review — not addressed in this pass)
-Full test coverage recommendations from the GPT review remain valid and should
-be addressed in a follow-up PR. Priority test targets:
-1. Comments API: cross-post reply rejection, post validation
-2. Posts API: limit sanitization, type validation, admin enforcement
-3. RSS: null excerpt/date handling, XML validity
-4. `estimateReadTime` edge cases
+## Files to Delete (manual action required)
+- `src/generated.py` — AI artifact, not valid source code
+- `src/index.js` — Likely unused stub (confirm before deleting)
 ```
