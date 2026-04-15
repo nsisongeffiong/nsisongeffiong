@@ -114,7 +114,7 @@ async function migrate() {
         tags:        ghost.tags?.map((t) => t.name) ?? [],
         published:   ghost.status === 'published',
         publishedAt: ghost.published_at ? new Date(ghost.published_at) : null,
-        metadata: {
+        metadata: ({
           legacyDisqus:  true,
           category:      ghost.tags?.[0]?.name ?? undefined,
           // Author metadata
@@ -123,6 +123,7 @@ async function migrate() {
           // All authors if guest post
           authors:       authorsMeta.length > 0 ? authorsMeta : undefined,
           isGuestPost:   primaryAuthor?.slug !== 'nsisong' && primaryAuthor !== undefined,
+        } as any),
         },
       })
 
