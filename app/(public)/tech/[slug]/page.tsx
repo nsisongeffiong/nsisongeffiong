@@ -736,7 +736,7 @@ export default function TechSinglePage() {
           </div>
 
           {/* comment form */}
-          <CommentForm section="tech" />
+          <CommentForm postId={post.id} section="tech" />
         </section>
       </main>
     </>
