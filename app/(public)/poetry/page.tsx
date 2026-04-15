@@ -1,4 +1,9 @@
-import { SiteNav } from '@/components/shared/SiteNav';
+export const dynamic = 'force-dynamic'
+
+import { SiteNav } from '@/components/shared/SiteNav'
+import { db } from '@/lib/db'
+import { posts } from '@/lib/db/schema'
+import { desc, eq, and } from 'drizzle-orm'
 
 const categories = [
   'All',
@@ -7,49 +12,27 @@ const categories = [
   'Language & form',
   'Grief',
   'Politics',
-];
+]
 
-const featuredPoem = {
-  title: 'The River Remembers',
-  excerpt:
-    'A meditation on how water holds the stories we drop into it — the baptisms, the crossings, the names spoken once and carried downstream forever.',
-  verse: `The river remembers what the mouth forgets—\nhow your name tasted before the renaming,\nhow the current held you\nthe way a vowel holds breath\nbefore it breaks into song.`,
-  category: 'Memory',
-  date: '2024-12-15',
-};
+export default async function PoetryPage() {
+  const poems = await db
+    .select({
+      id:          posts.id,
+      title:       posts.title,
+      slug:        posts.slug,
+      excerpt:     posts.excerpt,
+      tags:        posts.tags,
+      publishedAt: posts.publishedAt,
+      metadata:    posts.metadata,
+      content:     posts.content,
+    })
+    .from(posts)
+    .where(and(eq(posts.published, true), eq(posts.type, 'poetry')))
+    .orderBy(desc(posts.publishedAt))
 
-const poems = [
-  {
-    title: 'Cartography of Silence',
-    excerpt:
-      'Where the map ends, the body begins — tracing the borders that no surveyor drew.',
-    date: '2024-11-28',
-    category: 'Nature & place',
-  },
-  {
-    title: 'After the Rains',
-    excerpt:
-      'What remains when the storm has spoken — the grammar of wet earth and unfinished prayer.',
-    date: '2024-11-10',
-    category: 'Grief',
-  },
-  {
-    title: 'Syntax of Return',
-    excerpt:
-      'A poem about coming home to a language that no longer fits the mouth that left.',
-    date: '2024-10-22',
-    category: 'Language & form',
-  },
-  {
-    title: 'The Weight of Provinces',
-    excerpt:
-      'On borders drawn with rulers on tables far from the land they divided.',
-    date: '2024-10-05',
-    category: 'Politics',
-  },
-];
+  const featured = poems[0]
+  const rest     = poems.slice(1)
 
-export default function PoetryPage() {
   return (
     <div
       style={{
@@ -135,108 +118,119 @@ export default function PoetryPage() {
       </nav>
 
       {/* ── Featured Poem ── */}
-      <section
-        style={{
-          maxWidth: '960px',
-          margin: '0 auto',
-          padding: '0 1.5rem 4rem',
-        }}
-      >
-        <div
+      {featured && (
+        <section
           style={{
-            background: 'var(--bg2)',
-            padding: '2.5rem',
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '2.5rem',
+            maxWidth: '960px',
+            margin: '0 auto',
+            padding: '0 1.5rem 4rem',
           }}
         >
-          {/* Left: Title & excerpt */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              gap: '1rem',
-            }}
+          <a
+            href={`/poetry/${featured.slug}`}
+            style={{ textDecoration: 'none', color: 'inherit' }}
           >
-            <span
+            <div
               style={{
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.65rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                color: 'var(--purple-acc)',
+                background: 'var(--bg2)',
+                padding: '2.5rem',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '2.5rem',
               }}
             >
-              Featured
-            </span>
-            <h2
-              style={{
-                fontFamily: 'var(--font-cormorant), serif',
-                fontStyle: 'italic',
-                fontWeight: 300,
-                fontSize: '2rem',
-                lineHeight: 1.15,
-                color: 'var(--txt)',
-              }}
-            >
-              {featuredPoem.title}
-            </h2>
-            <p
-              style={{
-                fontFamily: 'var(--font-cormorant), serif',
-                fontStyle: 'italic',
-                fontWeight: 300,
-                fontSize: '1rem',
-                lineHeight: 1.7,
-                color: 'var(--txt-secondary)',
-              }}
-            >
-              {featuredPoem.excerpt}
-            </p>
-            <span
-              style={{
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.65rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'var(--purple-acc)',
-                border: '1px solid var(--purple-acc)',
-                padding: '0.15rem 0.5rem',
-                borderRadius: '2px',
-                alignSelf: 'flex-start',
-              }}
-            >
-              {featuredPoem.category}
-            </span>
-          </div>
+              {/* Left: Title & excerpt */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  gap: '1rem',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '0.65rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    color: 'var(--purple-acc)',
+                  }}
+                >
+                  Featured
+                </span>
+                <h2
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic',
+                    fontWeight: 300,
+                    fontSize: '2rem',
+                    lineHeight: 1.15,
+                    color: 'var(--txt)',
+                  }}
+                >
+                  {featured.title}
+                </h2>
+                {featured.excerpt && (
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-cormorant), serif',
+                      fontStyle: 'italic',
+                      fontWeight: 300,
+                      fontSize: '1rem',
+                      lineHeight: 1.7,
+                      color: 'var(--txt-secondary)',
+                    }}
+                  >
+                    {featured.excerpt}
+                  </p>
+                )}
+                {featured.tags?.[0] && (
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-dm-mono), monospace',
+                      fontSize: '0.65rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      color: 'var(--purple-acc)',
+                      border: '1px solid var(--purple-acc)',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '2px',
+                      alignSelf: 'flex-start',
+                    }}
+                  >
+                    {featured.tags[0]}
+                  </span>
+                )}
+              </div>
 
-          {/* Right: Verse excerpt */}
-          <div
-            style={{
-              borderLeft: '3px solid var(--purple-acc)',
-              paddingLeft: '1.5rem',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <p
-              style={{
-                fontFamily: 'var(--font-cormorant), serif',
-                fontStyle: 'italic',
-                fontWeight: 300,
-                fontSize: '1.1rem',
-                lineHeight: 1.9,
-                color: 'var(--txt)',
-                whiteSpace: 'pre-line',
-              }}
-            >
-              {featuredPoem.verse}
-            </p>
-          </div>
-        </div>
-      </section>
+              {/* Right: Verse excerpt from content */}
+              <div
+                style={{
+                  borderLeft: '3px solid var(--purple-acc)',
+                  paddingLeft: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic',
+                    fontWeight: 300,
+                    fontSize: '1.1rem',
+                    lineHeight: 1.9,
+                    color: 'var(--txt)',
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: featured.content?.slice(0, 400) ?? '',
+                  }}
+                />
+              </div>
+            </div>
+          </a>
+        </section>
+      )}
 
       {/* ── Poem Card Grid ── */}
       <section
@@ -249,9 +243,9 @@ export default function PoetryPage() {
           gap: '2.5rem',
         }}
       >
-        {poems.map((poem) => (
+        {rest.map((poem) => (
           <article
-            key={poem.title}
+            key={poem.id}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -260,7 +254,6 @@ export default function PoetryPage() {
               borderBottom: '0.5px solid var(--bdr)',
             }}
           >
-            {/* Ornamental dots */}
             <span
               style={{
                 fontFamily: 'var(--font-cormorant), serif',
@@ -284,24 +277,26 @@ export default function PoetryPage() {
               }}
             >
               <a
-                href={`/poetry/${poem.title.toLowerCase().replace(/ /g, '-')}`}
+                href={`/poetry/${poem.slug}`}
                 style={{ color: 'inherit', textDecoration: 'none' }}
               >
                 {poem.title}
               </a>
             </h3>
-            <p
-              style={{
-                fontFamily: 'var(--font-cormorant), serif',
-                fontStyle: 'italic',
-                fontWeight: 300,
-                fontSize: '1rem',
-                lineHeight: 1.7,
-                color: 'var(--txt-secondary)',
-              }}
-            >
-              {poem.excerpt}
-            </p>
+            {poem.excerpt && (
+              <p
+                style={{
+                  fontFamily: 'var(--font-cormorant), serif',
+                  fontStyle: 'italic',
+                  fontWeight: 300,
+                  fontSize: '1rem',
+                  lineHeight: 1.7,
+                  color: 'var(--txt-secondary)',
+                }}
+              >
+                {poem.excerpt}
+              </p>
+            )}
             <div
               style={{
                 display: 'flex',
@@ -310,38 +305,42 @@ export default function PoetryPage() {
                 marginTop: 'auto',
               }}
             >
-              <time
-                style={{
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.7rem',
-                  color: 'var(--txt-secondary)',
-                }}
-                dateTime={poem.date}
-              >
-                {new Date(poem.date).toLocaleDateString('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </time>
-              <span
-                style={{
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.65rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'var(--purple-acc)',
-                  border: '1px solid var(--purple-acc)',
-                  padding: '0.15rem 0.5rem',
-                  borderRadius: '2px',
-                }}
-              >
-                {poem.category}
-              </span>
+              {poem.publishedAt && (
+                <time
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '0.7rem',
+                    color: 'var(--txt-secondary)',
+                  }}
+                  dateTime={poem.publishedAt.toISOString()}
+                >
+                  {poem.publishedAt.toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </time>
+              )}
+              {poem.tags?.[0] && (
+                <span
+                  style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '0.65rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'var(--purple-acc)',
+                    border: '1px solid var(--purple-acc)',
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: '2px',
+                  }}
+                >
+                  {poem.tags[0]}
+                </span>
+              )}
             </div>
           </article>
         ))}
       </section>
     </div>
-  );
+  )
 }
