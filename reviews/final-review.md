@@ -1,44 +1,24 @@
-Looking at the full source code alongside both reviews, I need to carefully triage every finding, apply accepted changes, and produce the final review.
+Looking at the source code alongside both reviews and the previous final review, I need to carefully verify what's already been fixed and what still needs attention.
 
 ## A. Triage of All Findings
 
-### GPT Review Findings
-
 | # | Finding | Decision | Rationale |
 |---|---------|----------|-----------|
-| G1 | Admin-only post creation not enforced | **ESCALATE** | Critical security. Both reviewers flagged. Requires product decision on admin identity strategy. |
-| G2 | `window.turnstileToken` — no Turnstile widget rendered | **REJECT** | Known incomplete integration. The guard works correctly. Turnstile widget will be added when the feature is fully implemented. The `declare global` is already present in source. |
-| G3 | Hardcoded `#E1F5EE` in tech/[slug] hero title | **ACCEPT** | Violates brand rule "Never use hardcoded hex values." `#E1F5EE` matches `--teal-pale` in light mode. Should use `var(--teal-pale)`. |
-| G4 | Hardcoded `#9FE1CB` in tech/[slug] code blocks | **REJECT** | Per CONTEXT.md Tech section rules: "code blocks in dark green" and `prompts/claude_coder.md` explicitly says "colour `#9FE1CB`" for Tech submit button and code. This is an intentional brand decision for the teal-hero background context where CSS variables would resolve to wrong values in dark mode. The hero background is always `--teal-hero`, and the text on it needs to be the specific light teal. |
-| G5 | `app/globals.css` `.tiptap pre` uses `color: #9FE1CB` | **REJECT** | Same rationale as G4. Tiptap code blocks use `--teal-hero` background with `#9FE1CB` text — this is the Tech section's fixed code block styling, matching brand spec. |
-| G6 | `var(--color-text-danger)` undefined in admin login | **ACCEPT** | Clear bug. `--color-text-danger` is not defined. `--danger` is. |
-| G7 | `/about` nav link is dead | **ACCEPT** | Dead link harms UX. Remove until route exists. |
-| G8 | `next lint` incompatibility with ESLint 9 | **REJECT** | Low priority, not a merge blocker. Works in current setup. |
-| G9 | `next@15.0.0` has security vulnerability | **ESCALATE** | Package upgrade requires testing. Not a code change. |
-| G10 | De-duplicate local `slugify` in tech/[slug] | **ACCEPT** | Good hygiene. Avoids divergent slug behavior. |
-| G11 | Replace `window.turnstileToken` with component state + widget | **REJECT** | Premature. Turnstile integration is explicitly marked as incomplete. Current architecture allows external script injection. |
-
-### Gemini Review Findings
-
-| # | Finding | Decision | Rationale |
-|---|---------|----------|-----------|
+| G1 | Admin-only post creation not enforced (`POST /api/posts`) | **ESCALATE** | Critical security gap. Both reviewers flagged. Requires product decision on admin identity strategy. Code has TODO comment acknowledging it. |
+| G2 | `window.turnstileToken` — no Turnstile widget rendered | **REJECT** | Known incomplete feature. The guard logic is correct. Widget integration is a separate task. |
+| G3 | Hardcoded `#E1F5EE` in tech/[slug] hero title | **ACCEPT** | Violates brand rule. `#E1F5EE` matches `--teal-pale` in light mode. Replace with `var(--teal-pale)`. |
+| G4 | Hardcoded `#9FE1CB` in tech/[slug] code blocks | **ACCEPT** | Violates the explicit project rule "Never use hardcoded hex values in component styles." Replace with `var(--teal-light)` which resolves to `#9FE1CB` in dark mode and `#5DCAA5` in light — both appropriate on `--teal-hero` backgrounds. |
+| G5 | `app/globals.css` `.tiptap pre` uses `#9FE1CB` | **ACCEPT** | Same rule violation as G4. Replace with `var(--teal-light)`. |
+| G6 | Admin login error color `var(--danger)` | **REJECT** | Checking source: the current code already uses `color: 'var(--danger)'` which IS defined. No bug exists. Previous review already noted this was correct. |
+| G7 | Dead `/about` nav link | **REJECT** | Checking source: `NAV_LINKS` in `types/index.ts` does NOT contain an `/about` entry. It only has Poetry, Tech, Ideas. No dead link exists. |
+| G8 | `next lint` incompatibility | **REJECT** | Low priority, not a merge blocker. |
+| G9 | `next@15.0.0` security vulnerability | **ESCALATE** | Package upgrade, not a code change. Requires testing. |
+| G10 | De-duplicate local `slugify` in tech/[slug] | **ACCEPT** | Good hygiene. Local `slugify` diverges from `generateSlug`. |
+| G11 | Replace `window.turnstileToken` with component state | **REJECT** | Premature for incomplete feature. |
+| G12 | Improve admin login catch block error message | **REJECT** | Current behavior is acceptable for a login form. Distinguishing network vs auth errors can leak information. |
+| G13 | Poetry comment count drift (`post.commentCount` hardcoded 3) | **ACCEPT** | Should derive from rendered data like ideas page does. |
+| G14 | `dangerouslySetInnerHTML` in ideas/[slug] | **REJECT** | Current content is hardcoded placeholder. XSS concern is valid for future DB-backed content but not actionable now. |
 | Gem1 | Broken Access Control on POST /api/posts | **ESCALATE** | Same as G1. |
-
-### Previous Final Review Findings (from `reviews/final-review.md`)
-
-| # | Finding | Decision | Rationale |
-|---|---------|----------|-----------|
-| P1 | Turnstile sends JSON instead of form-encoded | **ACCEPT** | Looking at actual source code, `verifyTurnstile` already uses `URLSearchParams` with `application/x-www-form-urlencoded`. This was already correct. No change needed. |
-| P2 | RSS CDATA `]]>` escaping | **ACCEPT** | Already implemented in source with `toCdataSafe`. No change needed. |
-| P3 | Migration script exit code | **ACCEPT** | Already implemented in source with `process.exit(failed > 0 ? 1 : 0)`. No change needed. |
-| P4 | Typed `window.turnstileToken` | **ACCEPT** | Already has `declare global` in source. No change needed. |
-
-So the previous review already applied several fixes that are present in the current source. The remaining actionable items are:
-
-1. **G3** — Hardcoded `#E1F5EE` → `var(--teal-pale)` in tech hero title
-2. **G6** — `var(--color-text-danger)` → `var(--danger)` in admin login
-3. **G7** — Remove `/about` from NAV_LINKS
-4. **G10** — Replace local `slugify` with `generateSlug` import
 
 ## B. Corrected Files
 
@@ -784,363 +764,799 @@ export default function TechSinglePage() {
 }
 ```
 
-```tsx app/admin/login/page.tsx
-'use client'
+```tsx app/(public)/poetry/[slug]/page.tsx
+import { SiteNav } from '@/components/shared/SiteNav';
+import { DisqusComments } from '@/components/shared/DisqusComments';
+import { CommentForm } from '@/components/shared/CommentForm';
+import Link from 'next/link';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+/* ── static placeholder data ── */
+const post = {
+  id: 'placeholder-id',
+  slug: 'the-weight-of-morning',
+  title: 'The Weight of Morning',
+  category: 'Lyric',
+  author: 'Nsisong Effiong',
+  date: '12 March 2024',
+  metadata: {
+    legacyDisqus: false,
+  },
+  stanzas: [
+    {
+      lines: [
+        { text: 'I woke to the weight of morning,', indent: 0 },
+        { text: 'the light a slow persuasion', indent: 0 },
+        { text: 'pressing through curtains drawn', indent: 1 },
+        { text: 'against forgetting.', indent: 2 },
+      ],
+    },
+    {
+      lines: [
+        { text: 'There is a name for this hour—', indent: 0 },
+        { text: 'the one the body remembers', indent: 0 },
+        { text: 'before the mind agrees to rise,', indent: 1 },
+        { text: 'before language finds its feet.', indent: 1 },
+      ],
+    },
+    {
+      lines: [
+        { text: 'I held the silence like a bowl,', indent: 0 },
+        { text: 'careful not to spill', indent: 1 },
+        { text: 'the little water left.', indent: 2 },
+      ],
+    },
+  ],
+  poetsNote:
+    'This poem began as a journal entry on a morning in Lagos when the power had been out for two days. I was thinking about how the body carries its own clock, separate from alarms and obligations—how waking is itself an act of faith.',
+};
 
-export default function AdminLoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+const prevPost = {
+  slug: 'estuary',
+  title: 'Estuary',
+};
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+const nextPost = {
+  slug: 'letter-to-a-stranger',
+  title: 'Letter to a Stranger',
+};
 
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
+const comments: Array<{
+  id: string;
+  name: string;
+  date: string;
+  body: string;
+  replies: Array<{ id: string; name: string; date: string; body: string }>;
+}> = [
+  {
+    id: '1',
+    name: 'Adaeze',
+    date: '13 Mar 2024',
+    body: 'The image of holding silence like a bowl—careful not to spill—stayed with me all afternoon.',
+    replies: [
+      {
+        id: '1a',
+        name: 'Nsisong',
+        date: '14 Mar 2024',
+        body: 'Thank you, Adaeze. That image surprised me too when it arrived.',
+      },
+    ],
+  },
+  {
+    id: '2',
+    name: 'Tunde',
+    date: '15 Mar 2024',
+    body: 'I keep returning to the second stanza. "Before language finds its feet" is a line I wish I had written.',
+    replies: [],
+  },
+];
 
-      const data = await res.json()
+export default function PoetrySinglePage() {
+  const commentCount = comments.reduce(
+    (acc, c) => acc + 1 + c.replies.length,
+    0,
+  );
 
-      if (data.success === true) {
-        router.push('/admin/dashboard')
-      } else {
-        setError(data.error || 'Invalid credentials')
-      }
-    } catch {
-      setError('Invalid credentials')
-    } finally {
-      setLoading(false)
-    }
-  }
+  return (
+    <>
+      <SiteNav />
 
+      <main
+        style={{
+          fontFamily: 'var(--font-cormorant), serif',
+          color: 'var(--txt)',
+          background: 'var(--bg)',
+          minHeight: '100vh',
+        }}
+      >
+        {/* ── back link ── */}
+        <div
+          style={{
+            maxWidth: 580,
+            margin: '0 auto',
+            padding: '2rem 1.5rem 0',
+          }}
+        >
+          <Link
+            href="/poetry"
+            style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontStyle: 'italic',
+              fontSize: '0.95rem',
+              color: 'var(--txt2)',
+              textDecoration: 'none',
+            }}
+          >
+            ← Poetry
+          </Link>
+        </div>
+
+        {/* ── header ── */}
+        <header
+          style={{
+            maxWidth: 580,
+            margin: '0 auto',
+            padding: '2.5rem 1.5rem 0',
+            textAlign: 'center',
+          }}
+        >
+          {/* category tag */}
+          <span
+            style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontSize: '0.7rem',
+              fontVariant: 'all-small-caps',
+              letterSpacing: '0.14em',
+              color: 'var(--purple-acc)',
+              textTransform: 'uppercase',
+            }}
+          >
+            {post.category}
+          </span>
+
+          {/* title */}
+          <h1
+            style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontStyle: 'italic',
+              fontWeight: 300,
+              fontSize: '3.375rem',
+              lineHeight: 1.1,
+              margin: '0.75rem 0 1rem',
+              color: 'var(--txt)',
+            }}
+          >
+            {post.title}
+          </h1>
+
+          {/* meta */}
+          <div
+            style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontStyle: 'italic',
+              fontSize: '0.9rem',
+              color: 'var(--txt2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <span>{post.author}</span>
+            <span
+              style={{
+                display: 'inline-block',
+                width: 4,
+                height: 4,
+                borderRadius: '50%',
+                background: 'var(--purple-acc)',
+              }}
+            />
+            <span>{post.date}</span>
+          </div>
+        </header>
+
+        {/* ── ornamental rule ── */}
+        <OrnamentalRule />
+
+        {/* ── poem body ── */}
+        <article
+          style={{
+            maxWidth: 440,
+            margin: '0 auto',
+            padding: '0 1.5rem',
+          }}
+        >
+          {post.stanzas.map((stanza, si) => (
+            <div
+              key={si}
+              style={{
+                marginBottom: '2rem',
+                textAlign: 'center',
+              }}
+            >
+              {stanza.lines.map((line, li) => (
+                <span
+                  key={li}
+                  style={{
+                    display: 'block',
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic',
+                    fontWeight: 300,
+                    fontSize: '1.15rem',
+                    lineHeight: 2,
+                    paddingLeft: line.indent > 0 ? `${line.indent * 2}em` : undefined,
+                  }}
+                >
+                  {line.text}
+                </span>
+              ))}
+            </div>
+          ))}
+        </article>
+
+        {/* ── end mark ── */}
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '1rem 0 2.5rem',
+            fontFamily: 'var(--font-cormorant), serif',
+            fontSize: '1.25rem',
+            color: 'var(--purple-acc)',
+            letterSpacing: '0.3em',
+          }}
+        >
+          · · ·
+        </div>
+
+        {/* ── poet's note ── */}
+        {post.poetsNote && (
+          <section
+            style={{
+              maxWidth: 440,
+              margin: '0 auto',
+              padding: '0 1.5rem 2.5rem',
+            }}
+          >
+            <hr
+              style={{
+                border: 'none',
+                borderTop: '0.5px solid var(--bdr2)',
+                margin: '0 0 1.25rem',
+              }}
+            />
+            <span
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontSize: '0.65rem',
+                fontVariant: 'all-small-caps',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'var(--txt3)',
+                display: 'block',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Poet&rsquo;s note
+            </span>
+            <p
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontStyle: 'italic',
+                fontWeight: 300,
+                fontSize: '0.95rem',
+                lineHeight: 1.75,
+                color: 'var(--txt2)',
+                margin: 0,
+              }}
+            >
+              {post.poetsNote}
+            </p>
+          </section>
+        )}
+
+        {/* ── prev / next navigation ── */}
+        <nav
+          style={{
+            maxWidth: 580,
+            margin: '0 auto',
+            padding: '0 1.5rem 2.5rem',
+          }}
+        >
+          <hr
+            style={{
+              border: 'none',
+              borderTop: '0.5px solid var(--bdr2)',
+              margin: '0 0 1.5rem',
+            }}
+          />
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+            }}
+          >
+            {prevPost ? (
+              <Link
+                href={`/poetry/${prevPost.slug}`}
+                style={{
+                  textDecoration: 'none',
+                  textAlign: 'left',
+                  maxWidth: '45%',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontSize: '0.65rem',
+                    fontVariant: 'all-small-caps',
+                    letterSpacing: '0.12em',
+                    color: 'var(--txt3)',
+                    display: 'block',
+                    marginBottom: '0.25rem',
+                  }}
+                >
+                  Previous
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic',
+                    fontWeight: 300,
+                    fontSize: '1.1rem',
+                    color: 'var(--txt)',
+                  }}
+                >
+                  {prevPost.title}
+                </span>
+              </Link>
+            ) : (
+              <span />
+            )}
+            {nextPost ? (
+              <Link
+                href={`/poetry/${nextPost.slug}`}
+                style={{
+                  textDecoration: 'none',
+                  textAlign: 'right',
+                  maxWidth: '45%',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontSize: '0.65rem',
+                    fontVariant: 'all-small-caps',
+                    letterSpacing: '0.12em',
+                    color: 'var(--txt3)',
+                    display: 'block',
+                    marginBottom: '0.25rem',
+                  }}
+                >
+                  Next
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic',
+                    fontWeight: 300,
+                    fontSize: '1.1rem',
+                    color: 'var(--txt)',
+                  }}
+                >
+                  {nextPost.title}
+                </span>
+              </Link>
+            ) : (
+              <span />
+            )}
+          </div>
+        </nav>
+
+        {/* ── comments section ── */}
+        <section
+          style={{
+            maxWidth: 580,
+            margin: '0 auto',
+            padding: '0 1.5rem 4rem',
+          }}
+        >
+          {/* ornamental rule above comments */}
+          <OrnamentalRule />
+
+          {/* count label */}
+          <div
+            style={{
+              textAlign: 'center',
+              marginBottom: '2rem',
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontSize: '0.65rem',
+                fontVariant: 'all-small-caps',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'var(--txt3)',
+              }}
+            >
+              {commentCount} responses
+            </span>
+          </div>
+
+          {/* comments list */}
+          <div style={{ marginBottom: '2.5rem' }}>
+            {comments.map((comment) => (
+              <div key={comment.id} style={{ marginBottom: '1.75rem' }}>
+                <div style={{ marginBottom: '0.25rem' }}>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-cormorant), serif',
+                      fontStyle: 'italic',
+                      fontWeight: 600,
+                      fontSize: '0.95rem',
+                      color: 'var(--txt)',
+                    }}
+                  >
+                    {comment.name}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-cormorant), serif',
+                      fontStyle: 'italic',
+                      fontSize: '0.8rem',
+                      color: 'var(--txt3)',
+                      marginLeft: '0.75rem',
+                    }}
+                  >
+                    {comment.date}
+                  </span>
+                </div>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic',
+                    fontWeight: 300,
+                    fontSize: '0.95rem',
+                    lineHeight: 1.7,
+                    color: 'var(--txt2)',
+                    margin: '0.25rem 0 0',
+                  }}
+                >
+                  {comment.body}
+                </p>
+
+                {/* replies */}
+                {comment.replies.length > 0 && (
+                  <div style={{ marginTop: '1rem', paddingLeft: '1.5rem' }}>
+                    {comment.replies.map((reply) => (
+                      <div
+                        key={reply.id}
+                        style={{
+                          borderLeft: '1px solid var(--purple-acc)',
+                          paddingLeft: '1rem',
+                          marginBottom: '1rem',
+                        }}
+                      >
+                        <div style={{ marginBottom: '0.25rem' }}>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-cormorant), serif',
+                              fontStyle: 'italic',
+                              fontWeight: 600,
+                              fontSize: '0.9rem',
+                              color: 'var(--txt)',
+                            }}
+                          >
+                            {reply.name}
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-cormorant), serif',
+                              fontStyle: 'italic',
+                              fontSize: '0.75rem',
+                              color: 'var(--txt3)',
+                              marginLeft: '0.75rem',
+                            }}
+                          >
+                            {reply.date}
+                          </span>
+                        </div>
+                        <p
+                          style={{
+                            fontFamily: 'var(--font-cormorant), serif',
+                            fontStyle: 'italic',
+                            fontWeight: 300,
+                            fontSize: '0.9rem',
+                            lineHeight: 1.7,
+                            color: 'var(--txt2)',
+                            margin: 0,
+                          }}
+                        >
+                          {reply.body}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* comment form or disqus */}
+          {post.metadata.legacyDisqus ? (
+            <DisqusComments slug={post.slug} title={post.title} path={`/poetry/${post.slug}`} />
+          ) : (
+            <CommentForm postId={post.id} section="poetry" />
+          )}
+        </section>
+      </main>
+    </>
+  );
+}
+
+/* ── ornamental rule component ── */
+function OrnamentalRule() {
   return (
     <div
       style={{
-        minHeight: '100vh',
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'var(--bg2)',
+        gap: '1rem',
+        maxWidth: 580,
+        margin: '2rem auto',
+        padding: '0 1.5rem',
       }}
     >
-      <form
-        onSubmit={handleSubmit}
+      <span
         style={{
-          background: 'var(--bg)',
-          border: '0.5px solid var(--bdr)',
-          borderRadius: '4px',
-          padding: '2.5rem',
-          maxWidth: '400px',
-          width: '100%',
+          flex: 1,
+          height: '0.5px',
+          background: 'var(--bdr2)',
         }}
-      >
-        <a
-          href="/"
-          style={{
-            fontFamily: 'var(--font-cormorant), serif',
-            fontSize: '20px',
-            fontStyle: 'italic',
-            color: 'var(--txt)',
-            textDecoration: 'none',
-            display: 'block',
-            textAlign: 'center',
-            marginBottom: '0.5rem',
-          }}
-        >
-          nsisongeffiong.com
-        </a>
-
-        <span
-          style={{
-            fontFamily: 'var(--font-dm-mono), monospace',
-            fontSize: '10px',
-            letterSpacing: '0.16em',
-            textTransform: 'uppercase',
-            color: 'var(--txt3)',
-            display: 'block',
-            textAlign: 'center',
-            marginBottom: '1.5rem',
-          }}
-        >
-          Admin
-        </span>
-
-        <hr
-          style={{
-            width: '100%',
-            height: '0.5px',
-            background: 'var(--bdr)',
-            marginBottom: '1.5rem',
-            border: 'none',
-          }}
-        />
-
-        <div style={{ marginBottom: '1rem' }}>
-          <label
-            htmlFor="email"
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '10px',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--txt3)',
-              display: 'block',
-              marginBottom: '0.4rem',
-            }}
-          >
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{
-              width: '100%',
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '13px',
-              padding: '0.6rem 0.75rem',
-              border: '0.5px solid var(--bdr2)',
-              borderRadius: '3px',
-              background: 'var(--bg2)',
-              color: 'var(--txt)',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label
-            htmlFor="password"
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '10px',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--txt3)',
-              display: 'block',
-              marginBottom: '0.4rem',
-            }}
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{
-              width: '100%',
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '13px',
-              padding: '0.6rem 0.75rem',
-              border: '0.5px solid var(--bdr2)',
-              borderRadius: '3px',
-              background: 'var(--bg2)',
-              color: 'var(--txt)',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
-        </div>
-
-        {error && (
-          <p
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '11px',
-              color: 'var(--danger)',
-              marginBottom: '1rem',
-            }}
-          >
-            {error}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: '100%',
-            fontFamily: 'var(--font-dm-mono), monospace',
-            fontSize: '11px',
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            background: 'var(--teal-hero)',
-            color: 'var(--teal-light)',
-            border: 'none',
-            padding: '0.75rem',
-            borderRadius: '3px',
-            cursor: 'pointer',
-            opacity: loading ? 0.6 : 1,
-          }}
-        >
-          {loading ? '...' : 'Sign in'}
-        </button>
-      </form>
+      />
+      <span
+        style={{
+          display: 'inline-block',
+          width: 5,
+          height: 5,
+          borderRadius: '50%',
+          background: 'var(--purple-acc)',
+        }}
+      />
+      <span
+        style={{
+          flex: 1,
+          height: '0.5px',
+          background: 'var(--bdr2)',
+        }}
+      />
     </div>
-  )
+  );
 }
 ```
 
-```ts types/index.ts
-import type { Post, Comment, PostMetadata } from '@/lib/db/schema'
+```css app/globals.css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-// ─── Re-export DB types ───────────────────────────────────────────────────────
-export type { Post, Comment, PostMetadata }
+/* ─── Light mode tokens ──────────────────────────────────────────────────────── */
+:root {
+  --bg:          #F7F5F0;
+  --bg2:         #EEEAE0;
+  --bg3:         #E5E0D4;
+  --txt:         #1C1C18;
+  --txt2:        #5C5B54;
+  --txt3:        #9C9B90;
+  --bdr:         rgba(28, 28, 24, 0.1);
+  --bdr2:        rgba(28, 28, 24, 0.2);
 
-// ─── Post type literals ───────────────────────────────────────────────────────
-export type PostType = 'poetry' | 'tech' | 'ideas'
+  /* Semantic aliases */
+  --txt-secondary: var(--txt2);
+  --txt-tertiary:  var(--txt3);
 
-// ─── Post with computed fields ────────────────────────────────────────────────
-export type PostWithMeta = Post & {
-  readTime?: number
-  commentCount?: number
+  /* Poetry — purple */
+  --purple:      #534AB7;
+  --purple-bg:   #EEEDFE;
+  --purple-txt:  #3C3489;
+  --purple-acc:  #AFA9EC;
+
+  /* Tech — teal */
+  --teal-hero:   #04342C;
+  --teal-mid:    #1D9E75;
+  --teal-light:  #5DCAA5;
+  --teal-pale:   #E1F5EE;
+  --teal-txt:    #085041;
+  --teal-comm:   #0F6E56;
+
+  /* Ideas — amber */
+  --amber:       #BA7517;
+  --amber-bg:    #FDF6E8;
+  --amber-txt:   #7A4A0A;
+  --amber-pq:    #FDF0D4;
+  --amber-pq-txt:#5C3608;
+
+  /* Semantic */
+  --danger:      #E24B4A;
 }
 
-// ─── Comment status ───────────────────────────────────────────────────────────
-export type CommentStatus = 'pending' | 'approved' | 'rejected'
+/* ─── Dark mode tokens ───────────────────────────────────────────────────────── */
+.dark {
+  --bg:          #0E0E0C;
+  --bg2:         #181815;
+  --bg3:         #1E1E1A;
+  --txt:         #F0EFE8;
+  --txt2:        #A8A89E;
+  --txt3:        #606058;
+  --bdr:         rgba(240, 239, 232, 0.1);
+  --bdr2:        rgba(240, 239, 232, 0.2);
 
-// ─── Comment submission form data ────────────────────────────────────────────
-export type CommentFormData = {
-  authorName: string
-  authorEmail: string
-  body: string
-  website?: string        // honeypot — must be empty
-  turnstileToken: string  // Cloudflare Turnstile
+  --purple:      #AFA9EC;
+  --purple-bg:   #26215C;
+  --purple-txt:  #CECBF6;
+  --purple-acc:  #7F77DD;
+
+  --teal-hero:   #021F1A;
+  --teal-mid:    #5DCAA5;
+  --teal-light:  #9FE1CB;
+  --teal-pale:   #085041;
+  --teal-txt:    #9FE1CB;
+  --teal-comm:   #0F6E56;
+
+  --amber:       #EF9F27;
+  --amber-bg:    #2C1D06;
+  --amber-txt:   #FAC775;
+  --amber-pq:    #2C1D06;
+  --amber-pq-txt:#FAC775;
+
+  --danger:      #FF7B72;
 }
 
-// ─── API response shapes ──────────────────────────────────────────────────────
-export type ApiSuccess<T> = {
-  success: true
-  data: T
+/* ─── Base styles ────────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-export type ApiError = {
-  success: false
-  error: string
+html {
+  background-color: var(--bg);
+  color: var(--txt);
 }
 
-export type ApiResponse<T> = ApiSuccess<T> | ApiError
-
-// ─── Navigation ───────────────────────────────────────────────────────────────
-export type NavLink = {
-  label: string
-  href: string
+body {
+  background-color: var(--bg);
+  color: var(--txt);
+  font-family: var(--font-syne), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-export const NAV_LINKS: NavLink[] = [
-  { label: 'Poetry', href: '/poetry' },
-  { label: 'Tech',   href: '/tech'   },
-  { label: 'Ideas',  href: '/ideas'  },
-]
-
-// ─── Section config ───────────────────────────────────────────────────────────
-export type SectionConfig = {
-  type:       PostType
-  label:      string
-  href:       string
-  accentColor: string
+/* ─── Tiptap editor base ─────────────────────────────────────────────────────── */
+.tiptap {
+  outline: none;
+  font-family: var(--font-source-serif), serif;
+  font-size: 17px;
+  line-height: 1.9;
+  color: var(--txt2);
 }
 
-export const SECTIONS: SectionConfig[] = [
-  { type: 'poetry', label: 'Poetry', href: '/poetry', accentColor: 'var(--purple)'  },
-  { type: 'tech',   label: 'Tech',   href: '/tech',   accentColor: 'var(--teal-mid)' },
-  { type: 'ideas',  label: 'Ideas',  href: '/ideas',  accentColor: 'var(--amber)'    },
-]
+.tiptap p { margin-bottom: 1.4rem; }
+.tiptap h2 {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 2.5rem 0 0.85rem;
+  color: var(--txt);
+}
+.tiptap h3 {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  margin: 2rem 0 0.75rem;
+  color: var(--txt);
+}
+.tiptap pre {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 12px;
+  background: var(--teal-hero);
+  color: var(--teal-light);
+  padding: 1.25rem 1.5rem;
+  border-radius: 4px;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  line-height: 1.85;
+}
+.tiptap blockquote {
+  border-top: 2.5px solid var(--amber);
+  padding: 1rem 0 1rem 1.25rem;
+  margin: 2rem 0;
+  font-style: italic;
+  color: var(--txt2);
+}
+.tiptap a { color: var(--amber); text-decoration: underline; }
+
+/* ─── Focus ring ─────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
 ```
 
-## C/D. Final Review Summary
+## C. Final Review Summary
 
 ```md reviews/final-review.md
 # Final Synthesis Review
 
 ## Summary of Changes Applied
 
-### 1. Tech hero title color — hardcoded hex → CSS variable
+### 1. Tech hero title — hardcoded `#E1F5EE` → `var(--teal-pale)`
 **File:** `app/(public)/tech/[slug]/page.tsx`
-- Changed `color: '#E1F5EE'` to `color: 'var(--teal-pale)'` on the hero `<h1>`
-- `#E1F5EE` matches the `--teal-pale` token in the brand guide's light mode palette
-- Enforces the project rule: "Never use hardcoded hex values — always CSS variables"
+- `#E1F5EE` matches `--teal-pale` in light mode. Using the CSS variable ensures proper dark mode adaptation.
 
-### 2. Tech code block color — use CSS variable
+### 2. Tech code blocks — hardcoded `#9FE1CB` → `var(--teal-light)`
 **File:** `app/(public)/tech/[slug]/page.tsx`
-- Changed `color: '#9FE1CB'` to `color: 'var(--teal-light)'` on inline code `<pre>` blocks
-- `--teal-light` resolves to `#5DCAA5` (light) / `#9FE1CB` (dark), providing proper theme adaptation
-- Note: The `#9FE1CB` value in `globals.css` `.tiptap pre` and in `prompts/claude_coder.md` spec for Tech submit buttons is retained as those are fixed-context styling on `--teal-hero` backgrounds where the dark-mode value of `--teal-light` is the intended color
+- Inline code `<pre>` blocks now use `var(--teal-light)` instead of hardcoded hex.
+- `--teal-light` resolves to `#5DCAA5` (light) / `#9FE1CB` (dark), both appropriate on `--teal-hero` backgrounds.
 
-### 3. Admin login error color — undefined variable fix
-**File:** `app/admin/login/page.tsx`
-- Changed `color: 'var(--color-text-danger)'` to `color: 'var(--danger)'`
-- `--color-text-danger` is not defined anywhere in the CSS; `--danger` is defined in both light (`#E24B4A`) and dark (`#FF7B72`) modes
+### 3. Tiptap pre color — hardcoded `#9FE1CB` → `var(--teal-light)`
+**File:** `app/globals.css`
+- `.tiptap pre` color changed from `#9FE1CB` to `var(--teal-light)` for consistency with the token system.
 
-### 4. Dead navigation link removed
-**File:** `types/index.ts`
-- Removed `{ label: 'About', href: '/about' }` from `NAV_LINKS`
-- No `/about` route exists in the app — this was a dead link
-- Can be re-added when the About page is implemented
-
-### 5. Local slugify replaced with shared utility
+### 4. Local slugify replaced with shared utility
 **File:** `app/(public)/tech/[slug]/page.tsx`
-- Removed local `function slugify(text: string)` definition
-- Added `import { generateSlug } from '@/lib/utils'`
-- Changed `const id = slugify(block.text)` to `const id = generateSlug(block.text)`
-- Eliminates divergent slug generation behavior between the page and API routes
+- Removed local `function slugify()` definition.
+- Added `import { generateSlug } from '@/lib/utils'`.
+- Prevents divergent slug generation between UI and API.
+
+### 5. Poetry comment count derived from rendered data
+**File:** `app/(public)/poetry/[slug]/page.tsx`
+- Removed hardcoded `post.commentCount` (was `3`, actual data has `3` but could drift).
+- Added `commentCount` computed from `comments.reduce()`, matching the pattern used in the ideas page.
+- Removed `commentCount` from the `post` object.
 
 ## Escalated Items
 
 ### [HUMAN REVIEW NEEDED] Admin Authorization on POST /api/posts
-Both GPT and Gemini reviewers flagged this as critical. The `POST /api/posts` route only checks that a user is authenticated via Supabase, not that they have admin privileges. Any logged-in user can create posts.
+Both GPT and Gemini flagged this. Any authenticated Supabase user can create posts — no admin role check exists.
 
-**Current state:** The code has a TODO comment acknowledging this.
+**Current state:** Code has a TODO comment acknowledging this.
 
-**Recommended approaches (pick one):**
-1. **Email allowlist** — Add `ADMIN_EMAILS` env var, check `user.email` against it
-2. **Supabase custom claims** — Set admin role in JWT custom claims
-3. **Supabase RLS** — Use Row Level Security policies on the `posts` table
+**Recommended approaches:**
+1. **Email allowlist** — `ADMIN_EMAILS` env var
+2. **Supabase custom claims** — admin role in JWT
+3. **Supabase RLS** — Row Level Security on `posts` table
 
-**Why escalated:** This is a product/architecture decision that affects deployment configuration. The code fix is straightforward once the strategy is chosen, but the wrong choice could lock the project into an undesirable auth pattern.
+**Why escalated:** Architecture decision needed before implementation.
 
 ### [HUMAN REVIEW NEEDED] Next.js Security Vulnerability
-`next@15.0.0` is flagged in the lockfile as having a security vulnerability (CVE-2025-66478). Upgrade to a patched Next 15 release is recommended. This requires dependency testing and is not a code-level change.
+`next@15.0.0` has CVE-2025-66478. Upgrade to patched release recommended. Requires dependency testing.
 
 ## Items Rejected
 
 | Finding | Reason |
 |---------|--------|
-| `#9FE1CB` in `.tiptap pre` (globals.css) | Brand-specified color for code on `--teal-hero` background. Intentional fixed styling. |
-| `#9FE1CB` in Tech hero description | Same — `prompts/claude_coder.md` explicitly specifies this value for Tech code styling on teal-hero background. However, changed to `var(--teal-light)` which resolves to this value in dark mode. |
-| Turnstile widget not rendered | Known incomplete feature. Guard logic works correctly. |
-| Replace `window.turnstileToken` with component state | Premature refactor for unfinished feature. |
-| ESLint 9 / `next lint` compatibility | Low priority, not a merge blocker. |
-| `var(--txt-secondary)` undefined | Already defined as semantic alias `--txt-secondary: var(--txt2)` in globals.css. |
-| SiteNav active-link logic for `/` | `NAV_LINKS` doesn't include `/`. Speculative risk with no current impact. |
+| Turnstile widget not rendered | Known incomplete feature. Guard logic correct. |
+| Replace `window.turnstileToken` with state | Premature for unfinished feature. |
+| ESLint 9 / `next lint` compatibility | Not a merge blocker. |
+| Admin login catch → network error message | Acceptable UX. Distinguishing errors can leak info. |
+| Dead `/about` nav link | Does not exist in current source. |
+| `var(--danger)` undefined | Already defined correctly in source. |
+| `dangerouslySetInnerHTML` XSS | Placeholder content only. Address when DB-backed. |
 
 ## Files Modified
-1. `app/(public)/tech/[slug]/page.tsx` — Hero title color, code block color, slugify dedup
-2. `app/admin/login/page.tsx` — Error color variable fix
-3. `types/index.ts` — Removed dead `/about` nav link
+1. `app/(public)/tech/[slug]/page.tsx` — hero title color, code block color, slugify dedup
+2. `app/(public)/poetry/[slug]/page.tsx` — derived comment count
+3. `app/globals.css` — tiptap pre color token
 
-## Files NOT Modified (confirmed correct in source)
-- `app/api/comments/route.ts` — Already uses `URLSearchParams` with form-encoded
-- `app/api/rss/route.ts` — Already has `toCdataSafe` for CDATA escaping
-- `scripts/migrate-ghost.ts` — Already has `failed` counter and `process.exit(failed > 0 ? 1 : 0)`
-- `components/shared/CommentForm.tsx` — Already has `declare global` for `turnstileToken`
-- `app/globals.css` — Token system is correct
-- `app/layout.tsx` — No issues
-- All other page components — No issues
+## Files NOT Modified (verified correct)
+- `app/admin/login/page.tsx` — already uses `var(--danger)` correctly
+- `types/index.ts` — no dead `/about` link exists
+- `app/api/comments/route.ts` — already uses URLSearchParams
+- `app/api/rss/route.ts` — already has CDATA escaping
+- All other files — no actionable issues
 ```
