@@ -254,7 +254,7 @@ app/
     ideas/
       page.tsx                  ideas section
       [slug]/page.tsx           single essay + comments
-  (admin)/
+  (admin → admin)/
     layout.tsx                  admin wrapper
     login/page.tsx              Supabase Auth sign in
     dashboard/page.tsx          overview stats
