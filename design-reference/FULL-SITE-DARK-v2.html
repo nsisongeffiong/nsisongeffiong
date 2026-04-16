@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FULL-SITE-DARK-v2 — nsisongeffiong.com dark mode design reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Syne:wght@400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300;1,8..60,400&display=swap" rel="stylesheet">
+</head>
+<body>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0E0E0C;font-family:'Syne',sans-serif;color:#F0EFE8}
+--bg:#F7F5F0;--bg2:#EEEAE0;--bg3:#E5E0D4;--txt:#1C1C18;--txt2:#5C5B54;--txt3:#9C9B90;
+.page{background:#181815;margin-bottom:2.5rem;border:0.5px solid rgba(240,239,232,0.1)}
+.plbl{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#606058;padding:0.55rem 1rem;background:#1E1E1A;border-bottom:0.5px solid rgba(240,239,232,0.1);display:flex;align-items:center;gap:0.6rem}
+.plbl::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:rgba(240,239,232,0.2)}
+.snav{display:flex;justify-content:space-between;align-items:center;padding:1.25rem 2rem;border-bottom:0.5px solid rgba(240,239,232,0.1)}
+.slogo{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:#F0EFE8}
+.slinks{display:flex;gap:1.75rem;list-style:none}
+.slinks a{font-size:11px;color:#A8A89E;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase}
+.sback{font-size:13px;color:#A8A89E;text-decoration:none}
+.lhero{padding:4rem 2rem 2.5rem;max-width:700px}
+.leyebrow{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#606058;margin-bottom:1.5rem;display:block}
+.lname{font-family:'Cormorant Garamond',serif;font-size:clamp(42px,6.5vw,72px);font-weight:400;line-height:1.05;letter-spacing:-0.01em;margin-bottom:1.5rem;color:#F0EFE8}
+.lname em{font-style:italic;color:#A8A89E}
+.lbio{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:#A8A89E;line-height:1.8;max-width:460px;margin-bottom:2.5rem}
+.ldiv{width:36px;height:1px;background:rgba(240,239,232,0.2)}
+.lseclbl{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#606058;padding:1.1rem 2rem}
+.lgrid{display:grid;grid-template-columns:repeat(3,1fr);border-top:0.5px solid rgba(240,239,232,0.1)}
+.lcard{padding:2rem;border-right:0.5px solid rgba(240,239,232,0.1);position:relative;cursor:pointer}
+.lcard:last-child{border-right:none}
+.lcard:hover{background:#1E1E1A}
+.ltag{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;font-weight:500;margin-bottom:1.1rem;display:inline-block;padding:3px 9px;border-radius:2px}
+.tp{background:#26215C;color:#CECBF6}.tt{background:#085041;color:#9FE1CB}.ta{background:#2C1D06;color:#FAC775}
+.lct-serif{font-family:'Cormorant Garamond',serif;font-size:24px;font-style:italic;font-weight:400;line-height:1.2;margin-bottom:0.6rem;color:#F0EFE8}
+.lct-mono{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;line-height:1.2;margin-bottom:0.6rem;color:#F0EFE8}
+.lct-sans{font-family:'Syne',sans-serif;font-size:20px;font-weight:600;line-height:1.2;margin-bottom:0.6rem;letter-spacing:-0.01em;color:#F0EFE8}
+.lcdesc{font-size:13px;color:#A8A89E;line-height:1.65;margin-bottom:1.4rem}
+.lcsw{border-top:0.5px solid rgba(240,239,232,0.1);padding-top:1rem}
+.lcsl{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#606058;margin-bottom:0.45rem}
+.lcsp{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;line-height:1.5;color:#F0EFE8}
+.lcst{font-family:'DM Mono',monospace;font-size:11px;line-height:1.6;color:#F0EFE8}
+.lcsi{font-size:12px;line-height:1.5;color:#F0EFE8}
+.larr{position:absolute;bottom:1.6rem;right:1.6rem;font-size:15px;color:#606058}
+.lrecent{border-top:0.5px solid rgba(240,239,232,0.1);padding:1.75rem 2rem}
+.lrh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1.1rem}
+.lrl{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#606058}
+.lra{font-size:11px;color:#606058}
+.lrposts{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+.lrtype{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#606058;display:block;margin-bottom:0.3rem}
+.lrtp{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;display:block;color:#F0EFE8}
+.lrtt{font-family:'DM Mono',monospace;font-size:11px;display:block;color:#F0EFE8}
+.lrti{font-size:12px;display:block;color:#F0EFE8}
+.lrdate{font-size:11px;color:#606058;display:block;margin-top:0.3rem}
+.lfoot{border-top:0.5px solid rgba(240,239,232,0.1);padding:1.1rem 2rem;display:flex;justify-content:space-between;font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;color:#606058}
+.psh1{font-family:'Cormorant Garamond',serif;font-size:clamp(56px,9vw,90px);font-weight:300;font-style:italic;line-height:0.95;letter-spacing:-0.02em;color:#F0EFE8;padding:3rem 2rem 0}
+.pssub{font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;font-weight:300;color:#A8A89E;margin-top:1.4rem;max-width:380px;line-height:1.8;padding:0 2rem}
+.psrule{width:100%;height:0.5px;background:rgba(240,239,232,0.1);margin:2.25rem 0 0}
+.psfilter{display:flex;gap:1.6rem;padding:1rem 2rem;border-bottom:0.5px solid rgba(240,239,232,0.1);overflow-x:auto}
+.psfi{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#606058;cursor:pointer;white-space:nowrap;font-family:'Cormorant Garamond',serif}
+.psfi.active{color:#7F77DD;border-bottom:1px solid #534AB7;padding-bottom:2px}
+.psgrid{display:grid;grid-template-columns:1fr 1fr;border-bottom:0.5px solid rgba(240,239,232,0.1)}
+.psfeat{grid-column:1/-1;padding:2.25rem 2rem;border-bottom:0.5px solid rgba(240,239,232,0.1);display:grid;grid-template-columns:1fr 1fr;gap:2.25rem;align-items:center;background:#1E1E1A}
+.psflbl{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#7F77DD;margin-bottom:0.85rem;font-family:'Cormorant Garamond',serif}
+.psftitle{font-family:'Cormorant Garamond',serif;font-size:clamp(26px,4vw,42px);font-style:italic;font-weight:400;line-height:1.1;margin-bottom:0.85rem;color:#F0EFE8}
+.psfexc{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;font-weight:300;color:#A8A89E;line-height:1.85}
+.psread{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#7F77DD;font-family:'Cormorant Garamond',serif;margin-top:1.1rem;display:inline-block}
+.psverse{font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;line-height:2;color:#F0EFE8;font-weight:300;border-left:2px solid #AFA9EC;padding-left:1.25rem}
+.pscard{padding:1.85rem 2rem;border-right:0.5px solid rgba(240,239,232,0.1);border-bottom:0.5px solid rgba(240,239,232,0.1);cursor:pointer}
+.pscard:nth-child(even){border-right:none}
+.pscard:hover{background:#1E1E1A}
+.pscno{font-size:10px;letter-spacing:0.2em;color:#7F77DD;font-family:'Cormorant Garamond',serif;margin-bottom:1.1rem}
+.psctitle{font-family:'Cormorant Garamond',serif;font-size:clamp(18px,2.8vw,26px);font-style:italic;font-weight:400;line-height:1.2;margin-bottom:1rem;color:#F0EFE8}
+.pscexc{font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;font-weight:300;color:#A8A89E;line-height:1.8;margin-bottom:1.1rem}
+.pscmeta{display:flex;justify-content:space-between;align-items:center}
+.pscdate{font-size:11px;color:#606058;font-family:'Cormorant Garamond',serif;letter-spacing:0.06em}
+.psctag{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#7F77DD;background:#26215C;padding:2px 8px;border-radius:2px;font-family:'Cormorant Garamond',serif}
+.tsh{background:#021F1A;padding:2.5rem 2rem}
+.tshcomment{font-family:'DM Mono',monospace;font-size:12px;color:#1D9E75;margin-bottom:0.4rem}
+.tshh1{font-family:'DM Mono',monospace;font-size:clamp(22px,4vw,38px);font-weight:500;line-height:1.1;color:#E1F5EE;letter-spacing:-0.02em;margin-bottom:0.75rem}
+.tshdesc{font-family:'DM Mono',monospace;font-size:12px;color:#9FE1CB;line-height:1.75;max-width:460px;margin-bottom:1.4rem}
+.tshtags{display:flex;gap:0.5rem;flex-wrap:wrap}
+.tshtag{font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border:0.5px solid #1D9E75;color:#9FE1CB;border-radius:2px}
+.tstoolbar{display:flex;justify-content:space-between;align-items:center;padding:0.85rem 2rem;background:#1E1E1A;border-bottom:0.5px solid rgba(240,239,232,0.1)}
+.tschips{display:flex;gap:0.4rem}
+.tschip{font-family:'DM Mono',monospace;font-size:10px;padding:3px 10px;border:0.5px solid rgba(240,239,232,0.1);border-radius:2px;color:#A8A89E;cursor:pointer}
+.tschip.active{background:#085041;color:#9FE1CB;border-color:#9FE1CB}
+.tssort{font-family:'DM Mono',monospace;font-size:11px;color:#606058}
+.tspost{display:grid;grid-template-columns:auto 1fr auto;gap:1.4rem;padding:1.4rem 2rem;border-bottom:0.5px solid rgba(240,239,232,0.1);align-items:start;cursor:pointer}
+.tspost:hover{background:#1E1E1A}
+.tspnum{font-family:'DM Mono',monospace;font-size:11px;color:#606058;padding-top:2px;min-width:20px}
+.tsptags{display:flex;gap:0.4rem;margin-bottom:0.55rem;flex-wrap:wrap}
+.tsptag{font-family:'DM Mono',monospace;font-size:10px;padding:2px 7px;border-radius:2px;background:#085041;color:#9FE1CB}
+.tsptag.or{background:#2C1D06;color:#FAC775}
+.tsptag.bl{background:#26215C;color:#CECBF6}
+.tsptitle{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;line-height:1.3;margin-bottom:0.4rem;letter-spacing:-0.01em;color:#F0EFE8}
+.tspexc{font-family:'DM Mono',monospace;font-size:11px;color:#A8A89E;line-height:1.65}
+.tspmeta{font-family:'DM Mono',monospace;font-size:11px;color:#606058;white-space:nowrap;padding-top:2px}
+.tsstats{display:grid;grid-template-columns:repeat(3,1fr);border-top:0.5px solid rgba(240,239,232,0.1)}
+.tsstat{padding:1.25rem 2rem;border-right:0.5px solid rgba(240,239,232,0.1)}
+.tsstat:last-child{border-right:none}
+.tssn{font-family:'DM Mono',monospace;font-size:24px;font-weight:500;color:#9FE1CB;margin-bottom:0.2rem}
+.tssl{font-family:'DM Mono',monospace;font-size:10px;color:#606058;letter-spacing:0.08em}
+.ismast{padding:2.75rem 2rem 0;border-bottom:3px solid #F0EFE8;display:grid;grid-template-columns:1fr auto;align-items:end;gap:2rem;padding-bottom:1.1rem}
+.ismasttag{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#EF9F27;font-weight:600;display:block;margin-bottom:0.75rem}
+.ismasth1{font-family:'Syne',sans-serif;font-size:clamp(44px,7.5vw,80px);font-weight:800;line-height:0.95;letter-spacing:-0.04em;color:#F0EFE8}
+.ismastsub{font-family:'Source Serif 4',serif;font-size:14px;font-style:italic;font-weight:300;color:#A8A89E;line-height:1.7;max-width:240px;text-align:right}
+.ismastissue{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#606058;margin-top:0.6rem;text-align:right}
+.istop{display:grid;grid-template-columns:2fr 1fr;border-bottom:0.5px solid rgba(240,239,232,0.1)}
+.islead{padding:2rem;border-right:0.5px solid rgba(240,239,232,0.1);cursor:pointer}
+.isleadkicker{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:#EF9F27;font-weight:600;margin-bottom:0.75rem;display:block}
+.isleadtitle{font-family:'Syne',sans-serif;font-size:clamp(18px,3vw,28px);font-weight:800;line-height:1.1;letter-spacing:-0.025em;margin-bottom:0.75rem;color:#F0EFE8}
+.isleadbody{font-family:'Source Serif 4',serif;font-size:13px;line-height:1.8;color:#A8A89E;margin-bottom:1.1rem;font-weight:300}
+.isleadmeta{display:flex;gap:0.85rem;align-items:center}
+.isleaddate{font-family:'Syne',sans-serif;font-size:10px;color:#606058;letter-spacing:0.08em;text-transform:uppercase}
+.isleadread{font-family:'Syne',sans-serif;font-size:10px;color:#EF9F27;letter-spacing:0.08em;text-transform:uppercase;font-weight:600}
+.issb{padding:1.6rem 1.4rem}
+.issblbl{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#606058;border-bottom:0.5px solid rgba(240,239,232,0.1);padding-bottom:0.6rem;margin-bottom:0.85rem}
+.issbitem{padding:0.75rem 0;border-bottom:0.5px solid rgba(240,239,232,0.1);cursor:pointer}
+.issbitem:last-child{border-bottom:none}
+.issbkicker{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#EF9F27;font-weight:600;margin-bottom:0.3rem}
+.issbtitle{font-family:'Source Serif 4',serif;font-size:12px;font-weight:300;line-height:1.4;color:#F0EFE8}
+.ispq{background:#2C1D06;padding:1.75rem 2rem;border-bottom:0.5px solid rgba(240,239,232,0.1)}
+.ispqtext{font-family:'Source Serif 4',serif;font-size:clamp(15px,2.2vw,21px);font-style:italic;font-weight:300;color:#FAC775;max-width:680px;border-left:3px solid #BA7517;padding-left:1.4rem;line-height:1.55}
+.ispqattr{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#BA7517;margin-top:0.75rem;margin-left:1.4rem}
+.istopics{display:flex;gap:0.5rem;padding:1rem 2rem;flex-wrap:wrap;align-items:center;border-bottom:0.5px solid rgba(240,239,232,0.1)}
+.istl{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#606058;margin-right:0.4rem}
+.istopic{font-family:'Syne',sans-serif;font-size:10px;padding:4px 11px;border:0.5px solid rgba(240,239,232,0.2);border-radius:2px;color:#A8A89E;cursor:pointer}
+.istopic.active{background:#2C1D06;color:#FAC775;border-color:#EF9F27}
+.iscards{display:grid;grid-template-columns:repeat(3,1fr)}
+.iscard{padding:1.6rem 2rem;border-right:0.5px solid rgba(240,239,232,0.1);cursor:pointer}
+.iscard:last-child{border-right:none}
+.iscard:hover{background:#1E1E1A}
+.isckicker{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#EF9F27;font-weight:600;margin-bottom:0.6rem}
+.isctitle{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;line-height:1.25;letter-spacing:-0.02em;margin-bottom:0.6rem;color:#F0EFE8}
+.iscbody{font-family:'Source Serif 4',serif;font-size:12px;line-height:1.7;color:#A8A89E;font-weight:300;margin-bottom:0.75rem}
+.iscmeta{font-family:'Syne',sans-serif;font-size:10px;color:#606058;display:flex;justify-content:space-between}
+.ppnav{display:flex;justify-content:space-between;align-items:center;padding:1.1rem 2rem;border-bottom:0.5px solid rgba(240,239,232,0.1)}
+.ppback{font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;color:#A8A89E;text-decoration:none}
+.pphdr{padding:3rem 2rem 0;max-width:580px;margin:0 auto;text-align:center}
+.pptag{font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#7F77DD;display:inline-block;margin-bottom:1.6rem;font-family:'Cormorant Garamond',serif}
+.pptitle{font-family:'Cormorant Garamond',serif;font-size:clamp(30px,5vw,54px);font-style:italic;font-weight:400;line-height:1.1;letter-spacing:-0.02em;margin-bottom:1.6rem;color:#F0EFE8}
+.ppmeta{font-family:'Cormorant Garamond',serif;font-size:12px;color:#606058;letter-spacing:0.08em;display:flex;gap:1.1rem;justify-content:center;align-items:center}
+.ppdot{width:3px;height:3px;border-radius:50%;background:rgba(240,239,232,0.2);display:inline-block}
+.pporn{width:60px;height:1px;background:rgba(240,239,232,0.1);margin:2.25rem auto;position:relative}
+.pporn::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:5px;height:5px;border-radius:50%;background:#7F77DD}
+.pppoem{max-width:440px;margin:0 auto;padding:0 2rem 1rem}
+.ppstanza{margin-bottom:2.1rem}
+.ppline{font-family:'Cormorant Garamond',serif;font-size:clamp(16px,2.1vw,20px);font-style:italic;font-weight:300;line-height:2;display:block;color:#F0EFE8}
+.i1{padding-left:2em}.i2{padding-left:4em}
+.ppend{text-align:center;font-size:15px;color:#7F77DD;margin:1.4rem 0 2.25rem;letter-spacing:0.3em}
+.ppnrule{width:100%;height:0.5px;background:rgba(240,239,232,0.1);margin:0 0 1.6rem}
+.ppnlbl{font-family:'Cormorant Garamond',serif;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#606058;margin-bottom:0.65rem;display:block}
+.ppnote{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;font-weight:300;color:#A8A89E;line-height:1.9}
+.ppfoot{border-top:0.5px solid rgba(240,239,232,0.1);margin-top:2.75rem;padding:1.4rem 2rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;max-width:580px;margin-left:auto;margin-right:auto}
+.ppfd{font-family:'Cormorant Garamond',serif;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#606058;display:block;margin-bottom:0.4rem}
+.ppft{font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:#A8A89E}
+.ppfnext{text-align:right}
+.pc{padding:2.5rem 2rem;max-width:560px;margin:0 auto}
+.pcrule{width:64px;height:1px;background:rgba(240,239,232,0.1);margin:0 auto 2.5rem;position:relative}
+.pcrule::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:5px;height:5px;border-radius:50%;background:#7F77DD}
+.pchdr{font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:#606058;text-align:center;margin-bottom:2.5rem}
+.pcc{margin-bottom:2rem;padding-bottom:2rem;border-bottom:0.5px solid rgba(240,239,232,0.1)}
+.pcc:last-of-type{border-bottom:none}
+.pccmeta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.65rem}
+.pccname{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:400;color:#F0EFE8}
+.pccdate{font-family:'Cormorant Garamond',serif;font-size:12px;color:#606058;font-style:italic}
+.pcctext{font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;font-weight:300;color:#A8A89E;line-height:1.9;margin-bottom:0.75rem}
+.pccreply{font-family:'Cormorant Garamond',serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#7F77DD;cursor:pointer}
+.pcreply{margin-left:2rem;margin-top:1rem;padding-left:1.25rem;border-left:1px solid #AFA9EC}
+.pcrname{font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:400;color:#F0EFE8;margin-bottom:0.3rem}
+.pcrtext{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;font-weight:300;color:#A8A89E;line-height:1.8}
+.pcftitle{font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:#606058;margin-bottom:1.5rem;text-align:center}
+.pcfields{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.pcfield{display:flex;flex-direction:column;gap:0.35rem}
+.pclabel{font-family:'Cormorant Garamond',serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#606058}
+.pcinput{font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;padding:0.6rem 0;border:none;border-bottom:0.5px solid rgba(240,239,232,0.2);background:transparent;color:#F0EFE8;outline:none;width:100%}
+.pctextarea{font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;padding:0.75rem 0;border:none;border-bottom:0.5px solid rgba(240,239,232,0.2);background:transparent;color:#F0EFE8;outline:none;width:100%;resize:none;min-height:80px;margin-bottom:1.5rem}
+.pcsubmit{font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:#7F77DD;background:none;border:0.5px solid #7F77DD;padding:0.65rem 2rem;cursor:pointer;display:block;margin:0 auto}
+.pcnote{font-family:'Cormorant Garamond',serif;font-size:12px;font-style:italic;color:#606058;text-align:center;margin-top:1rem}
+.tpnav{display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;border-bottom:0.5px solid rgba(240,239,232,0.1);font-family:'DM Mono',monospace}
+.tpback{font-size:12px;color:#A8A89E;text-decoration:none}
+.tpcrumb{font-size:12px;color:#9FE1CB}
+.tphero{background:#021F1A;padding:2.5rem 2rem}
+.tphtags{display:flex;gap:0.4rem;margin-bottom:1rem;flex-wrap:wrap}
+.tphtag{font-family:'DM Mono',monospace;font-size:10px;padding:2px 8px;border:0.5px solid #1D9E75;color:#9FE1CB;border-radius:2px}
+.tphtitle{font-family:'Syne',sans-serif;font-size:clamp(19px,3.3vw,34px);font-weight:700;line-height:1.1;color:#E1F5EE;letter-spacing:-0.025em;margin-bottom:0.7rem;max-width:620px}
+.tphdesc{font-family:'DM Mono',monospace;font-size:12px;color:#9FE1CB;line-height:1.75;max-width:480px;margin-bottom:1.1rem}
+.tphmeta{display:flex;gap:1.25rem;font-family:'DM Mono',monospace;font-size:11px;color:#1D9E75}
+.tpbody{display:grid;grid-template-columns:1fr 185px}
+.tpmain{padding:2rem 2rem;border-right:0.5px solid rgba(240,239,232,0.1)}
+.tpp{font-size:14px;line-height:1.8;color:#A8A89E;margin-bottom:1.2rem;font-family:'Syne',sans-serif}
+.tph2{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;letter-spacing:-0.02em;margin:2rem 0 0.7rem;color:#F0EFE8}
+.tpcode{font-family:'DM Mono',monospace;font-size:11px;background:#021F1A;color:#9FE1CB;padding:1.1rem 1.25rem;border-radius:4px;line-height:1.85;margin:1.1rem 0;overflow-x:auto}
+.tc{color:#1D9E75}.tk{color:#9FE1CB}.ts2{color:#FAC775}.tf{color:#E1F5EE}.tn2{color:#9FE1CB}
+.tpcallout{border-left:3px solid #1D9E75;background:#1E1E1A;padding:0.85rem 1.1rem;margin:1.1rem 0}
+.tpcll{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#9FE1CB;margin-bottom:0.35rem}
+.tpclt{font-family:'DM Mono',monospace;font-size:11px;color:#A8A89E;line-height:1.7}
+.tpsb{padding:2rem 1.35rem;background:#1E1E1A}
+.tptoclbl{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#606058;margin-bottom:0.7rem;display:block}
+.tptoc{font-family:'DM Mono',monospace;font-size:11px;color:#A8A89E;padding:0.4rem 0;border-bottom:0.5px solid rgba(240,239,232,0.1);display:block;text-decoration:none}
+.tptoc.active{color:#9FE1CB}
+.tptoc:last-child{border-bottom:none}
+.tpsbblock{margin-top:1.6rem;padding-top:1.1rem;border-top:0.5px solid rgba(240,239,232,0.1)}
+.tpsblbl{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#606058;margin-bottom:0.7rem;display:block}
+.tprel{font-family:'Syne',sans-serif;font-size:12px;font-weight:500;color:#A8A89E;line-height:1.4;margin-bottom:0.6rem;cursor:pointer}
+.tpfoot{border-top:0.5px solid rgba(240,239,232,0.1);padding:1.1rem 2rem;display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:11px}
+.tpfp{color:#A8A89E}.tpfn{color:#9FE1CB}
+.tco{padding:2rem 2rem;border-top:0.5px solid rgba(240,239,232,0.1)}
+.tcohdr{display:flex;align-items:center;gap:1rem;margin-bottom:1.75rem;font-family:'DM Mono',monospace}
+.tcotitle{font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#606058}
+.tcocount{font-size:11px;color:#9FE1CB}
+.tcocomment{padding:1.25rem 0;border-bottom:0.5px solid rgba(240,239,232,0.1)}
+.tcocomment:last-of-type{border-bottom:none;margin-bottom:1.75rem}
+.tcocmeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem}
+.tcocleft{display:flex;align-items:center;gap:0.75rem}
+.tcoavatar{width:28px;height:28px;border-radius:2px;background:#085041;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:#9FE1CB;flex-shrink:0}
+.tcocname{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:#F0EFE8}
+.tcocdate{font-family:'DM Mono',monospace;font-size:11px;color:#606058}
+.tcoctext{font-family:'Syne',sans-serif;font-size:14px;color:#A8A89E;line-height:1.75;margin-bottom:0.6rem}
+.tcocreply{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#9FE1CB;cursor:pointer}
+.tcoreply{margin-left:2.5rem;margin-top:0.85rem;padding-left:1rem;border-left:2px solid #E1F5EE}
+.tcorname{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:#F0EFE8;margin-bottom:0.3rem}
+.tcortext{font-family:'Syne',sans-serif;font-size:13px;color:#A8A89E;line-height:1.7}
+.tcoform{background:#1E1E1A;padding:1.5rem;border-radius:4px}
+.tcoformtitle{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#606058;margin-bottom:1.25rem}
+.tcofrow{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.tcoflabel{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#606058;display:block;margin-bottom:0.35rem}
+.tcofinput{font-family:'DM Mono',monospace;font-size:12px;padding:0.5rem 0.75rem;border:0.5px solid rgba(240,239,232,0.2);background:#181815;color:#F0EFE8;border-radius:3px;width:100%;outline:none}
+.tcoftextarea{font-family:'DM Mono',monospace;font-size:12px;padding:0.5rem 0.75rem;border:0.5px solid rgba(240,239,232,0.2);background:#181815;color:#F0EFE8;border-radius:3px;width:100%;resize:none;min-height:80px;margin-bottom:1rem;outline:none}
+.tcofsubmit{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;background:#021F1A;color:#9FE1CB;border:none;padding:0.6rem 1.5rem;cursor:pointer;border-radius:3px}
+.tcofnote{font-family:'DM Mono',monospace;font-size:10px;color:#606058;margin-top:0.75rem;letter-spacing:0.06em}
+.epnav{display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;border-bottom:0.5px solid rgba(240,239,232,0.1);font-family:'Syne',sans-serif}
+.epback{font-size:13px;color:#A8A89E;text-decoration:none;font-weight:400}
+.epnavlbl{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#EF9F27;font-weight:600}
+.ephdr{padding:2.75rem 2rem 2rem;border-bottom:2.5px solid #1C1C18}
+.epkicker{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:0.24em;text-transform:uppercase;color:#EF9F27;font-weight:700;display:block;margin-bottom:0.85rem}
+.eph1{font-family:'Syne',sans-serif;font-size:clamp(24px,4.2vw,46px);font-weight:800;line-height:1.05;letter-spacing:-0.03em;margin-bottom:1rem;color:#F0EFE8}
+.epdeck{font-family:'Source Serif 4',serif;font-size:16px;font-style:italic;font-weight:300;color:#A8A89E;line-height:1.7;margin-bottom:1.4rem}
+.epbyline{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;font-family:'Syne',sans-serif;font-size:11px;color:#606058;letter-spacing:0.05em}
+.epbyname{color:#F0EFE8;font-weight:600}
+.epbsep{width:1px;height:11px;background:rgba(240,239,232,0.2)}
+.epbody{padding:2.25rem 2rem 3rem;max-width:700px;margin:0 auto}
+.eplede::first-letter{font-family:'Syne',sans-serif;font-size:5em;font-weight:800;float:left;line-height:0.82;margin:0.06em 0.1em 0 0;color:#F0EFE8}
+.eplede{font-family:'Source Serif 4',serif;font-size:17px;font-weight:400;line-height:1.8;margin-bottom:1.5rem;color:#F0EFE8;overflow:hidden}
+.epp{font-family:'Source Serif 4',serif;font-size:15px;line-height:1.9;color:#A8A89E;margin-bottom:1.35rem;font-weight:300}
+.eph2{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;letter-spacing:-0.02em;margin:2.5rem 0 0.85rem;color:#F0EFE8;clear:both}
+.eppqr{float:right;width:41%;margin:0.4rem -0.5rem 1rem 1.6rem;padding:1rem 1.1rem 1rem 0;border-top:2.5px solid #F0EFE8;border-bottom:0.5px solid rgba(240,239,232,0.1);text-align:right;clear:right}
+.eppql{float:left;width:41%;margin:0.4rem 1.6rem 1rem -0.5rem;padding:1rem 0 1rem 1.1rem;border-top:2.5px solid #BA7517;border-bottom:0.5px solid rgba(240,239,232,0.1);clear:left}
+.eppqc{margin:2rem auto;padding:1.4rem 1.6rem;border-top:2.5px solid #BA7517;border-bottom:0.5px solid rgba(240,239,232,0.1);clear:both;text-align:center}
+.eppqlg{font-family:'Syne',sans-serif;font-size:clamp(16px,2.5vw,21px);font-weight:700;line-height:1.25;letter-spacing:-0.02em;color:#F0EFE8}
+.eppqsm{font-family:'Syne',sans-serif;font-size:clamp(13px,1.9vw,16px);font-weight:600;line-height:1.3;letter-spacing:-0.01em;color:#F0EFE8}
+.eppqattr{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#606058;margin-top:0.6rem;display:block}
+.eprule{clear:both;display:flex;align-items:center;gap:0.75rem;margin:2.5rem 0}
+.eprl{flex:1;height:0.5px;background:rgba(240,239,232,0.1)}
+.eprm{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:#606058}
+.epfoot{border-top:2px solid #F0EFE8;display:flex}
+.epfn{flex:1;padding:1.4rem 2rem;cursor:pointer}
+.epfn.next{border-left:0.5px solid rgba(240,239,232,0.1);text-align:right}
+.epfd{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#606058;display:block;margin-bottom:0.4rem}
+.epft{font-family:'Source Serif 4',serif;font-size:13px;font-style:italic;font-weight:300;color:#A8A89E;line-height:1.4}
+.ico{padding:2rem 2rem;border-top:3px solid #1C1C18;max-width:700px;margin:0 auto}
+.icohdr{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2rem}
+.icotitle{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#F0EFE8}
+.icocount{font-family:'Syne',sans-serif;font-size:11px;color:#EF9F27;letter-spacing:0.08em}
+.icocomment{padding:1.5rem 0;border-bottom:0.5px solid rgba(240,239,232,0.1)}
+.icocomment:last-of-type{border-bottom:none;margin-bottom:2.5rem}
+.icocmeta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.6rem}
+.icocname{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;letter-spacing:-0.01em;color:#F0EFE8}
+.icocdate{font-family:'Syne',sans-serif;font-size:10px;color:#606058;letter-spacing:0.1em;text-transform:uppercase}
+.icoctext{font-family:'Source Serif 4',serif;font-size:15px;font-weight:300;color:#A8A89E;line-height:1.85;margin-bottom:0.75rem}
+.icocreply{font-family:'Syne',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#EF9F27;cursor:pointer}
+.icoreply{margin-left:2rem;margin-top:1rem;padding-left:1.25rem;border-left:2px solid #FDF0D4}
+.icorname{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#F0EFE8;margin-bottom:0.3rem}
+.icortext{font-family:'Source Serif 4',serif;font-size:14px;font-weight:300;color:#A8A89E;line-height:1.8}
+.icoformrule{width:40px;height:2px;background:#EF9F27;margin-bottom:1.5rem}
+.icoformtitle{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#F0EFE8;margin-bottom:1.5rem}
+.icofrow{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+.icoflabel{font-family:'Syne',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#606058;display:block;margin-bottom:0.4rem}
+.icofinput{font-family:'Source Serif 4',serif;font-size:15px;font-style:italic;font-weight:300;padding:0.6rem 0;border:none;border-bottom:0.5px solid rgba(240,239,232,0.2);background:transparent;color:#F0EFE8;width:100%;outline:none}
+.icoftextarea{font-family:'Source Serif 4',serif;font-size:15px;font-style:italic;font-weight:300;padding:0.6rem 0;border:none;border-bottom:0.5px solid rgba(240,239,232,0.2);background:transparent;color:#F0EFE8;width:100%;resize:none;min-height:90px;margin-bottom:1.5rem;outline:none}
+.icofsubmit{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;background:none;border:0.5px solid #EF9F27;color:#EF9F27;padding:0.7rem 2rem;cursor:pointer}
+.icofnote{font-family:'Source Serif 4',serif;font-size:13px;font-style:italic;font-weight:300;color:#606058;margin-top:0.85rem}
+</style>
+
+<div>
+
+<!-- LANDING -->
+<div class="page">
+  <div class="plbl">Landing page</div>
+  <nav class="snav">
+    <span class="slogo">Nsisong Effiong</span>
+    <ul class="slinks"><li><a href="#">Poetry</a></li><li><a href="#">Tech</a></li><li><a href="#">Ideas</a></li><li><a href="#">About</a></li></ul>
+  </nav>
+  <div class="lhero">
+    <span class="leyebrow">Writer · Engineer · Thinker</span>
+    <h1 class="lname">Words that build<br><em>worlds & systems.</em></h1>
+    <p class="lbio">Poetry, code, and public thought — three modes of making sense of the world.</p>
+    <div class="ldiv"></div>
+  </div>
+  <p class="lseclbl">Explore by category</p>
+  <div class="lgrid">
+    <div class="lcard"><span class="ltag tp">Poetry</span><h2 class="lct-serif">The literary space</h2><p class="lcdesc">Verse, imagery, and language pressed into new shapes. Poetry as a way of knowing.</p><div class="lcsw"><p class="lcsl">Latest</p><p class="lcsp">"What the delta teaches about forgetting"</p></div><span class="larr">↗</span></div>
+    <div class="lcard"><span class="ltag tt">Tech</span><h2 class="lct-mono">./engineering</h2><p class="lcdesc">Deep dives on AI systems, software architecture, and building with emerging tools.</p><div class="lcsw"><p class="lcsl">Latest</p><p class="lcst">multi_model_pipeline: design & tradeoffs</p></div><span class="larr">↗</span></div>
+    <div class="lcard"><span class="ltag ta">Ideas</span><h2 class="lct-sans">Essays & Policy</h2><p class="lcdesc">Writing on governance, technology in society, and ideas that deserve more friction.</p><div class="lcsw"><p class="lcsl">Latest</p><p class="lcsi">Why public sector AI adoption keeps failing</p></div><span class="larr">↗</span></div>
+  </div>
+  <div class="lrecent">
+    <div class="lrh"><span class="lrl">Recent across all categories</span><span class="lra">View all →</span></div>
+    <div class="lrposts">
+      <div><span class="lrtype">Poetry</span><span class="lrtp">"Harmattan syntax"</span><span class="lrdate">Apr 10, 2026</span></div>
+      <div><span class="lrtype">Tech</span><span class="lrtt">orchestrate.py: how the pipeline works</span><span class="lrdate">Apr 7, 2026</span></div>
+      <div><span class="lrtype">Ideas</span><span class="lrti">Digital public infrastructure and who owns it</span><span class="lrdate">Apr 2, 2026</span></div>
+    </div>
+  </div>
+  <div class="lfoot"><span>nsisongeffiong.com</span><span>© 2026 · All writing reserved</span></div>
+</div>
+
+<!-- POETRY SECTION -->
+<div class="page">
+  <div class="plbl">Poetry — section</div>
+  <nav class="snav"><a href="#" class="sback" style="font-family:'Cormorant Garamond',serif;font-style:italic">← nsisongeffiong.com</a><span style="font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:0.18em;color:#7F77DD">Poetry</span></nav>
+  <h1 class="psh1">Poetry</h1>
+  <p class="pssub">Verse as a way of knowing. Language pressed into unfamiliar shapes to say what prose cannot.</p>
+  <div class="psrule"></div>
+  <div class="psfilter"><span class="psfi active">All</span><span class="psfi">Nature & place</span><span class="psfi">Memory</span><span class="psfi">Language & form</span><span class="psfi">Grief</span><span class="psfi">Politics</span></div>
+  <div class="psgrid">
+    <div class="psfeat"><div><p class="psflbl">Featured poem</p><h2 class="psftitle">"What the delta teaches about forgetting"</h2><p class="psfexc">On water, impermanence, and the places that hold us even as we leave them.</p><span class="psread">Read poem →</span></div><div><p class="psverse">The river does not mourn<br>the banks it has abandoned—<br>it is already elsewhere,<br>already becoming<br>something the sea will name.</p></div></div>
+    <div class="pscard"><p class="pscno">· · ·</p><h3 class="psctitle">"Harmattan syntax"</h3><p class="pscexc">Dust as grammar. The dry season as a kind of punctuation the body cannot refuse.</p><div class="pscmeta"><span class="pscdate">Apr 10, 2026</span><span class="psctag">Nature & place</span></div></div>
+    <div class="pscard"><p class="pscno">· · ·</p><h3 class="psctitle">"My grandmother's English"</h3><p class="pscexc">A language borrowed and returned transformed. What survives translation and what is made new.</p><div class="pscmeta"><span class="pscdate">Mar 28, 2026</span><span class="psctag">Language & form</span></div></div>
+    <div class="pscard"><p class="pscno">· · ·</p><h3 class="psctitle">"Elegy for a childhood street"</h3><p class="pscexc">Streets that no longer exist except in the people who walked them.</p><div class="pscmeta"><span class="pscdate">Mar 14, 2026</span><span class="psctag">Memory</span></div></div>
+    <div class="pscard"><p class="pscno">· · ·</p><h3 class="psctitle">"After the election"</h3><p class="pscexc">How do we speak in the aftermath? Language that holds anger and grief at once.</p><div class="pscmeta"><span class="pscdate">Feb 28, 2026</span><span class="psctag">Politics</span></div></div>
+  </div>
+</div>
+
+<!-- TECH SECTION -->
+<div class="page">
+  <div class="plbl">Tech — section</div>
+  <nav class="snav" style="font-family:'DM Mono',monospace"><a href="#" class="sback" style="font-family:'DM Mono',monospace;font-size:12px">← nsisongeffiong.com</a><span style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.1em;color:#9FE1CB">~/tech</span></nav>
+  <div class="tsh"><p class="tshcomment"># engineering blog</p><h1 class="tshh1">./tech</h1><p class="tshdesc">Deep dives on AI systems, software architecture, and building with emerging tools.</p><div class="tshtags"><span class="tshtag">AI/ML</span><span class="tshtag">systems</span><span class="tshtag">web</span><span class="tshtag">devtools</span></div></div>
+  <div class="tstoolbar"><div class="tschips"><span class="tschip active">all</span><span class="tschip">AI/ML</span><span class="tschip">systems</span><span class="tschip">web</span><span class="tschip">devtools</span></div><span class="tssort">sort: newest</span></div>
+  <div class="tspost"><span class="tspnum">01</span><div><div class="tsptags"><span class="tsptag">AI/ML</span><span class="tsptag or">devtools</span></div><h3 class="tsptitle">orchestrate.py — a deep dive into the pipeline runner</h3><p class="tspexc">Stage management, git branching strategy, and making multi-model pipelines resumable.</p></div><span class="tspmeta">Apr 7 · 12 min</span></div>
+  <div class="tspost"><span class="tspnum">02</span><div><div class="tsptags"><span class="tsptag bl">systems</span></div><h3 class="tsptitle">Why your AI context window is a state management problem</h3><p class="tspexc">Agentic systems have no memory between completions. How to encode full state without bloating context.</p></div><span class="tspmeta">Mar 22 · 8 min</span></div>
+  <div class="tspost"><span class="tspnum">03</span><div><div class="tsptags"><span class="tsptag">AI/ML</span><span class="tsptag bl">web</span></div><h3 class="tsptitle">Next.js + Supabase: the server/client boundary mistakes I keep seeing</h3><p class="tspexc">createServerClient vs createClient — when it matters and how to prevent the mistake recurring.</p></div><span class="tspmeta">Mar 8 · 6 min</span></div>
+  <div class="tsstats"><div class="tsstat"><div class="tssn">14</div><div class="tssl">articles published</div></div><div class="tsstat"><div class="tssn">~7k</div><div class="tssl">avg words / article</div></div><div class="tsstat"><div class="tssn">4</div><div class="tssl">topics covered</div></div></div>
+</div>
+
+<!-- IDEAS SECTION -->
+<div class="page">
+  <div class="plbl">Ideas & Policy — section</div>
+  <nav class="snav"><a href="#" class="sback">← nsisongeffiong.com</a><span style="font-family:'Syne',sans-serif;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#EF9F27;font-weight:600">Ideas & Policy</span></nav>
+  <div class="ismast"><div><span class="ismasttag">Essays · Policy · Public Thought</span><h1 class="ismasth1">Ideas</h1></div><div><p class="ismastsub">Writing on governance, technology in society, and questions that deserve more friction.</p><p class="ismastissue">Vol. I · April 2026</p></div></div>
+  <div class="istop"><div class="islead"><p class="isleadkicker">Technology & governance</p><h2 class="isleadtitle">Why public sector AI adoption keeps failing — and who benefits from the story we tell about it</h2><p class="isleadbody">Governments across the world are adopting AI tools at pace, yet most deployments quietly fail within 18 months.</p><div class="isleadmeta"><span class="isleaddate">Apr 2, 2026 · 14 min</span><span class="isleadread">Read essay →</span></div></div><div class="issb"><p class="issblbl">Also this month</p><div class="issbitem"><p class="issbkicker">Digital infrastructure</p><p class="issbtitle">Digital public infrastructure and the question of who owns it</p></div><div class="issbitem"><p class="issbkicker">Political economy</p><p class="issbtitle">What the "innovation economy" discourse leaves out</p></div><div class="issbitem"><p class="issbkicker">Media</p><p class="issbtitle">The attention economy has a geography problem</p></div></div></div>
+  <div class="ispq"><p class="ispqtext">"The question is not whether AI will transform governance — it is who gets to define what transformation means, and for whom."</p><p class="ispqattr">— from "Why public sector AI adoption keeps failing"</p></div>
+  <div class="istopics"><span class="istl">Topics</span><span class="istopic active">All</span><span class="istopic">AI & society</span><span class="istopic">Public policy</span><span class="istopic">Political economy</span><span class="istopic">Digital rights</span><span class="istopic">Media</span></div>
+  <div class="iscards"><div class="iscard"><p class="isckicker">Digital rights</p><h3 class="isctitle">Digital public infrastructure and the question of who owns it</h3><p class="iscbody">When states build digital identity systems and payment rails — who controls the infrastructure?</p><div class="iscmeta"><span>Mar 28</span><span>11 min</span></div></div><div class="iscard"><p class="isckicker">Political economy</p><h3 class="isctitle">What the "innovation economy" discourse consistently leaves out</h3><p class="iscbody">The language of innovation hubs travels fast. Evidence of who benefits arrives slowly.</p><div class="iscmeta"><span>Mar 15</span><span>9 min</span></div></div><div class="iscard"><p class="isckicker">Media & attention</p><h3 class="isctitle">The attention economy has a geography problem nobody is naming</h3><p class="iscbody">Global platforms optimise for metrics set in a handful of cities.</p><div class="iscmeta"><span>Feb 27</span><span>7 min</span></div></div></div>
+</div>
+
+<!-- POETRY POST + COMMENTS -->
+<div class="page">
+  <div class="plbl">Poetry — single post + comments</div>
+  <nav class="ppnav"><a href="#" class="ppback">← Poetry</a></nav>
+  <header class="pphdr"><span class="pptag">Nature & place</span><h1 class="pptitle">"What the delta teaches about forgetting"</h1><div class="ppmeta"><span>Nsisong Effiong</span><span class="ppdot"></span><span>April 10, 2026</span></div></header>
+  <div class="pporn"></div>
+  <div class="pppoem">
+    <div class="ppstanza"><span class="ppline">The river does not mourn</span><span class="ppline">the banks it has abandoned—</span><span class="ppline">it is already elsewhere,</span><span class="ppline">already becoming</span><span class="ppline i1">something the sea will name.</span></div>
+    <div class="ppstanza"><span class="ppline">I have stood at three deltas.</span><span class="ppline">Each one taught me</span><span class="ppline">the same thing</span><span class="ppline i1">in a different mouth.</span></div>
+    <div class="ppstanza"><span class="ppline">Forgetting is not failure.</span><span class="ppline">It is the water finding</span><span class="ppline">a lower place to go,</span><span class="ppline i1">a softer way through.</span></div>
+    <div class="ppstanza"><span class="ppline">What I have lost</span><span class="ppline">is not behind me—</span><span class="ppline">it is distributed,</span><span class="ppline i1">given to the silt,</span><span class="ppline i2">the estuarine grass,</span><span class="ppline i1">the slow birds</span><span class="ppline">who do not keep</span><span class="ppline i1">what they find.</span></div>
+    <div class="ppstanza"><span class="ppline">The delta does not ask</span><span class="ppline">where it is going.</span><span class="ppline">It only spreads,</span><span class="ppline i1">and spreads,</span><span class="ppline i2">and thins</span><span class="ppline">into the open.</span></div>
+    <div class="ppend">· · ·</div>
+    <div class="ppnrule"></div>
+    <p class="ppnlbl">Poet's note</p>
+    <p class="ppnote">Written after returning to the Niger Delta for the first time in seven years. The geography kept insisting on becoming metaphor — I eventually stopped resisting it.</p>
+  </div>
+  <div class="ppfoot"><div><p class="ppfd">← Previous</p><p class="ppft">"My grandmother's English"</p></div><div class="ppfnext"><p class="ppfd">Next →</p><p class="ppft">"Harmattan syntax"</p></div></div>
+  <div class="pc">
+    <div class="pcrule"></div>
+    <p class="pchdr">2 responses</p>
+    <div class="pcc">
+      <div class="pccmeta"><span class="pccname">Chidinma Osei</span><span class="pccdate">April 12, 2026</span></div>
+      <p class="pcctext">"It only spreads, and spreads, and thins into the open" — this is how grief actually moves. Not dramatically. Just quietly outward until it disappears into everything.</p>
+      <span class="pccreply">↩ Reply</span>
+      <div class="pcreply"><p class="pcrname">Nsisong Effiong</p><p class="pcrtext">Yes — that's exactly what I was reaching for. Thank you for articulating it so clearly.</p></div>
+    </div>
+    <div class="pcc">
+      <div class="pccmeta"><span class="pccname">Emeka Balogun</span><span class="pccdate">April 14, 2026</span></div>
+      <p class="pcctext">The indentation in the fourth stanza does so much work. You feel the silt, the grass, the birds as separate layers, each one receiving something.</p>
+      <span class="pccreply">↩ Reply</span>
+    </div>
+    <div class="pcrule" style="margin:2rem auto 2rem"></div>
+    <p class="pcftitle">Leave a response</p>
+    <div class="pcfields"><div class="pcfield"><span class="pclabel">Name</span><input class="pcinput" type="text" placeholder="Your name" /></div><div class="pcfield"><span class="pclabel">Email</span><input class="pcinput" type="email" placeholder="your@email.com" /></div></div>
+    <textarea class="pctextarea" placeholder="Write something..."></textarea>
+    <button class="pcsubmit">Submit</button>
+    <p class="pcnote">Your email is never displayed publicly · Comments are moderated</p>
+  </div>
+</div>
+
+<!-- TECH POST + COMMENTS -->
+<div class="page">
+  <div class="plbl">Tech — single post + comments</div>
+  <nav class="tpnav"><a href="#" class="tpback">← ~/tech</a><span class="tpcrumb">orchestrate.py — deep dive</span></nav>
+  <div class="tphero"><div class="tphtags"><span class="tphtag">AI/ML</span><span class="tphtag">devtools</span><span class="tphtag">Python</span></div><h1 class="tphtitle">orchestrate.py — a deep dive into the pipeline runner</h1><p class="tphdesc">How I built a resumable 4-stage AI pipeline and what I learned about model handoffs, state management, and failure modes.</p><div class="tphmeta"><span>Apr 7, 2026</span><span>12 min read</span><span>Nsisong Effiong</span></div></div>
+  <div class="tpbody">
+    <article class="tpmain">
+      <p class="tpp">When I built ai-workspace-scripts, the hardest part wasn't getting three AI models to produce good output — it was making the whole thing reliable.</p>
+      <h2 class="tph2">The stage routing model</h2>
+      <div class="tpcode"><span class="tc"># Stage dispatch</span>
+<span class="tk">def</span> <span class="tf">run_stage</span>(stage_num, task, prior=<span class="tk">None</span>):
+&nbsp;&nbsp;response = <span class="tf">call_api</span>(<span class="tf">get_model</span>(stage_num), task, prior)
+&nbsp;&nbsp;<span class="tf">write_files</span>(response)
+&nbsp;&nbsp;<span class="tf">git_commit</span>(f<span class="ts2">"stage-{stage_num}"</span>)
+&nbsp;&nbsp;<span class="tk">return</span> response</div>
+      <div class="tpcallout"><div class="tpcll">Design note</div><div class="tpclt">Each stage receives the full output of the previous stage as context. This lets Stage 4 make meaningful corrections.</div></div>
+    </article>
+    <aside class="tpsb"><span class="tptoclbl">// contents</span><a href="#" class="tptoc active">Stage routing model</a><a href="#" class="tptoc">Why commit per stage</a><a href="#" class="tptoc">Resuming failures</a><a href="#" class="tptoc">What I'd change</a><div class="tpsbblock"><span class="tpsblbl">// related</span><div class="tprel">Context window as state management</div><div class="tprel">Idempotent bash scripts</div></div></aside>
+  </div>
+  <div class="tpfoot"><span class="tpfp">← Context window as state management</span><span class="tpfn">Idempotent bash scripts →</span></div>
+  <div class="tco">
+    <div class="tcohdr"><span class="tcotitle">// discussion</span><span class="tcocount">2 comments</span></div>
+    <div class="tcocomment">
+      <div class="tcocmeta"><div class="tcocleft"><div class="tcoavatar">TN</div><span class="tcocname">Tunde Nwachukwu</span></div><span class="tcocdate">Apr 8, 2026</span></div>
+      <p class="tcoctext">The git-commit-per-stage approach is clever. Have you thought about using git tags instead of just commits?</p>
+      <span class="tcocreply">$ reply</span>
+      <div class="tcoreply"><p class="tcorname">Nsisong Effiong</p><p class="tcortext">Good call. Tags would make --from-stage cleaner.</p></div>
+    </div>
+    <div class="tcoform">
+      <p class="tcoformtitle">// add a comment</p>
+      <div class="tcofrow"><div><label class="tcoflabel">Name</label><input class="tcofinput" type="text" placeholder="your name" /></div><div><label class="tcoflabel">Email</label><input class="tcofinput" type="email" placeholder="your@email.com" /></div></div>
+      <label class="tcoflabel">Comment</label>
+      <textarea class="tcoftextarea" placeholder="your comment..."></textarea>
+      <button class="tcofsubmit">$ submit</button>
+      <p class="tcofnote">email hidden publicly · comments moderated before publishing</p>
+    </div>
+  </div>
+</div>
+
+<!-- IDEAS POST + COMMENTS -->
+<div class="page">
+  <div class="plbl">Ideas & Policy — single post + comments</div>
+  <nav class="epnav"><a href="#" class="epback">← Ideas & Policy</a><span class="epnavlbl">Essay · Vol. I</span></nav>
+  <div class="ephdr"><span class="epkicker">Technology & governance</span><h1 class="eph1">Why public sector AI adoption keeps failing — and who benefits from the story we tell about it</h1><p class="epdeck">Governments are adopting AI tools at pace, yet most deployments quietly collapse within 18 months. The dominant explanation — institutional slowness — obscures something more structural.</p><div class="epbyline"><span class="epbyname">Nsisong Effiong</span><span class="epbsep"></span><span>April 2, 2026</span><span class="epbsep"></span><span>14 min read</span></div></div>
+  <div class="epbody">
+    <p class="eplede">In 2023, a mid-sized European municipality deployed an AI triage system for its social services department. By early 2025 it had been quietly retired — not because of technical failure, but because the vendor had defined success metrics that diverged steadily from what social workers actually needed.</p>
+    <div class="eppqr"><p class="eppqsm">The failure modes cluster around the interface between what vendors are incentivised to measure and what public value actually requires.</p></div>
+    <p class="epp">This story is not unusual. Across healthcare, education, and benefits administration, AI deployments that arrived with fanfare have been wound down while stakeholders wait for contracts to expire.</p>
+    <div class="eprule"><span class="eprl"></span><span class="eprm">I.</span><span class="eprl"></span></div>
+    <h2 class="eph2">The procurement structure creates the failure mode</h2>
+    <div class="eppql"><p class="eppqsm">The public body lacks technical capacity to evaluate what it is buying — and the procurement process is not designed to build that capacity.</p></div>
+    <p class="epp">This creates a structural asymmetry that precedes any question of institutional culture or risk appetite.</p>
+    <div class="eprule"><span class="eprl"></span><span class="eprm">II.</span><span class="eprl"></span></div>
+    <div class="eppqc"><p class="eppqlg">"The question is not whether AI will transform governance — it is who gets to define what transformation means, and for whom."</p><span class="eppqattr">— Nsisong Effiong</span></div>
+    <p class="epp">The framing of public institutions as congenitally unable to adopt technology performs specific work. It positions the solution as more private sector involvement, faster procurement, reduced oversight — precisely the conditions that created the failure mode in the first place.</p>
+  </div>
+  <div class="epfoot"><div class="epfn"><span class="epfd">← Previous</span><p class="epft">What the "innovation economy" discourse consistently leaves out</p></div><div class="epfn next"><span class="epfd">Next →</span><p class="epft">Digital public infrastructure and the question of who owns it</p></div></div>
+  <div class="ico">
+    <div class="icohdr"><span class="icotitle">Responses</span><span class="icocount">2 responses · Vol. I</span></div>
+    <div class="icocomment">
+      <div class="icocmeta"><span class="icocname">Funke Adeleke</span><span class="icocdate">Apr 4, 2026</span></div>
+      <p class="icoctext">The point about vendor-defined success metrics is the crux of it.</p>
+      <span class="icocreply">Reply →</span>
+      <div class="icoreply"><p class="icorname">Nsisong Effiong</p><p class="icortext">The NHS examples are particularly stark.</p></div>
+    </div>
+    <div class="icoformrule"></div>
+    <p class="icoformtitle">Leave a response</p>
+    <div class="icofrow"><div><label class="icoflabel">Name</label><input class="icofinput" type="text" placeholder="Your name" /></div><div><label class="icoflabel">Email</label><input class="icofinput" type="email" placeholder="your@email.com" /></div></div>
+    <label class="icoflabel">Response</label>
+    <textarea class="icoftextarea" placeholder="Your response..."></textarea>
+    <button class="icofsubmit">Submit response</button>
+    <p class="icofnote">Your email is never displayed publicly. All responses are moderated.</p>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
