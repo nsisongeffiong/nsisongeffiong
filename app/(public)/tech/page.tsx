@@ -1,11 +1,28 @@
 export const dynamic = 'force-dynamic'
 
-import { SiteNav } from '@/components/shared/SiteNav'
+import Link from 'next/link'
+import type { CSSProperties } from 'react'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { desc, eq, and } from 'drizzle-orm'
 
-const filters = ['all', 'AI/ML', 'systems', 'web', 'devtools']
+interface PostMeta {
+  readTime?: number
+}
+
+const heroTags: string[] = ['AI/ML', 'systems', 'web', 'devtools']
+const chips: string[]    = ['all', 'AI/ML', 'systems', 'web', 'devtools']
+
+function tagStyle(tag: string): CSSProperties {
+  const t = tag.toLowerCase()
+  if (t === 'devtools' || t === 'python' || t === 'performance') {
+    return { background: 'var(--amber-bg)', color: 'var(--amber-txt)' }
+  }
+  if (t === 'systems' || t === 'web' || t === 'architecture') {
+    return { background: 'var(--purple-bg)', color: 'var(--purple-txt)' }
+  }
+  return { background: 'var(--teal-pale)', color: 'var(--teal-txt)' }
+}
 
 export default async function TechPage() {
   const articles = await db
@@ -22,283 +39,290 @@ export default async function TechPage() {
     .where(and(eq(posts.published, true), eq(posts.type, 'tech')))
     .orderBy(desc(posts.publishedAt))
 
-  const stats = [
-    { label: 'articles published', value: String(articles.length) },
-    { label: 'avg words',          value: '2,400' },
-    { label: 'topics covered',     value: '6' },
-  ]
+  const uniqueTopics = new Set(articles.flatMap((a) => a.tags ?? []))
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg)',
-        color: 'var(--txt)',
-      }}
-    >
-      <SiteNav />
+    <div style={{ background: 'var(--bg)', color: 'var(--txt)', minHeight: '100vh' }}>
 
-      {/* ── Hero ── */}
-      <section
-        style={{
-          background: 'var(--teal-hero)',
-          padding: '4rem 1.5rem 3.5rem',
-        }}
-      >
-        <div style={{ maxWidth: '820px', margin: '0 auto' }}>
-          <p
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '0.8rem',
-              color: 'var(--teal-mid)',
-              marginBottom: '0.5rem',
-            }}
-          >
-            # engineering blog
-          </p>
-          <h1
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontWeight: 400,
-              fontSize: 'clamp(2.4rem, 6vw, 3.5rem)',
-              lineHeight: 1.1,
-              color: 'var(--teal-txt)',
-              marginBottom: '1rem',
-            }}
-          >
-            ./tech
-          </h1>
-          <p
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '0.9rem',
-              lineHeight: 1.7,
-              color: 'var(--teal-txt)',
-              maxWidth: '560px',
-              marginBottom: '1.5rem',
-              opacity: 0.85,
-            }}
-          >
-            Deep dives into AI/ML systems, web infrastructure, and the developer
-            tools that make complex work feel simple.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {['AI/ML', 'systems', 'web', 'devtools'].map((t) => (
-              <span
-                key={t}
-                style={{
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.7rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  border: '1px solid var(--teal-mid)',
-                  color: 'var(--teal-mid)',
-                  padding: '0.25rem 0.65rem',
-                  borderRadius: '2px',
-                }}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Filter Chips ── */}
+      {/* ── Nav ─────────────────────────────────────────── */}
       <nav
         style={{
-          maxWidth: '820px',
-          margin: '0 auto',
-          padding: '2rem 1.5rem 1.5rem',
           display: 'flex',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1.25rem 2rem',
+          borderBottom: '0.5px solid var(--bdr)',
         }}
       >
-        {filters.map((f, i) => (
-          <button
-            key={f}
-            type="button"
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '0.7rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              background: i === 0 ? 'var(--teal-hero)' : 'transparent',
-              color: i === 0 ? 'var(--teal-mid)' : 'var(--txt-secondary)',
-              border:
-                i === 0
-                  ? '1px solid var(--teal-hero)'
-                  : '1px solid var(--bdr)',
-              borderRadius: '2px',
-              padding: '0.35rem 0.85rem',
-              cursor: 'pointer',
-            }}
-          >
-            {f}
-          </button>
-        ))}
+        <Link
+          href="/"
+          style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '12px',
+            color: 'var(--txt2)',
+            textDecoration: 'none',
+          }}
+        >
+          ← nsisongeffiong.com
+        </Link>
+        <span
+          style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '11px',
+            letterSpacing: '0.1em',
+            color: 'var(--teal-mid)',
+          }}
+        >
+          ~/tech
+        </span>
       </nav>
 
-      {/* ── Article List ── */}
-      <section
-        style={{
-          maxWidth: '820px',
-          margin: '0 auto',
-          padding: '1rem 1.5rem 4rem',
-        }}
-      >
-        {articles.map((a, i) => (
-          <article
-            key={a.id}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '3rem 1fr',
-              gap: '1.5rem',
-              padding: '2rem 0',
-              borderBottom: '0.5px solid var(--bdr)',
-            }}
-          >
-            {/* Number */}
+      {/* ── Hero ─────────────────────────────────────────── */}
+      <div style={{ background: 'var(--teal-hero)', padding: '2.5rem 2rem' }}>
+        <p
+          style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '12px',
+            color: 'var(--teal-comm)',
+            marginBottom: '0.4rem',
+          }}
+        >
+          # engineering blog
+        </p>
+        <h1
+          style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: 'clamp(22px, 4vw, 38px)',
+            fontWeight: 500,
+            lineHeight: 1.1,
+            color: 'var(--teal-pale)',
+            letterSpacing: '-0.02em',
+            marginBottom: '0.75rem',
+          }}
+        >
+          ./tech
+        </h1>
+        <p
+          style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '12px',
+            color: 'var(--teal-light)',
+            lineHeight: 1.75,
+            maxWidth: '460px',
+            marginBottom: '1.4rem',
+          }}
+        >
+          Deep dives on AI systems, software architecture, and building with emerging tools.
+        </p>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {heroTags.map((t) => (
             <span
+              key={t}
               style={{
                 fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '1.5rem',
-                fontWeight: 400,
-                color: 'var(--teal-mid)',
-                lineHeight: 1,
-                paddingTop: '0.15rem',
+                fontSize: '10px',
+                padding: '3px 9px',
+                border: '0.5px solid var(--teal-comm)',
+                color: 'var(--teal-light)',
+                borderRadius: '2px',
               }}
             >
-              {String(i + 1).padStart(2, '0')}
+              {t}
             </span>
+          ))}
+        </div>
+      </div>
 
-            {/* Content */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {a.tags?.[0] && (
-                <span
-                  style={{
-                    fontFamily: 'var(--font-dm-mono), monospace',
-                    fontSize: '0.65rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    color: 'var(--teal-hero)',
-                    border: '1px solid var(--teal-hero)',
-                    padding: '0.1rem 0.45rem',
-                    borderRadius: '2px',
-                    alignSelf: 'flex-start',
-                  }}
-                >
-                  {a.tags[0]}
-                </span>
-              )}
-              <h2
-                style={{
-                  fontFamily: 'var(--font-syne), sans-serif',
-                  fontWeight: 700,
-                  fontSize: '1.35rem',
-                  lineHeight: 1.25,
-                  color: 'var(--txt)',
-                }}
-              >
-                <a
-                  href={`/tech/${a.slug}`}
-                  style={{ color: 'inherit', textDecoration: 'none' }}
-                >
-                  {a.title}
-                </a>
-              </h2>
-              {a.excerpt && (
-                <p
-                  style={{
-                    fontFamily: 'var(--font-dm-mono), monospace',
-                    fontSize: '0.8rem',
-                    lineHeight: 1.7,
-                    color: 'var(--txt-secondary)',
-                  }}
-                >
-                  {a.excerpt}
-                </p>
-              )}
+      {/* ── Toolbar ─────────────────────────────────────── */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '0.85rem 2rem',
+          background: 'var(--bg2)',
+          borderBottom: '0.5px solid var(--bdr)',
+        }}
+      >
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          {chips.map((chip, i) => (
+            <span
+              key={chip}
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '10px',
+                padding: '3px 10px',
+                border: i === 0 ? '0.5px solid var(--teal-light)' : '0.5px solid var(--bdr)',
+                borderRadius: '2px',
+                color: i === 0 ? 'var(--teal-txt)' : 'var(--txt2)',
+                background: i === 0 ? 'var(--teal-pale)' : 'transparent',
+                cursor: 'pointer',
+              }}
+            >
+              {chip}
+            </span>
+          ))}
+        </div>
+        <span
+          style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '11px',
+            color: 'var(--txt3)',
+          }}
+        >
+          sort: newest
+        </span>
+      </div>
+
+      {/* ── Post rows ───────────────────────────────────── */}
+      {articles.map((a, i) => (
+        <Link
+          key={a.id}
+          href={`/tech/${a.slug}`}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'auto 1fr auto',
+            gap: '1.4rem',
+            padding: '1.4rem 2rem',
+            borderBottom: '0.5px solid var(--bdr)',
+            alignItems: 'start',
+            cursor: 'pointer',
+            textDecoration: 'none',
+            color: 'inherit',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '11px',
+              color: 'var(--txt3)',
+              paddingTop: '2px',
+              minWidth: '20px',
+            }}
+          >
+            {String(i + 1).padStart(2, '0')}
+          </span>
+
+          <div>
+            {(a.tags ?? []).length > 0 && (
               <div
                 style={{
                   display: 'flex',
-                  gap: '1.5rem',
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.7rem',
-                  color: 'var(--txt-secondary)',
+                  gap: '0.4rem',
+                  marginBottom: '0.55rem',
+                  flexWrap: 'wrap',
                 }}
               >
-                {a.publishedAt && (
-                  <time dateTime={a.publishedAt.toISOString()}>
-                    {a.publishedAt.toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </time>
-                )}
-                {(a.metadata as any)?.readTime && (
-                  <span>{(a.metadata as any).readTime} min read</span>
-                )}
+                {(a.tags ?? []).map((tag) => (
+                  <span
+                    key={tag}
+                    style={{
+                      fontFamily: 'var(--font-dm-mono), monospace',
+                      fontSize: '10px',
+                      padding: '2px 7px',
+                      borderRadius: '2px',
+                      ...tagStyle(tag),
+                    }}
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
-            </div>
-          </article>
-        ))}
-      </section>
-
-      {/* ── Stats Bar ── */}
-      <section
-        style={{
-          maxWidth: '820px',
-          margin: '0 auto',
-          padding: '0 1.5rem 4rem',
-        }}
-      >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            borderTop: '0.5px solid var(--bdr)',
-            borderBottom: '0.5px solid var(--bdr)',
-          }}
-        >
-          {stats.map((s, i) => (
-            <div
-              key={s.label}
+            )}
+            <h3
               style={{
-                textAlign: 'center',
-                padding: '2rem 1rem',
-                borderRight:
-                  i < stats.length - 1 ? '0.5px solid var(--bdr)' : 'none',
+                fontFamily: 'var(--font-syne), sans-serif',
+                fontSize: '14px',
+                fontWeight: 600,
+                lineHeight: 1.3,
+                marginBottom: '0.4rem',
+                letterSpacing: '-0.01em',
+                color: 'var(--txt)',
               }}
             >
+              {a.title}
+            </h3>
+            {a.excerpt && (
               <p
                 style={{
                   fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '2rem',
-                  fontWeight: 400,
-                  color: 'var(--teal-mid)',
-                  marginBottom: '0.35rem',
+                  fontSize: '11px',
+                  color: 'var(--txt2)',
+                  lineHeight: 1.65,
                 }}
               >
-                {s.value}
+                {a.excerpt}
               </p>
-              <p
-                style={{
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.7rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'var(--txt-secondary)',
-                }}
-              >
-                {s.label}
-              </p>
+            )}
+          </div>
+
+          <span
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '11px',
+              color: 'var(--txt3)',
+              whiteSpace: 'nowrap',
+              paddingTop: '2px',
+            }}
+          >
+            {a.publishedAt
+              ? a.publishedAt.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })
+              : ''}
+            {(a.metadata as PostMeta)?.readTime
+              ? ` · ${(a.metadata as PostMeta).readTime} min`
+              : ''}
+          </span>
+        </Link>
+      ))}
+
+      {/* ── Stats ───────────────────────────────────────── */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          borderTop: '0.5px solid var(--bdr)',
+        }}
+      >
+        {[
+          { n: String(articles.length),         label: 'articles published' },
+          { n: '~7k',                            label: 'avg words / article' },
+          { n: String(uniqueTopics.size || 4),   label: 'topics covered' },
+        ].map((s, i, arr) => (
+          <div
+            key={s.label}
+            style={{
+              padding: '1.25rem 2rem',
+              borderRight: i < arr.length - 1 ? '0.5px solid var(--bdr)' : 'none',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '24px',
+                fontWeight: 500,
+                color: 'var(--teal-mid)',
+                marginBottom: '0.2rem',
+              }}
+            >
+              {s.n}
             </div>
-          ))}
-        </div>
-      </section>
+            <div
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '10px',
+                color: 'var(--txt3)',
+                letterSpacing: '0.08em',
+              }}
+            >
+              {s.label}
+            </div>
+          </div>
+        ))}
+      </div>
+
     </div>
   )
 }
