@@ -5,28 +5,35 @@ import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { desc, eq, and } from 'drizzle-orm'
 
+function formatDate(iso: string): string {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  })
+}
+
 export default async function HomePage() {
-  const recentPosts = await db
-    .select({
-      id:          posts.id,
-      type:        posts.type,
-      title:       posts.title,
-      slug:        posts.slug,
-      publishedAt: posts.publishedAt,
-    })
-    .from(posts)
-    .where(eq(posts.published, true))
-    .orderBy(desc(posts.publishedAt))
-    .limit(3)
+  // Latest per section for cards
+  const [latestPoetry, latestTech, latestIdeas] = await Promise.all([
+    db.select({ title: posts.title, slug: posts.slug })
+      .from(posts).where(and(eq(posts.published, true), eq(posts.type, 'poetry')))
+      .orderBy(desc(posts.publishedAt)).limit(1),
+    db.select({ title: posts.title, slug: posts.slug })
+      .from(posts).where(and(eq(posts.published, true), eq(posts.type, 'tech')))
+      .orderBy(desc(posts.publishedAt)).limit(1),
+    db.select({ title: posts.title, slug: posts.slug })
+      .from(posts).where(and(eq(posts.published, true), eq(posts.type, 'ideas')))
+      .orderBy(desc(posts.publishedAt)).limit(1),
+  ])
 
-  const [latestIdeas] = await db
-    .select({ title: posts.title, slug: posts.slug })
-    .from(posts)
-    .where(and(eq(posts.published, true), eq(posts.type, 'ideas')))
-    .orderBy(desc(posts.publishedAt))
-    .limit(1)
+  // Recent across all for the strip
+  const recentRaw = await db
+    .select({ id: posts.id, type: posts.type, title: posts.title, slug: posts.slug, publishedAt: posts.publishedAt })
+    .from(posts).where(eq(posts.published, true))
+    .orderBy(desc(posts.publishedAt)).limit(3)
 
-  const formatted = recentPosts.map((p) => ({
+  const recentPosts = recentRaw.map((p) => ({
     type:  p.type.charAt(0).toUpperCase() + p.type.slice(1),
     title: p.title,
     date:  p.publishedAt ? p.publishedAt.toISOString().split('T')[0] : '',
@@ -34,467 +41,341 @@ export default async function HomePage() {
   }))
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg)',
-        color: 'var(--txt)',
-      }}
-    >
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--txt)' }}>
       <SiteNav />
 
       {/* ── Hero ── */}
-      <section
-        style={{
-          textAlign: 'center',
-          padding: '6rem 1.5rem 4rem',
-          maxWidth: '720px',
-          margin: '0 auto',
-        }}
-      >
-        <h1
-          style={{
-            fontFamily: 'var(--font-cormorant), serif',
-            fontWeight: 300,
-            fontStyle: 'italic',
-            fontSize: 'clamp(2.8rem, 6vw, 4.5rem)',
-            lineHeight: 1.1,
-            color: 'var(--txt)',
-            marginBottom: '1rem',
-          }}
-        >
-          Nsisong Effiong
+      <div style={{ padding: '4rem 2rem 2.5rem', maxWidth: '700px' }}>
+        <span style={{
+          fontFamily: 'var(--font-syne), sans-serif',
+          fontSize: '10px',
+          letterSpacing: '0.16em',
+          textTransform: 'uppercase',
+          color: 'var(--txt3)',
+          marginBottom: '1.5rem',
+          display: 'block',
+        }}>
+          Writer · Engineer · Thinker
+        </span>
+        <h1 style={{
+          fontFamily: 'var(--font-cormorant), serif',
+          fontSize: 'clamp(42px, 6.5vw, 72px)',
+          fontWeight: 400,
+          lineHeight: 1.05,
+          letterSpacing: '-0.01em',
+          marginBottom: '1.5rem',
+          color: 'var(--txt)',
+        }}>
+          Words that build<br />
+          <em style={{ fontStyle: 'italic', color: 'var(--txt2)' }}>worlds &amp; systems.</em>
         </h1>
-        <p
-          style={{
-            fontFamily: 'var(--font-cormorant), serif',
-            fontStyle: 'italic',
-            fontWeight: 300,
-            fontSize: '1.25rem',
-            color: 'var(--txt-secondary)',
-            maxWidth: '480px',
-            margin: '0 auto',
-            lineHeight: 1.6,
-          }}
-        >
-          Poet, engineer, and essayist — exploring language, systems, and the
-          architecture of public thought.
+        <p style={{
+          fontFamily: 'var(--font-cormorant), serif',
+          fontSize: '18px',
+          fontStyle: 'italic',
+          color: 'var(--txt2)',
+          lineHeight: 1.8,
+          maxWidth: '460px',
+          marginBottom: '2.5rem',
+        }}>
+          Poetry, code, and public thought — three modes of making sense of the world.
         </p>
-      </section>
+        <div style={{ width: '36px', height: '1px', background: 'var(--bdr2)' }} />
+      </div>
+
+      {/* ── Section label ── */}
+      <p style={{
+        fontFamily: 'var(--font-syne), sans-serif',
+        fontSize: '10px',
+        letterSpacing: '0.16em',
+        textTransform: 'uppercase',
+        color: 'var(--txt3)',
+        padding: '1.1rem 2rem',
+      }}>
+        Explore by category
+      </p>
 
       {/* ── Section Cards ── */}
-      <section
-        style={{
-          maxWidth: '1100px',
-          margin: '0 auto',
-          padding: '0 1.5rem 4rem',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '2rem',
-        }}
-      >
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        borderTop: '0.5px solid var(--bdr)',
+      }}>
+
         {/* Poetry Card */}
-        <article
-          style={{
-            border: '0.5px solid var(--bdr)',
-            borderRadius: '2px',
+        <a href="/poetry" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+          <div style={{
             padding: '2rem',
-            background: 'var(--bg2)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <h2
-              style={{
-                fontFamily: 'var(--font-cormorant), serif',
-                fontStyle: 'italic',
-                fontWeight: 300,
-                fontSize: '1.75rem',
-                color: 'var(--txt)',
-              }}
-            >
-              Poetry
-            </h2>
-            <span
-              style={{
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                border: '1px solid var(--purple-acc)',
-                color: 'var(--purple-acc)',
-                padding: '0.15rem 0.5rem',
-                borderRadius: '2px',
-              }}
-            >
-              verse
-            </span>
-          </div>
-          <p
-            style={{
+            borderRight: '0.5px solid var(--bdr)',
+            position: 'relative',
+            cursor: 'pointer',
+            height: '100%',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontSize: '10px',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              fontWeight: 500,
+              marginBottom: '1.1rem',
+              display: 'inline-block',
+              padding: '3px 9px',
+              borderRadius: '2px',
+              background: 'var(--purple-bg)',
+              color: 'var(--purple-txt)',
+            }}>Poetry</span>
+            <h2 style={{
               fontFamily: 'var(--font-cormorant), serif',
+              fontSize: '24px',
               fontStyle: 'italic',
-              fontWeight: 300,
-              fontSize: '1rem',
-              lineHeight: 1.7,
-              color: 'var(--txt-secondary)',
-            }}
-          >
-            Poems on memory, place, grief, and the textures of language — written
-            in the space between music and meaning.
-          </p>
-          <div
-            style={{
-              borderTop: '0.5px solid var(--bdr)',
-              paddingTop: '0.75rem',
-              marginTop: 'auto',
-            }}
-          >
-            <p
-              style={{
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'var(--txt-secondary)',
-                marginBottom: '0.35rem',
-              }}
-            >
-              Latest
+              fontWeight: 400,
+              lineHeight: 1.2,
+              marginBottom: '0.6rem',
+              color: 'var(--txt)',
+            }}>The literary space</h2>
+            <p style={{
+              fontSize: '13px',
+              color: 'var(--txt2)',
+              lineHeight: 1.65,
+              marginBottom: '1.4rem',
+            }}>
+              Verse, imagery, and language pressed into new shapes. Poetry as a way of knowing.
             </p>
-            <p
-              style={{
+            <div style={{ borderTop: '0.5px solid var(--bdr)', paddingTop: '1rem' }}>
+              <p style={{
+                fontFamily: 'var(--font-syne), sans-serif',
+                fontSize: '10px',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--txt3)',
+                marginBottom: '0.45rem',
+              }}>Latest</p>
+              <p style={{
                 fontFamily: 'var(--font-cormorant), serif',
                 fontStyle: 'italic',
-                fontSize: '1rem',
+                fontSize: '13px',
+                lineHeight: 1.5,
                 color: 'var(--txt)',
-              }}
-            >
-              {formatted.find((p) => p.type === 'Poetry')?.title ?? ''}
-            </p>
+              }}>
+                {latestPoetry[0]?.title ? `"${latestPoetry[0].title}"` : ''}
+              </p>
+            </div>
+            <span style={{
+              position: 'absolute',
+              bottom: '1.6rem',
+              right: '1.6rem',
+              fontSize: '15px',
+              color: 'var(--txt3)',
+            }}>↗</span>
           </div>
-          <a
-            href="/poetry"
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '0.8rem',
-              color: 'var(--purple-acc)',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-            }}
-          >
-            Read poems <span aria-hidden="true">→</span>
-          </a>
-        </article>
+        </a>
 
         {/* Tech Card */}
-        <article
-          style={{
-            border: '0.5px solid var(--bdr)',
-            borderRadius: '2px',
+        <a href="/tech" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+          <div style={{
             padding: '2rem',
-            background: 'var(--bg2)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <h2
-              style={{
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontWeight: 400,
-                fontSize: '1.35rem',
-                color: 'var(--txt)',
-              }}
-            >
-              ./engineering
-            </h2>
-            <span
-              style={{
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                border: '1px solid var(--teal-hero)',
-                color: 'var(--teal-hero)',
-                padding: '0.15rem 0.5rem',
-                borderRadius: '2px',
-              }}
-            >
-              tech
-            </span>
-          </div>
-          <p
-            style={{
+            borderRight: '0.5px solid var(--bdr)',
+            position: 'relative',
+            cursor: 'pointer',
+            height: '100%',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontSize: '10px',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              fontWeight: 500,
+              marginBottom: '1.1rem',
+              display: 'inline-block',
+              padding: '3px 9px',
+              borderRadius: '2px',
+              background: 'var(--teal-pale)',
+              color: 'var(--teal-txt)',
+            }}>Tech</span>
+            <h2 style={{
               fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '0.85rem',
-              lineHeight: 1.7,
-              color: 'var(--txt-secondary)',
-            }}
-          >
-            Deep dives into AI/ML systems, web architecture, and developer
-            tooling — written with the precision of a commit message.
-          </p>
-          <div
-            style={{
-              borderTop: '0.5px solid var(--bdr)',
-              paddingTop: '0.75rem',
-              marginTop: 'auto',
-            }}
-          >
-            <p
-              style={{
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.7rem',
+              fontSize: '14px',
+              fontWeight: 500,
+              lineHeight: 1.2,
+              marginBottom: '0.6rem',
+              color: 'var(--txt)',
+            }}>./engineering</h2>
+            <p style={{
+              fontSize: '13px',
+              color: 'var(--txt2)',
+              lineHeight: 1.65,
+              marginBottom: '1.4rem',
+            }}>
+              Deep dives on AI systems, software architecture, and building with emerging tools.
+            </p>
+            <div style={{ borderTop: '0.5px solid var(--bdr)', paddingTop: '1rem' }}>
+              <p style={{
+                fontFamily: 'var(--font-syne), sans-serif',
+                fontSize: '10px',
+                letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'var(--txt-secondary)',
-                marginBottom: '0.35rem',
-              }}
-            >
-              Latest
-            </p>
-            <p
-              style={{
+                color: 'var(--txt3)',
+                marginBottom: '0.45rem',
+              }}>Latest</p>
+              <p style={{
                 fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.85rem',
+                fontSize: '11px',
+                lineHeight: 1.6,
                 color: 'var(--txt)',
-              }}
-            >
-              {formatted.find((p) => p.type === 'Tech')?.title ?? ''}
-            </p>
+              }}>
+                {latestTech[0]?.title ?? ''}
+              </p>
+            </div>
+            <span style={{
+              position: 'absolute',
+              bottom: '1.6rem',
+              right: '1.6rem',
+              fontSize: '15px',
+              color: 'var(--txt3)',
+            }}>↗</span>
           </div>
-          <a
-            href="/tech"
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '0.8rem',
-              color: 'var(--teal-hero)',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-            }}
-          >
-            Read articles <span aria-hidden="true">→</span>
-          </a>
-        </article>
+        </a>
 
         {/* Ideas Card */}
-        <article
-          style={{
-            border: '0.5px solid var(--bdr)',
-            borderRadius: '2px',
+        <a href="/ideas" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+          <div style={{
             padding: '2rem',
-            background: 'var(--bg2)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <h2
-              style={{
+            position: 'relative',
+            cursor: 'pointer',
+            height: '100%',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontSize: '10px',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              fontWeight: 500,
+              marginBottom: '1.1rem',
+              display: 'inline-block',
+              padding: '3px 9px',
+              borderRadius: '2px',
+              background: 'var(--amber-bg)',
+              color: 'var(--amber-txt)',
+            }}>Ideas</span>
+            <h2 style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontSize: '20px',
+              fontWeight: 600,
+              lineHeight: 1.2,
+              marginBottom: '0.6rem',
+              letterSpacing: '-0.01em',
+              color: 'var(--txt)',
+            }}>Essays &amp; Policy</h2>
+            <p style={{
+              fontSize: '13px',
+              color: 'var(--txt2)',
+              lineHeight: 1.65,
+              marginBottom: '1.4rem',
+            }}>
+              Writing on governance, technology in society, and ideas that deserve more friction.
+            </p>
+            <div style={{ borderTop: '0.5px solid var(--bdr)', paddingTop: '1rem' }}>
+              <p style={{
                 fontFamily: 'var(--font-syne), sans-serif',
-                fontWeight: 700,
-                fontSize: '1.5rem',
-                color: 'var(--txt)',
-              }}
-            >
-              Ideas
-            </h2>
-            <span
-              style={{
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.7rem',
+                fontSize: '10px',
+                letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                border: '1px solid var(--amber)',
-                color: 'var(--amber)',
-                padding: '0.15rem 0.5rem',
-                borderRadius: '2px',
-              }}
-            >
-              essays
-            </span>
-          </div>
-          <p
-            style={{
-              fontFamily: 'var(--font-source-serif), serif',
-              fontSize: '1rem',
-              lineHeight: 1.7,
-              color: 'var(--txt-secondary)',
-            }}
-          >
-            Long-form essays on policy, governance, and the public structures
-            that shape how we live together.
-          </p>
-          <div
-            style={{
-              borderTop: '0.5px solid var(--bdr)',
-              paddingTop: '0.75rem',
-              marginTop: 'auto',
-            }}
-          >
-            <p
-              style={{
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'var(--txt-secondary)',
-                marginBottom: '0.35rem',
-              }}
-            >
-              Latest
-            </p>
-            <p
-              style={{
-                fontFamily: 'var(--font-source-serif), serif',
-                fontSize: '1rem',
+                color: 'var(--txt3)',
+                marginBottom: '0.45rem',
+              }}>Latest</p>
+              <p style={{
+                fontSize: '12px',
+                lineHeight: 1.5,
                 color: 'var(--txt)',
-              }}
-            >
-              {latestIdeas?.title ?? ''}
-            </p>
+              }}>
+                {latestIdeas[0]?.title ?? ''}
+              </p>
+            </div>
+            <span style={{
+              position: 'absolute',
+              bottom: '1.6rem',
+              right: '1.6rem',
+              fontSize: '15px',
+              color: 'var(--txt3)',
+            }}>↗</span>
           </div>
-          <a
-            href="/ideas"
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '0.8rem',
-              color: 'var(--amber)',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-            }}
-          >
-            Read essays <span aria-hidden="true">→</span>
-          </a>
-        </article>
-      </section>
+        </a>
+
+      </div>
 
       {/* ── Recent Posts Strip ── */}
-      <section
-        style={{
-          maxWidth: '1100px',
-          margin: '0 auto',
-          padding: '0 1.5rem 4rem',
-        }}
-      >
-        <h3
-          style={{
+      <div style={{ borderTop: '0.5px solid var(--bdr)', padding: '1.75rem 2rem' }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginBottom: '1.1rem',
+        }}>
+          <span style={{
             fontFamily: 'var(--font-syne), sans-serif',
-            fontWeight: 700,
-            fontSize: '1rem',
+            fontSize: '10px',
+            letterSpacing: '0.16em',
             textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: 'var(--txt-secondary)',
-            marginBottom: '1.5rem',
-            borderBottom: '0.5px solid var(--bdr)',
-            paddingBottom: '0.5rem',
-          }}
-        >
-          Recent
-        </h3>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '1.5rem',
-          }}
-        >
-          {formatted.map((post) => (
-            <a
-              key={post.href}
-              href={post.href}
-              style={{
-                textDecoration: 'none',
+            color: 'var(--txt3)',
+          }}>Recent across all categories</span>
+          <span style={{
+            fontFamily: 'var(--font-syne), sans-serif',
+            fontSize: '11px',
+            color: 'var(--txt3)',
+          }}>View all →</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.1rem' }}>
+          {recentPosts.map((post) => (
+            <a key={post.href} href={post.href} style={{ textDecoration: 'none' }}>
+              <span style={{
+                fontFamily: 'var(--font-syne), sans-serif',
+                fontSize: '10px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'var(--txt3)',
+                display: 'block',
+                marginBottom: '0.3rem',
+              }}>{post.type}</span>
+              <span style={{
+                display: 'block',
+                fontFamily: post.type === 'Poetry'
+                  ? 'var(--font-cormorant), serif'
+                  : post.type === 'Tech'
+                  ? 'var(--font-dm-mono), monospace'
+                  : 'var(--font-syne), sans-serif',
+                fontStyle: post.type === 'Poetry' ? 'italic' : 'normal',
+                fontSize: post.type === 'Tech' ? '11px' : post.type === 'Poetry' ? '14px' : '12px',
                 color: 'var(--txt)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.35rem',
-                padding: '1rem 0',
-                borderBottom: '0.5px solid var(--bdr)',
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.65rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  color:
-                    post.type === 'Poetry'
-                      ? 'var(--purple-acc)'
-                      : post.type === 'Tech'
-                        ? 'var(--teal-hero)'
-                        : 'var(--amber)',
-                }}
-              >
-                {post.type}
-              </span>
-              <span
-                style={{
-                  fontFamily:
-                    post.type === 'Poetry'
-                      ? 'var(--font-cormorant), serif'
-                      : post.type === 'Tech'
-                        ? 'var(--font-dm-mono), monospace'
-                        : 'var(--font-syne), sans-serif',
-                  fontStyle: post.type === 'Poetry' ? 'italic' : 'normal',
-                  fontWeight: post.type === 'Ideas' ? 700 : 400,
-                  fontSize: post.type === 'Tech' ? '0.9rem' : '1.1rem',
-                }}
-              >
-                {post.title}
-              </span>
+              }}>{post.title}</span>
               {post.date && (
-                <time
-                  style={{
-                    fontFamily: 'var(--font-dm-mono), monospace',
-                    fontSize: '0.7rem',
-                    color: 'var(--txt-secondary)',
-                  }}
-                  dateTime={post.date}
-                >
-                  {new Date(post.date).toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </time>
+                <span style={{
+                  fontFamily: 'var(--font-syne), sans-serif',
+                  fontSize: '11px',
+                  color: 'var(--txt3)',
+                  display: 'block',
+                  marginTop: '0.3rem',
+                }}>
+                  {formatDate(post.date)}
+                </span>
               )}
             </a>
           ))}
         </div>
-      </section>
+      </div>
 
       {/* ── Footer ── */}
-      <footer
-        style={{
-          textAlign: 'center',
-          padding: '2rem 1.5rem 3rem',
-          borderTop: '0.5px solid var(--bdr)',
-          maxWidth: '1100px',
-          margin: '0 auto',
-        }}
-      >
-        <p
-          style={{
-            fontFamily: 'var(--font-dm-mono), monospace',
-            fontSize: '0.75rem',
-            color: 'var(--txt-secondary)',
-          }}
-        >
-          © {new Date().getFullYear()} Nsisong Effiong. All rights reserved.
-        </p>
+      <footer style={{
+        borderTop: '0.5px solid var(--bdr)',
+        padding: '1.1rem 2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontFamily: 'var(--font-cormorant), serif',
+        fontSize: '13px',
+        fontStyle: 'italic',
+        color: 'var(--txt3)',
+      }}>
+        <span>nsisongeffiong.com</span>
+        <span>© {new Date().getFullYear()} · All writing reserved</span>
       </footer>
     </div>
   )
