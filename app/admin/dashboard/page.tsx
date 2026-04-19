@@ -1,25 +1,44 @@
 import Link from 'next/link';
 import AdminNav from '@/components/admin/AdminNav';
+import { db } from '@/lib/db';
+import { posts, comments } from '@/lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
 
-const stats = {
-  totalPosts: 14,
-  published: 11,
-  drafts: 3,
-  pendingComments: 7,
-  postsByType: { poetry: 8, tech: 4, ideas: 2 },
-};
+export const dynamic = 'force-dynamic';
 
-const postsByTypeRows: Array<{
-  label: string;
-  count: number;
-  color: string;
-}> = [
-  { label: 'Poetry', count: stats.postsByType.poetry, color: 'var(--purple)' },
-  { label: 'Tech', count: stats.postsByType.tech, color: 'var(--teal-mid)' },
-  { label: 'Ideas', count: stats.postsByType.ideas, color: 'var(--amber)' },
-];
+export default async function AdminDashboardPage() {
+  const [totalRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(posts);
 
-export default function AdminDashboardPage() {
+  const [draftRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(posts)
+    .where(eq(posts.published, false));
+
+  const [pendingRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(comments)
+    .where(eq(comments.status, 'pending'));
+
+  const byTypeRows = await db
+    .select({ type: posts.type, count: sql<number>`count(*)::int` })
+    .from(posts)
+    .groupBy(posts.type);
+
+  const totalPosts = totalRow?.count ?? 0;
+  const drafts = draftRow?.count ?? 0;
+  const published = totalPosts - drafts;
+  const pendingComments = pendingRow?.count ?? 0;
+
+  const countByType = Object.fromEntries(byTypeRows.map((r) => [r.type, r.count]));
+
+  const postsByTypeRows: Array<{ label: string; count: number; color: string }> = [
+    { label: 'Poetry', count: countByType['poetry'] ?? 0, color: 'var(--purple)' },
+    { label: 'Tech',   count: countByType['tech']   ?? 0, color: 'var(--teal-mid)' },
+    { label: 'Ideas',  count: countByType['ideas']  ?? 0, color: 'var(--amber)' },
+  ];
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <AdminNav />
@@ -46,7 +65,7 @@ export default function AdminDashboardPage() {
               color: 'var(--txt3)',
             }}
           >
-            Site overview — static placeholder data
+            Site overview
           </span>
         </div>
 
@@ -59,12 +78,12 @@ export default function AdminDashboardPage() {
             marginBottom: '2.5rem',
           }}
         >
-          <StatCard label="Total Posts" value={stats.totalPosts} />
-          <StatCard label="Published" value={stats.published} />
-          <StatCard label="Drafts" value={stats.drafts} />
+          <StatCard label="Total Posts" value={totalPosts} />
+          <StatCard label="Published" value={published} />
+          <StatCard label="Drafts" value={drafts} />
           <StatCard
             label="Pending Comments"
-            value={stats.pendingComments}
+            value={pendingComments}
             valueColor="var(--amber)"
           />
         </div>
@@ -86,10 +105,7 @@ export default function AdminDashboardPage() {
           </span>
 
           {postsByTypeRows.map((row) => {
-            const pct =
-              stats.totalPosts > 0
-                ? (row.count / stats.totalPosts) * 100
-                : 0;
+            const pct = totalPosts > 0 ? (row.count / totalPosts) * 100 : 0;
             return (
               <div
                 key={row.label}

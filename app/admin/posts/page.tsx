@@ -1,20 +1,10 @@
 import AdminNav from '@/components/admin/AdminNav'
 import Link from 'next/link'
+import { db } from '@/lib/db'
+import { posts } from '@/lib/db/schema'
+import { desc } from 'drizzle-orm'
 
-const posts: {
-  id: string
-  title: string
-  type: 'poetry' | 'tech' | 'ideas'
-  published: boolean
-  publishedAt: string | null
-  excerpt: string
-}[] = [
-  { id: '1', title: 'What the delta teaches about forgetting', type: 'poetry', published: true, publishedAt: 'Apr 10, 2026', excerpt: 'On water, impermanence, and the places that hold us.' },
-  { id: '2', title: 'orchestrate.py — a deep dive into the pipeline runner', type: 'tech', published: true, publishedAt: 'Apr 7, 2026', excerpt: 'Stage management, git branching, and resumable pipelines.' },
-  { id: '3', title: 'Why public sector AI adoption keeps failing', type: 'ideas', published: true, publishedAt: 'Apr 2, 2026', excerpt: 'The dominant explanation obscures something more structural.' },
-  { id: '4', title: 'Harmattan syntax', type: 'poetry', published: false, publishedAt: null, excerpt: 'Dust as grammar.' },
-  { id: '5', title: 'Next.js + Supabase: server/client boundary mistakes', type: 'tech', published: false, publishedAt: null, excerpt: 'createServerClient vs createClient — when it matters.' },
-]
+export const dynamic = 'force-dynamic'
 
 const filters = ['All', 'Poetry', 'Tech', 'Ideas', 'Drafts'] as const
 
@@ -33,7 +23,25 @@ const typeBadgeStyles: Record<'poetry' | 'tech' | 'ideas', React.CSSProperties> 
   },
 }
 
-export default function AdminPostsPage() {
+function fmtDate(d: Date | null): string {
+  if (!d) return '—'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+export default async function AdminPostsPage() {
+  const allPosts = await db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      type: posts.type,
+      published: posts.published,
+      publishedAt: posts.publishedAt,
+      excerpt: posts.excerpt,
+      slug: posts.slug,
+    })
+    .from(posts)
+    .orderBy(desc(posts.publishedAt))
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <AdminNav />
@@ -112,7 +120,7 @@ export default function AdminPostsPage() {
             </tr>
           </thead>
           <tbody>
-            {posts.map((post) => (
+            {allPosts.map((post) => (
               <tr
                 key={post.id}
                 style={{
@@ -184,7 +192,7 @@ export default function AdminPostsPage() {
                     color: 'var(--txt3)',
                   }}
                 >
-                  {post.publishedAt ?? '—'}
+                  {fmtDate(post.publishedAt)}
                 </td>
 
                 {/* Actions cell */}

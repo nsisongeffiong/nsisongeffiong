@@ -1,20 +1,9 @@
 import AdminNav from '@/components/admin/AdminNav'
+import { db } from '@/lib/db'
+import { posts, comments } from '@/lib/db/schema'
+import { desc, eq } from 'drizzle-orm'
 
-const comments: {
-  id: string
-  postTitle: string
-  postType: 'poetry' | 'tech' | 'ideas'
-  authorName: string
-  authorEmail: string
-  body: string
-  status: 'pending' | 'approved'
-  createdAt: string
-}[] = [
-  { id: '1', postTitle: 'What the delta teaches about forgetting', postType: 'poetry', authorName: 'Chidinma Osei', authorEmail: 'c.osei@example.com', body: 'This is how grief actually moves. Not dramatically. Just quietly outward.', status: 'pending', createdAt: 'Apr 12, 2026' },
-  { id: '2', postTitle: 'orchestrate.py — a deep dive', postType: 'tech', authorName: 'Tunde Nwachukwu', authorEmail: 't.nwachukwu@example.com', body: 'The git-commit-per-stage approach is clever. Have you thought about using git tags?', status: 'pending', createdAt: 'Apr 8, 2026' },
-  { id: '3', postTitle: 'Why public sector AI adoption keeps failing', postType: 'ideas', authorName: 'Funke Adeleke', authorEmail: 'f.adeleke@example.com', body: 'The point about vendor-defined success metrics is the crux of it.', status: 'approved', createdAt: 'Apr 4, 2026' },
-  { id: '4', postTitle: 'What the delta teaches about forgetting', postType: 'poetry', authorName: 'Emeka Balogun', authorEmail: 'e.balogun@example.com', body: 'The indentation in the fourth stanza does so much work.', status: 'pending', createdAt: 'Apr 14, 2026' },
-]
+export const dynamic = 'force-dynamic'
 
 const tabs = ['All', 'Pending', 'Approved'] as const
 
@@ -37,8 +26,27 @@ function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max) + '…' : text
 }
 
-export default function AdminCommentsPage() {
-  const pendingCount = comments.filter((c) => c.status === 'pending').length
+function fmtDate(d: Date): string {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+export default async function AdminCommentsPage() {
+  const allComments = await db
+    .select({
+      id: comments.id,
+      postTitle: posts.title,
+      postType: posts.type,
+      authorName: comments.authorName,
+      authorEmail: comments.authorEmail,
+      body: comments.body,
+      status: comments.status,
+      createdAt: comments.createdAt,
+    })
+    .from(comments)
+    .innerJoin(posts, eq(comments.postId, posts.id))
+    .orderBy(desc(comments.createdAt))
+
+  const pendingCount = allComments.filter((c) => c.status === 'pending').length
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -99,7 +107,7 @@ export default function AdminCommentsPage() {
 
         {/* Comment cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {comments.map((comment) => (
+          {allComments.map((comment) => (
             <div
               key={comment.id}
               style={{
@@ -139,7 +147,7 @@ export default function AdminCommentsPage() {
                     color: 'var(--txt3)',
                   }}
                 >
-                  {comment.createdAt}
+                  {fmtDate(comment.createdAt)}
                 </div>
               </div>
 
