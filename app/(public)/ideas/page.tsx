@@ -1,18 +1,11 @@
 export const dynamic = 'force-dynamic'
 
-import { SiteNav } from '@/components/shared/SiteNav'
+import Link from 'next/link'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { desc, eq, and } from 'drizzle-orm'
 
-const topics = [
-  'All',
-  'Governance',
-  'Education',
-  'Urban Policy',
-  'Public Health',
-  'Economics',
-]
+const topics = ['All', 'AI & society', 'Public policy', 'Political economy', 'Digital rights', 'Media']
 
 export default async function IdeasPage() {
   const essays = await db
@@ -29,415 +22,464 @@ export default async function IdeasPage() {
     .where(and(eq(posts.published, true), eq(posts.type, 'ideas')))
     .orderBy(desc(posts.publishedAt))
 
-  const leadEssay    = essays[0]
+  const leadEssay     = essays[0]
   const sidebarEssays = essays.slice(1, 4)
-  const essayGrid    = essays.slice(4)
+  const cardEssays    = essays.slice(4)
 
   const pullQuote = leadEssay
     ? {
-        text: leadEssay.excerpt ?? 'Writing on governance, technology in society, and ideas that deserve more friction.',
+        text: leadEssay.excerpt ?? 'The question is not whether AI will transform governance — it is who gets to define what transformation means, and for whom.',
         attribution: `— from "${leadEssay.title}"`,
       }
     : {
-        text: 'The most dangerous policy is the one that sounds like common sense but has never been tested against the lives it claims to improve.',
+        text: 'The question is not whether AI will transform governance — it is who gets to define what transformation means, and for whom.',
         attribution: '— Nsisong Effiong',
       }
 
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg)',
-        color: 'var(--txt)',
-      }}
-    >
-      <SiteNav />
+  const issueLabel = leadEssay
+    ? `Vol. I · ${leadEssay.publishedAt?.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) ?? 'April 2026'}`
+    : 'Vol. I · April 2026'
 
-      {/* ── Masthead ── */}
-      <section
+  return (
+    <div style={{ background: 'var(--bg)', color: 'var(--txt)', minHeight: '100vh' }}>
+
+      {/* ── Nav ─────────────────────────────────────────── */}
+      <nav
         style={{
-          maxWidth: '1060px',
-          margin: '0 auto',
-          padding: '4rem 1.5rem 2rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1.25rem 2rem',
+          borderBottom: '0.5px solid rgba(28,28,24,0.1)',
         }}
       >
-        <p
+        <Link
+          href="/"
           style={{
-            fontFamily: 'var(--font-dm-mono), monospace',
-            fontSize: '0.7rem',
+            fontSize: '13px',
+            color: '#5C5B54',
+            textDecoration: 'none',
+          }}
+        >
+          ← nsisongeffiong.com
+        </Link>
+        <span
+          style={{
+            fontFamily: 'var(--font-syne), sans-serif',
+            fontSize: '10px',
+            letterSpacing: '0.2em',
             textTransform: 'uppercase',
-            letterSpacing: '0.12em',
-            color: 'var(--amber)',
-            marginBottom: '0.5rem',
+            color: '#BA7517',
+            fontWeight: 600,
           }}
         >
-          Essays · Policy · Public Thought
-        </p>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '0.5rem',
-            paddingBottom: '1rem',
-            borderBottom: '3px solid var(--txt)',
-          }}
-        >
+          Ideas &amp; Policy
+        </span>
+      </nav>
+
+      {/* ── Masthead ─────────────────────────────────────── */}
+      <div
+        style={{
+          padding: '2.75rem 2rem 1.1rem',
+          borderBottom: '3px solid #1C1C18',
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          alignItems: 'end',
+          gap: '2rem',
+        }}
+      >
+        <div>
+          <span
+            style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontSize: '10px',
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+              color: '#BA7517',
+              fontWeight: 600,
+              display: 'block',
+              marginBottom: '0.75rem',
+            }}
+          >
+            Essays · Policy · Public Thought
+          </span>
           <h1
             style={{
               fontFamily: 'var(--font-syne), sans-serif',
+              fontSize: 'clamp(44px, 7.5vw, 80px)',
               fontWeight: 800,
-              fontSize: 'clamp(3.5rem, 8vw, 5rem)',
-              lineHeight: 1,
-              color: 'var(--txt)',
+              lineHeight: 0.95,
+              letterSpacing: '-0.04em',
+              color: '#1C1C18',
             }}
           >
             Ideas
           </h1>
-          <span
+        </div>
+        <div>
+          <p
             style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '0.75rem',
-              color: 'var(--txt-secondary)',
-              letterSpacing: '0.05em',
+              fontFamily: 'var(--font-source-serif), serif',
+              fontSize: '14px',
+              fontStyle: 'italic',
+              fontWeight: 300,
+              color: '#5C5B54',
+              lineHeight: 1.7,
+              maxWidth: '240px',
+              textAlign: 'right',
             }}
           >
-            {leadEssay ? ((leadEssay.metadata as any)?.volume ?? 'Vol. I') + ' — ' + (leadEssay.publishedAt?.getFullYear() ?? new Date().getFullYear()) : 'Vol. I'}
-          </span>
+            Writing on governance, technology in society, and questions that deserve more friction.
+          </p>
+          <p
+            style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontSize: '10px',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: '#9C9B90',
+              marginTop: '0.6rem',
+              textAlign: 'right',
+            }}
+          >
+            {issueLabel}
+          </p>
         </div>
-      </section>
+      </div>
 
-      {/* ── Top Grid: Lead + Sidebar ── */}
-      {leadEssay && (
-        <section
+      {/* ── Top Grid: Lead + Sidebar ─────────────────────── */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '2fr 1fr',
+          borderBottom: '0.5px solid rgba(28,28,24,0.1)',
+        }}
+      >
+        {/* Lead essay */}
+        <article
           style={{
-            maxWidth: '1060px',
-            margin: '0 auto',
-            padding: '2rem 1.5rem 3rem',
-            display: 'grid',
-            gridTemplateColumns: '2fr 1fr',
-            gap: '0',
+            padding: '2rem',
+            borderRight: '0.5px solid rgba(28,28,24,0.1)',
+            cursor: 'pointer',
           }}
         >
-          {/* Lead essay */}
-          <article
-            style={{
-              paddingRight: '2.5rem',
-              borderRight: '0.5px solid var(--bdr)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.65rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                color: 'var(--amber)',
-              }}
-            >
-              {(leadEssay.metadata as any)?.kicker ?? leadEssay.tags?.[0] ?? 'Essay'}
-            </span>
-            <h2
-              style={{
-                fontFamily: 'var(--font-syne), sans-serif',
-                fontWeight: 700,
-                fontSize: '1.85rem',
-                lineHeight: 1.2,
-                color: 'var(--txt)',
-              }}
-            >
-              <a
-                href={`/ideas/${leadEssay.slug}`}
-                style={{ color: 'inherit', textDecoration: 'none' }}
+          {leadEssay ? (
+            <Link href={`/ideas/${leadEssay.slug}`} style={{ textDecoration: 'none' }}>
+              <span
+                style={{
+                  fontFamily: 'var(--font-syne), sans-serif',
+                  fontSize: '9px',
+                  letterSpacing: '0.22em',
+                  textTransform: 'uppercase',
+                  color: '#BA7517',
+                  fontWeight: 600,
+                  marginBottom: '0.75rem',
+                  display: 'block',
+                }}
+              >
+                {(leadEssay.metadata as any)?.kicker ?? leadEssay.tags?.[0] ?? 'Technology & governance'}
+              </span>
+              <h2
+                style={{
+                  fontFamily: 'var(--font-syne), sans-serif',
+                  fontSize: 'clamp(18px, 3vw, 28px)',
+                  fontWeight: 800,
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.025em',
+                  marginBottom: '0.75rem',
+                  color: '#1C1C18',
+                }}
               >
                 {leadEssay.title}
-              </a>
-            </h2>
-            {leadEssay.excerpt && (
-              <p
-                style={{
-                  fontFamily: 'var(--font-source-serif), serif',
-                  fontSize: '1.05rem',
-                  lineHeight: 1.75,
-                  color: 'var(--txt-secondary)',
-                }}
-              >
-                {leadEssay.excerpt}
-              </p>
-            )}
-            <div
-              style={{
-                display: 'flex',
-                gap: '1.5rem',
-                fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '0.7rem',
-                color: 'var(--txt-secondary)',
-                marginTop: 'auto',
-              }}
-            >
-              {leadEssay.publishedAt && (
-                <time dateTime={leadEssay.publishedAt.toISOString()}>
-                  {leadEssay.publishedAt.toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </time>
+              </h2>
+              {leadEssay.excerpt && (
+                <p
+                  style={{
+                    fontFamily: 'var(--font-source-serif), serif',
+                    fontSize: '13px',
+                    lineHeight: 1.8,
+                    color: '#5C5B54',
+                    marginBottom: '1.1rem',
+                    fontWeight: 300,
+                  }}
+                >
+                  {leadEssay.excerpt}
+                </p>
               )}
-              {(leadEssay.metadata as any)?.readTime && (
-                <span>{(leadEssay.metadata as any).readTime} min</span>
-              )}
-              {(leadEssay.metadata as any)?.volume && (
-                <span style={{ color: 'var(--amber)' }}>
-                  {(leadEssay.metadata as any).volume}
-                </span>
-              )}
-            </div>
-          </article>
-
-          {/* Sidebar */}
-          <aside
-            style={{
-              paddingLeft: '2rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0',
-            }}
-          >
-            {sidebarEssays.map((essay, i) => (
-              <article
-                key={essay.id}
-                style={{
-                  padding: '1.25rem 0',
-                  borderBottom:
-                    i < sidebarEssays.length - 1
-                      ? '0.5px solid var(--bdr)'
-                      : 'none',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.4rem',
-                }}
-              >
+              <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
+                {leadEssay.publishedAt && (
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-syne), sans-serif',
+                      fontSize: '10px',
+                      color: '#9C9B90',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {leadEssay.publishedAt.toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                    {(leadEssay.metadata as any)?.readTime
+                      ? ` · ${(leadEssay.metadata as any).readTime} min`
+                      : ''}
+                  </span>
+                )}
                 <span
                   style={{
-                    fontFamily: 'var(--font-dm-mono), monospace',
-                    fontSize: '0.6rem',
+                    fontFamily: 'var(--font-syne), sans-serif',
+                    fontSize: '10px',
+                    color: '#BA7517',
+                    letterSpacing: '0.08em',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    color: 'var(--amber)',
+                    fontWeight: 600,
+                  }}
+                >
+                  Read essay →
+                </span>
+              </div>
+            </Link>
+          ) : (
+            <p style={{ fontFamily: 'var(--font-source-serif), serif', fontSize: '13px', color: '#5C5B54' }}>
+              No essays published yet.
+            </p>
+          )}
+        </article>
+
+        {/* Sidebar */}
+        <aside style={{ padding: '1.6rem 1.4rem' }}>
+          <p
+            style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontSize: '9px',
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: '#9C9B90',
+              borderBottom: '0.5px solid rgba(28,28,24,0.1)',
+              paddingBottom: '0.6rem',
+              marginBottom: '0.85rem',
+            }}
+          >
+            Also this month
+          </p>
+          {sidebarEssays.map((essay, i) => (
+            <Link
+              key={essay.id}
+              href={`/ideas/${essay.slug}`}
+              style={{ textDecoration: 'none' }}
+            >
+              <div
+                style={{
+                  padding: '0.75rem 0',
+                  borderBottom:
+                    i < sidebarEssays.length - 1
+                      ? '0.5px solid rgba(28,28,24,0.1)'
+                      : 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: 'var(--font-syne), sans-serif',
+                    fontSize: '9px',
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: '#BA7517',
+                    fontWeight: 600,
+                    marginBottom: '0.3rem',
                   }}
                 >
                   {(essay.metadata as any)?.kicker ?? essay.tags?.[0] ?? 'Essay'}
-                </span>
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-source-serif), serif',
+                    fontSize: '12px',
+                    fontWeight: 300,
+                    lineHeight: 1.4,
+                    color: '#1C1C18',
+                  }}
+                >
+                  {essay.title}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </aside>
+      </div>
+
+      {/* ── Pull Quote ───────────────────────────────────── */}
+      <div
+        style={{
+          background: '#FDF0D4',
+          padding: '1.75rem 2rem',
+          borderBottom: '0.5px solid rgba(28,28,24,0.1)',
+        }}
+      >
+        <p
+          style={{
+            fontFamily: 'var(--font-source-serif), serif',
+            fontSize: 'clamp(15px, 2.2vw, 21px)',
+            fontStyle: 'italic',
+            fontWeight: 300,
+            color: '#5C3608',
+            maxWidth: '680px',
+            borderLeft: '3px solid #BA7517',
+            paddingLeft: '1.4rem',
+            lineHeight: 1.55,
+          }}
+        >
+          &ldquo;{pullQuote.text}&rdquo;
+        </p>
+        <p
+          style={{
+            fontFamily: 'var(--font-syne), sans-serif',
+            fontSize: '10px',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: '#9A5C10',
+            marginTop: '0.75rem',
+            marginLeft: '1.4rem',
+          }}
+        >
+          {pullQuote.attribution}
+        </p>
+      </div>
+
+      {/* ── Topics Filter ────────────────────────────────── */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '0.5rem',
+          padding: '1rem 2rem',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          borderBottom: '0.5px solid rgba(28,28,24,0.1)',
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'var(--font-syne), sans-serif',
+            fontSize: '10px',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: '#9C9B90',
+            marginRight: '0.4rem',
+          }}
+        >
+          Topics
+        </span>
+        {topics.map((t, i) => (
+          <span
+            key={t}
+            style={{
+              fontFamily: 'var(--font-syne), sans-serif',
+              fontSize: '10px',
+              padding: '4px 11px',
+              border: i === 0 ? '0.5px solid #BA7517' : '0.5px solid rgba(28,28,24,0.2)',
+              borderRadius: '2px',
+              color: i === 0 ? '#7A4A0A' : '#5C5B54',
+              background: i === 0 ? '#FDF6E8' : 'transparent',
+              cursor: 'pointer',
+            }}
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+
+      {/* ── Card Grid ────────────────────────────────────── */}
+      {cardEssays.length > 0 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+          }}
+        >
+          {cardEssays.map((essay, i) => (
+            <Link
+              key={essay.id}
+              href={`/ideas/${essay.slug}`}
+              style={{ textDecoration: 'none' }}
+            >
+              <article
+                style={{
+                  padding: '1.6rem 2rem',
+                  borderRight:
+                    i < cardEssays.length - 1
+                      ? '0.5px solid rgba(28,28,24,0.1)'
+                      : 'none',
+                  cursor: 'pointer',
+                  height: '100%',
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: 'var(--font-syne), sans-serif',
+                    fontSize: '9px',
+                    letterSpacing: '0.2em',
+                    textTransform: 'uppercase',
+                    color: '#BA7517',
+                    fontWeight: 600,
+                    marginBottom: '0.6rem',
+                  }}
+                >
+                  {(essay.metadata as any)?.kicker ?? essay.tags?.[0] ?? 'Essay'}
+                </p>
                 <h3
                   style={{
                     fontFamily: 'var(--font-syne), sans-serif',
+                    fontSize: '14px',
                     fontWeight: 700,
-                    fontSize: '1rem',
-                    lineHeight: 1.3,
-                    color: 'var(--txt)',
+                    lineHeight: 1.25,
+                    letterSpacing: '-0.02em',
+                    marginBottom: '0.6rem',
+                    color: '#1C1C18',
                   }}
                 >
-                  <a
-                    href={`/ideas/${essay.slug}`}
-                    style={{ color: 'inherit', textDecoration: 'none' }}
-                  >
-                    {essay.title}
-                  </a>
+                  {essay.title}
                 </h3>
+                {essay.excerpt && (
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-source-serif), serif',
+                      fontSize: '12px',
+                      lineHeight: 1.7,
+                      color: '#5C5B54',
+                      fontWeight: 300,
+                      marginBottom: '0.75rem',
+                    }}
+                  >
+                    {essay.excerpt}
+                  </p>
+                )}
                 <div
                   style={{
+                    fontFamily: 'var(--font-syne), sans-serif',
+                    fontSize: '10px',
+                    color: '#9C9B90',
                     display: 'flex',
-                    gap: '1rem',
-                    fontFamily: 'var(--font-dm-mono), monospace',
-                    fontSize: '0.65rem',
-                    color: 'var(--txt-secondary)',
+                    justifyContent: 'space-between',
                   }}
                 >
                   {essay.publishedAt && (
-                    <time dateTime={essay.publishedAt.toISOString()}>
+                    <span>
                       {essay.publishedAt.toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'short',
-                        year: 'numeric',
                       })}
-                    </time>
+                    </span>
                   )}
                   {(essay.metadata as any)?.readTime && (
                     <span>{(essay.metadata as any).readTime} min</span>
                   )}
                 </div>
               </article>
-            ))}
-          </aside>
-        </section>
-      )}
-
-      {/* ── Pull Quote Strip ── */}
-      <section
-        style={{
-          background: 'var(--amber-pq)',
-          padding: '3rem 1.5rem',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '780px',
-            margin: '0 auto',
-            borderLeft: '4px solid var(--amber)',
-            paddingLeft: '1.5rem',
-          }}
-        >
-          <p
-            style={{
-              fontFamily: 'var(--font-source-serif), serif',
-              fontStyle: 'italic',
-              fontSize: '1.35rem',
-              lineHeight: 1.65,
-              color: 'var(--txt)',
-              marginBottom: '0.75rem',
-            }}
-          >
-            &ldquo;{pullQuote.text}&rdquo;
-          </p>
-          <p
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '0.7rem',
-              color: 'var(--txt-secondary)',
-            }}
-          >
-            {pullQuote.attribution}
-          </p>
-        </div>
-      </section>
-
-      {/* ── Topic Filter Chips ── */}
-      <nav
-        style={{
-          maxWidth: '1060px',
-          margin: '0 auto',
-          padding: '2.5rem 1.5rem 1.5rem',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
-        }}
-      >
-        {topics.map((t, i) => (
-          <button
-            key={t}
-            type="button"
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '0.7rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              background: i === 0 ? 'var(--amber)' : 'transparent',
-              color: i === 0 ? 'var(--bg)' : 'var(--txt-secondary)',
-              border:
-                i === 0 ? '1px solid var(--amber)' : '1px solid var(--bdr)',
-              borderRadius: '2px',
-              padding: '0.35rem 0.85rem',
-              cursor: 'pointer',
-            }}
-          >
-            {t}
-          </button>
-        ))}
-      </nav>
-
-      {/* ── Essay Card Grid ── */}
-      {essayGrid.length > 0 && (
-        <section
-          style={{
-            maxWidth: '1060px',
-            margin: '0 auto',
-            padding: '1rem 1.5rem 5rem',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '2rem',
-          }}
-        >
-          {essayGrid.map((essay) => (
-            <article
-              key={essay.id}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.65rem',
-                paddingBottom: '1.5rem',
-                borderBottom: '0.5px solid var(--bdr)',
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.6rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  color: 'var(--amber)',
-                }}
-              >
-                {(essay.metadata as any)?.kicker ?? essay.tags?.[0] ?? 'Essay'}
-              </span>
-              <h3
-                style={{
-                  fontFamily: 'var(--font-syne), sans-serif',
-                  fontWeight: 700,
-                  fontSize: '1.15rem',
-                  lineHeight: 1.3,
-                  color: 'var(--txt)',
-                }}
-              >
-                <a
-                  href={`/ideas/${essay.slug}`}
-                  style={{ color: 'inherit', textDecoration: 'none' }}
-                >
-                  {essay.title}
-                </a>
-              </h3>
-              {essay.excerpt && (
-                <p
-                  style={{
-                    fontFamily: 'var(--font-source-serif), serif',
-                    fontSize: '0.95rem',
-                    lineHeight: 1.7,
-                    color: 'var(--txt-secondary)',
-                  }}
-                >
-                  {essay.excerpt}
-                </p>
-              )}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '1rem',
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '0.65rem',
-                  color: 'var(--txt-secondary)',
-                  marginTop: 'auto',
-                }}
-              >
-                {essay.publishedAt && (
-                  <time dateTime={essay.publishedAt.toISOString()}>
-                    {essay.publishedAt.toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </time>
-                )}
-                {(essay.metadata as any)?.readTime && (
-                  <span>{(essay.metadata as any).readTime} min</span>
-                )}
-              </div>
-            </article>
+            </Link>
           ))}
-        </section>
+        </div>
       )}
     </div>
   )
