@@ -26,7 +26,6 @@ interface PostEditorProps {
 const lowlight = createLowlight(common);
 
 export default function PostEditor({ initialData, onSave }: PostEditorProps) {
-  console.log('initialData received:', initialData);
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [type, setType] = useState<'poetry' | 'tech' | 'ideas'>(initialData?.type ?? 'poetry');
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? '');
@@ -52,7 +51,6 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
 
   useEffect(() => {
     if (editor && initialData?.content) {
-      console.log('editor ready, setting content:', initialData?.content?.slice(0, 50));
       editor.commands.setContent(initialData.content);
     }
   }, [editor, initialData?.content]);
@@ -125,10 +123,85 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
             background: 'transparent',
             color: 'var(--txt)',
             padding: '0.75rem 0',
-            marginBottom: '1.5rem',
+            marginBottom: '1rem',
             outline: 'none',
           }}
         />
+
+        {/* Toolbar */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '4px',
+            marginBottom: '1rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          {[
+            {
+              label: 'B',
+              title: 'Bold',
+              action: () => editor?.chain().focus().toggleBold().run(),
+              active: () => editor?.isActive('bold') ?? false,
+            },
+            {
+              label: 'I',
+              title: 'Italic',
+              action: () => editor?.chain().focus().toggleItalic().run(),
+              active: () => editor?.isActive('italic') ?? false,
+            },
+            {
+              label: 'H2',
+              title: 'Heading 2',
+              action: () => editor?.chain().focus().toggleHeading({ level: 2 }).run(),
+              active: () => editor?.isActive('heading', { level: 2 }) ?? false,
+            },
+            {
+              label: 'H3',
+              title: 'Heading 3',
+              action: () => editor?.chain().focus().toggleHeading({ level: 3 }).run(),
+              active: () => editor?.isActive('heading', { level: 3 }) ?? false,
+            },
+            {
+              label: '<>',
+              title: 'Code block',
+              action: () => editor?.chain().focus().toggleCodeBlock().run(),
+              active: () => editor?.isActive('codeBlock') ?? false,
+            },
+            {
+              label: '"',
+              title: 'Blockquote',
+              action: () => editor?.chain().focus().toggleBlockquote().run(),
+              active: () => editor?.isActive('blockquote') ?? false,
+            },
+            {
+              label: 'HR',
+              title: 'Horizontal rule',
+              action: () => editor?.chain().focus().setHorizontalRule().run(),
+              active: () => false,
+            },
+          ].map(({ label, title, action, active }) => (
+            <button
+              key={label}
+              title={title}
+              onMouseDown={(e) => { e.preventDefault(); action(); }}
+              style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '11px',
+                padding: '3px 7px',
+                background: 'var(--bg2)',
+                border: '0.5px solid var(--bdr)',
+                color: active() ? 'var(--teal-mid)' : 'var(--txt2)',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                lineHeight: 1.4,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <EditorContent editor={editor} style={{ minHeight: '400px' }} />
       </div>
 
