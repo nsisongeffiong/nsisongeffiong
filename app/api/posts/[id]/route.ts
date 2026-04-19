@@ -33,15 +33,12 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { title, type, content, excerpt, tags, metadata, published } = body
+    const { title, type, content, excerpt, tags, metadata, published, publishedAt, createdAt } = body
 
     const [existing] = await db.select().from(posts).where(eq(posts.id, id)).limit(1)
     if (!existing) {
       return NextResponse.json({ success: false, error: 'Post not found' }, { status: 404 })
     }
-
-    const setPublishedAt =
-      published === true && !existing.published ? new Date() : existing.publishedAt
 
     const updates: Record<string, unknown> = { updatedAt: new Date() }
     if (title     !== undefined) updates.title     = title
@@ -51,9 +48,17 @@ export async function PATCH(
     if (tags      !== undefined) updates.tags      = tags
     if (metadata  !== undefined) updates.metadata  = metadata
     if (published !== undefined) {
-      updates.published   = published
-      updates.publishedAt = setPublishedAt
+      updates.published = published
+      // Explicit publishedAt from body takes priority; otherwise auto-stamp on first publish
+      if (publishedAt !== undefined) {
+        updates.publishedAt = publishedAt ? new Date(publishedAt) : null
+      } else {
+        updates.publishedAt = published === true && !existing.published ? new Date() : existing.publishedAt
+      }
+    } else if (publishedAt !== undefined) {
+      updates.publishedAt = publishedAt ? new Date(publishedAt) : null
     }
+    if (createdAt !== undefined) updates.createdAt = createdAt ? new Date(createdAt) : existing.createdAt
 
     const [post] = await db
       .update(posts)
