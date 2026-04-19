@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -48,6 +48,12 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
       },
     },
   });
+
+  useEffect(() => {
+    if (editor && initialData?.content) {
+      editor.commands.setContent(initialData.content);
+    }
+  }, [editor, initialData?.content]);
 
   const handleSave = async () => {
     if (!editor) return;
