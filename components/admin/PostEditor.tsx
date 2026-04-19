@@ -36,12 +36,12 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
   const [saved, setSaved] = useState(false);
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({ codeBlock: false }),
       Placeholder.configure({ placeholder: 'Start writing...' }),
       CodeBlockLowlight.configure({ lowlight }),
     ],
-    content: initialData?.content ?? '',
     editorProps: {
       attributes: {
         class: 'tiptap',
