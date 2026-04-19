@@ -54,6 +54,8 @@ export default async function EditPostPage({
           excerpt: post.excerpt ?? '',
           tags: post.tags ?? [],
           published: post.published ?? false,
+          publishedAt: post.publishedAt?.toISOString() ?? null,
+          createdAt: post.createdAt?.toISOString() ?? null,
         }} />
       </main>
     </div>

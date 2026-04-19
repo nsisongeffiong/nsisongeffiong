@@ -68,7 +68,7 @@ const ClassedBlockquote = Node.create({
       },
     };
   },
-  parseHTML() { return [{ tag: 'blockquote[class]' }]; },
+  parseHTML() { return [{ tag: 'blockquote[class]', priority: 1001 }]; },
   renderHTML({ HTMLAttributes }) {
     return ['blockquote', mergeAttributes(HTMLAttributes), 0];
   },
