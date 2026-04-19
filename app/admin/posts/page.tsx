@@ -1,46 +1,51 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import AdminNav from '@/components/admin/AdminNav'
 import Link from 'next/link'
-import { db } from '@/lib/db'
-import { posts } from '@/lib/db/schema'
-import { desc } from 'drizzle-orm'
-
-export const dynamic = 'force-dynamic'
 
 const filters = ['All', 'Poetry', 'Tech', 'Ideas', 'Drafts'] as const
+type Filter = (typeof filters)[number]
 
 const typeBadgeStyles: Record<'poetry' | 'tech' | 'ideas', React.CSSProperties> = {
-  poetry: {
-    background: 'var(--purple-bg)',
-    color: 'var(--purple-txt)',
-  },
-  tech: {
-    background: 'var(--teal-pale)',
-    color: 'var(--teal-txt)',
-  },
-  ideas: {
-    background: 'var(--amber-bg)',
-    color: 'var(--amber-txt)',
-  },
+  poetry: { background: 'var(--purple-bg)', color: 'var(--purple-txt)' },
+  tech:   { background: 'var(--teal-pale)', color: 'var(--teal-txt)' },
+  ideas:  { background: 'var(--amber-bg)',  color: 'var(--amber-txt)' },
 }
 
-function fmtDate(d: Date | null): string {
+function fmtDate(d: string | null): string {
   if (!d) return '—'
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default async function AdminPostsPage() {
-  const allPosts = await db
-    .select({
-      id: posts.id,
-      title: posts.title,
-      type: posts.type,
-      published: posts.published,
-      publishedAt: posts.publishedAt,
-      excerpt: posts.excerpt,
-      slug: posts.slug,
-    })
-    .from(posts)
-    .orderBy(desc(posts.publishedAt))
+interface Post {
+  id: string
+  title: string
+  type: 'poetry' | 'tech' | 'ideas'
+  published: boolean
+  publishedAt: string | null
+  excerpt: string | null
+  slug: string | null
+}
+
+export default function AdminPostsPage() {
+  const router = useRouter()
+  const [allPosts, setAllPosts] = useState<Post[]>([])
+  const [activeFilter, setActiveFilter] = useState<Filter>('All')
+
+  useEffect(() => {
+    fetch('/api/admin/posts')
+      .then((r) => r.json())
+      .then((data: Post[]) => setAllPosts(data))
+      .catch(() => {/* silently fail — auth redirect will handle it */})
+  }, [])
+
+  const displayed = allPosts.filter((p) => {
+    if (activeFilter === 'All') return true
+    if (activeFilter === 'Drafts') return !p.published
+    return p.type === activeFilter.toLowerCase()
+  })
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -78,25 +83,29 @@ export default async function AdminPostsPage() {
 
         {/* Filter row */}
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-          {filters.map((filter) => (
-            <button
-              key={filter}
-              type="button"
-              style={{
-                fontFamily: 'var(--font-dm-mono)',
-                fontSize: 10,
-                textTransform: 'uppercase',
-                background: 'none',
-                border: `0.5px solid ${filter === 'All' ? 'var(--teal-mid)' : 'var(--bdr2)'}`,
-                color: filter === 'All' ? 'var(--teal-mid)' : 'var(--txt2)',
-                padding: '0.35rem 0.85rem',
-                borderRadius: 3,
-                cursor: 'pointer',
-              }}
-            >
-              {filter}
-            </button>
-          ))}
+          {filters.map((filter) => {
+            const isActive = filter === activeFilter
+            return (
+              <button
+                key={filter}
+                type="button"
+                onClick={() => setActiveFilter(filter)}
+                style={{
+                  fontFamily: 'var(--font-dm-mono)',
+                  fontSize: 10,
+                  textTransform: 'uppercase',
+                  background: 'none',
+                  border: `0.5px solid ${isActive ? 'var(--teal-mid)' : 'var(--bdr2)'}`,
+                  color: isActive ? 'var(--teal-mid)' : 'var(--txt2)',
+                  padding: '0.35rem 0.85rem',
+                  borderRadius: 3,
+                  cursor: 'pointer',
+                }}
+              >
+                {filter}
+              </button>
+            )
+          })}
         </div>
 
         {/* Posts table */}
@@ -120,11 +129,13 @@ export default async function AdminPostsPage() {
             </tr>
           </thead>
           <tbody>
-            {allPosts.map((post) => (
+            {displayed.map((post) => (
               <tr
                 key={post.id}
+                onClick={() => router.push(`/admin/posts/${post.id}`)}
                 style={{
                   borderBottom: '0.5px solid var(--bdr)',
+                  cursor: 'pointer',
                 }}
               >
                 {/* Title cell */}
@@ -196,7 +207,10 @@ export default async function AdminPostsPage() {
                 </td>
 
                 {/* Actions cell */}
-                <td style={{ paddingTop: '1rem', paddingBottom: '1rem', width: 80 }}>
+                <td
+                  style={{ paddingTop: '1rem', paddingBottom: '1rem', width: 80 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Link
                     href={`/admin/posts/${post.id}`}
                     style={{

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 const navItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
@@ -110,6 +111,10 @@ export default function AdminNav() {
           );
         })}
       </nav>
+
+      <div style={{ padding: '0 1.5rem', marginBottom: '1rem' }}>
+        <ThemeToggle />
+      </div>
 
       {signOutError && (
         <p

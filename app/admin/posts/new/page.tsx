@@ -1,6 +1,10 @@
+'use client';
+
 import AdminNav from '@/components/admin/AdminNav';
-import PostEditor from '@/components/admin/PostEditor';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+
+const PostEditor = dynamic(() => import('@/components/admin/PostEditor'), { ssr: false });
 
 export default function NewPostPage() {
   return (
