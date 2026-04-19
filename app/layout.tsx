@@ -1,19 +1,21 @@
 import type { Metadata } from 'next'
 import { ThemeProvider } from 'next-themes'
 import {
-  Cormorant_Garamond,
+  Fraunces,
   Syne,
-  DM_Mono,
+  JetBrains_Mono,
   Source_Serif_4,
 } from 'next/font/google'
 import './globals.css'
 
 // ─── Font loading ─────────────────────────────────────────────────────────────
-const cormorant = Cormorant_Garamond({
+// Fraunces replaces Cormorant Garamond — kept under the same CSS var name
+// so all existing pages (var(--font-cormorant)) update automatically.
+const fraunces = Fraunces({
   subsets: ['latin'],
   weight: ['300', '400', '500'],
   style: ['normal', 'italic'],
-  variable: '--font-cormorant',
+  variable: '--font-cormorant',  // intentional: reuse existing var name
   display: 'swap',
 })
 
@@ -24,11 +26,12 @@ const syne = Syne({
   display: 'swap',
 })
 
-const dmMono = DM_Mono({
+// JetBrains Mono replaces DM Mono — kept under same CSS var name
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['400', '500'],
   style: ['normal', 'italic'],
-  variable: '--font-dm-mono',
+  variable: '--font-dm-mono',  // intentional: reuse existing var name
   display: 'swap',
 })
 
@@ -46,8 +49,11 @@ export const metadata: Metadata = {
     default: 'Nsisong Effiong',
     template: '%s · Nsisong Effiong',
   },
-  description: 'Poetry, code, and public thought — three modes of making sense of the world.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nsisongeffiong.com'),
+  description:
+    'I write poems, build things, and think too hard about how the world works. This is where all of it lives.',
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nsisongeffiong.com'
+  ),
   openGraph: {
     siteName: 'Nsisong Effiong',
     locale: 'en_GB',
@@ -58,9 +64,7 @@ export const metadata: Metadata = {
     creator: '@nsisong101',
   },
   alternates: {
-    types: {
-      'application/rss+xml': '/api/rss',
-    },
+    types: { 'application/rss+xml': '/api/rss' },
   },
 }
 
@@ -75,18 +79,18 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       className={`
-        ${cormorant.variable}
+        ${fraunces.variable}
         ${syne.variable}
-        ${dmMono.variable}
+        ${jetbrainsMono.variable}
         ${sourceSerif.variable}
       `}
     >
       <body>
         <ThemeProvider
-          attribute="class"
+          attribute="data-theme"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
+          disableTransitionOnChange={false}
         >
           {children}
         </ThemeProvider>

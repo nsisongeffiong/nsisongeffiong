@@ -10,7 +10,15 @@ export default function PublicLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)', color: 'var(--txt)' }}>
+    <div
+      style={{
+        background:  'var(--bg)',
+        color:       'var(--txt)',
+        maxWidth:    '1120px',
+        margin:      '0 auto',
+        boxShadow:   '0 0 0 0.5px var(--bdr)',
+      }}
+    >
       {children}
     </div>
   )

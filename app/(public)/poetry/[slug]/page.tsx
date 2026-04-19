@@ -1,11 +1,12 @@
 import { SiteNav } from '@/components/shared/SiteNav'
-import { DisqusComments } from '@/components/shared/DisqusComments'
+import { SiteFooter } from '@/components/shared/SiteFooter'
 import { CommentForm } from '@/components/shared/CommentForm'
+import { DisqusComments } from '@/components/shared/DisqusComments'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import { posts, comments } from '@/lib/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, lt, gt, desc, asc } from 'drizzle-orm'
 
 export default async function PoetrySinglePage({
   params,
@@ -22,302 +23,264 @@ export default async function PoetrySinglePage({
 
   if (!post) notFound()
 
+  // Prev / next within poetry section
+  const [prevPost] = await db
+    .select({ title: posts.title, slug: posts.slug })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.type, 'poetry'),
+        eq(posts.published, true),
+        lt(posts.publishedAt, post.publishedAt!)
+      )
+    )
+    .orderBy(desc(posts.publishedAt))
+    .limit(1)
+
+  const [nextPost] = await db
+    .select({ title: posts.title, slug: posts.slug })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.type, 'poetry'),
+        eq(posts.published, true),
+        gt(posts.publishedAt, post.publishedAt!)
+      )
+    )
+    .orderBy(asc(posts.publishedAt))
+    .limit(1)
+
   const approvedComments = await db
     .select()
     .from(comments)
     .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
 
-  const meta     = post.metadata as any
-  const category = meta?.category ?? post.tags?.[0] ?? 'Poetry'
-  const poetNote = meta?.poetNote ?? null
-  const isLegacy = meta?.legacyDisqus === true
-  const author   = meta?.authorName ?? 'Nsisong Effiong'
-  const date     = post.publishedAt
-    ? post.publishedAt.toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
+  const meta      = post.metadata as any
+  const category  = meta?.category ?? post.tags?.[0] ?? 'Poetry'
+  const poetNote  = meta?.poetNote ?? null
+  const isLegacy  = meta?.legacyDisqus === true
+  const author    = meta?.authorName ?? 'Nsisong Effiong'
+  const date      = post.publishedAt
+    ? post.publishedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : ''
 
   return (
     <>
       <SiteNav />
 
-      <main
-        style={{
-          fontFamily: 'var(--font-cormorant), serif',
-          color: 'var(--txt)',
-          background: 'var(--bg)',
-          minHeight: '100vh',
-        }}
-      >
-        {/* back link */}
-        <div style={{ maxWidth: 580, margin: '0 auto', padding: '2rem 1.5rem 0' }}>
-          <Link
-            href="/poetry"
-            style={{
-              fontFamily: 'var(--font-cormorant), serif',
-              fontStyle: 'italic',
-              fontSize: '0.95rem',
-              color: 'var(--txt2)',
-              textDecoration: 'none',
-            }}
-          >
-            ← Poetry
-          </Link>
+      <main style={{ background: 'var(--bg)', color: 'var(--txt)' }}>
+
+        {/* ── Back link ── */}
+        <div style={{ padding: '1.5rem 2rem 0' }}>
+          <Link href="/poetry" style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontStyle: 'italic', fontSize: '14px',
+            color: 'var(--txt2)', textDecoration: 'none',
+          }}>← Poetry</Link>
         </div>
 
-        {/* header */}
-        <header
-          style={{
-            maxWidth: 580,
-            margin: '0 auto',
-            padding: '2.5rem 1.5rem 0',
-            textAlign: 'center',
-          }}
-        >
-          <span
-            style={{
-              fontFamily: 'var(--font-cormorant), serif',
-              fontSize: '0.7rem',
-              fontVariant: 'all-small-caps',
-              letterSpacing: '0.14em',
-              color: 'var(--purple-acc)',
-              textTransform: 'uppercase',
-            }}
-          >
-            {category}
-          </span>
+        {/* ── Header ── */}
+        <header style={{
+          maxWidth: 580, margin: '0 auto',
+          padding: '4rem 2rem 0', textAlign: 'center',
+        }}>
+          <span style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase',
+            color: 'var(--purple)', display: 'inline-block', marginBottom: '1.75rem',
+          }}>{category}</span>
 
-          <h1
-            style={{
-              fontFamily: 'var(--font-cormorant), serif',
-              fontStyle: 'italic',
-              fontWeight: 300,
-              fontSize: '3.375rem',
-              lineHeight: 1.1,
-              margin: '0.75rem 0 1rem',
-              color: 'var(--txt)',
-            }}
-          >
-            {post.title}
-          </h1>
+          <h1 style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontStyle: 'italic', fontWeight: 300,
+            fontSize: 'clamp(32px, 5.5vw, 56px)',
+            lineHeight: 1.05, letterSpacing: '-0.025em',
+            marginBottom: '1.75rem', color: 'var(--txt)',
+          }}>{post.title}</h1>
 
-          <div
-            style={{
-              fontFamily: 'var(--font-cormorant), serif',
-              fontStyle: 'italic',
-              fontSize: '0.9rem',
-              color: 'var(--txt2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-            }}
-          >
+          <div style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '11px', letterSpacing: '0.06em',
+            color: 'var(--txt3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
+          }}>
             <span>{author}</span>
-            <span
-              style={{
-                display: 'inline-block',
-                width: 4,
-                height: 4,
-                borderRadius: '50%',
-                background: 'var(--purple-acc)',
-              }}
-            />
+            <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--txt4)', display: 'inline-block' }} />
             <span>{date}</span>
           </div>
         </header>
 
+        {/* ── Ornament ── */}
         <OrnamentalRule />
 
-        {/* poem body */}
+        {/* ── Poem body ── */}
         <article
-          style={{ maxWidth: 440, margin: '0 auto', padding: '0 1.5rem' }}
+          className="poem-content"
+          style={{ maxWidth: 480, margin: '0 auto', padding: '0 2rem' }}
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
-        {/* end mark */}
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '1rem 0 2.5rem',
-            fontFamily: 'var(--font-cormorant), serif',
-            fontSize: '1.25rem',
-            color: 'var(--purple-acc)',
-            letterSpacing: '0.3em',
-          }}
-        >
-          · · ·
-        </div>
+        {/* ── End mark ── */}
+        <div style={{
+          textAlign: 'center',
+          padding: '2rem 0 2.5rem',
+          fontFamily: 'var(--font-cormorant), serif',
+          fontSize: '15px', color: 'var(--purple)',
+          letterSpacing: '0.3em',
+        }}>· · ·</div>
 
-        {/* poet's note */}
+        {/* ── Poet's note ── */}
         {poetNote && (
-          <section style={{ maxWidth: 440, margin: '0 auto', padding: '0 1.5rem 2.5rem' }}>
-            <hr style={{ border: 'none', borderTop: '0.5px solid var(--bdr2)', margin: '0 0 1.25rem' }} />
-            <span
-              style={{
-                fontFamily: 'var(--font-cormorant), serif',
-                fontSize: '0.65rem',
-                fontVariant: 'all-small-caps',
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--txt3)',
-                display: 'block',
-                marginBottom: '0.5rem',
-              }}
-            >
-              Poet&rsquo;s note
-            </span>
-            <p
-              style={{
-                fontFamily: 'var(--font-cormorant), serif',
-                fontStyle: 'italic',
-                fontWeight: 300,
-                fontSize: '0.95rem',
-                lineHeight: 1.75,
-                color: 'var(--txt2)',
-                margin: 0,
-              }}
-            >
-              {poetNote}
-            </p>
+          <section style={{ maxWidth: 480, margin: '0 auto', padding: '0 2rem 2.5rem' }}>
+            <div style={{ borderTop: '0.5px solid var(--bdr)', paddingTop: '1.75rem' }}>
+              <span style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase',
+                color: 'var(--txt3)', display: 'block', marginBottom: '0.75rem',
+              }}>Poet's note</span>
+              <p style={{
+                fontFamily: 'var(--font-source-serif), serif',
+                fontStyle: 'italic', fontWeight: 300,
+                fontSize: '15px', lineHeight: 1.85, color: 'var(--txt2)',
+              }}>{poetNote}</p>
+            </div>
           </section>
         )}
 
-        {/* prev / next navigation */}
-        <nav style={{ maxWidth: 580, margin: '0 auto', padding: '0 1.5rem 2.5rem' }}>
-          <hr style={{ border: 'none', borderTop: '0.5px solid var(--bdr2)', margin: '0 0 1.5rem' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <span />
-            <Link
-              href="/poetry"
-              style={{
-                fontFamily: 'var(--font-cormorant), serif',
-                fontStyle: 'italic',
-                fontSize: '0.9rem',
-                color: 'var(--txt2)',
-                textDecoration: 'none',
-              }}
-            >
-              ← Back to Poetry
-            </Link>
-          </div>
-        </nav>
+        {/* ── Prev / Next ── */}
+        {(prevPost || nextPost) && (
+          <nav style={{
+            maxWidth: 580, margin: '3rem auto 0',
+            padding: '2rem 2rem',
+            borderTop: '0.5px solid var(--bdr)',
+            display: 'grid', gridTemplateColumns: '1fr 1fr',
+            gap: '2rem',
+          }}>
+            <div>
+              {prevPost && (
+                <Link href={`/poetry/${prevPost.slug}`} style={{ textDecoration: 'none' }}>
+                  <span style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase',
+                    color: 'var(--txt3)', display: 'block', marginBottom: '0.5rem',
+                  }}>← Previous</span>
+                  <span style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic', fontWeight: 300,
+                    fontSize: '17px', color: 'var(--txt)', lineHeight: 1.3,
+                  }}>{prevPost.title}</span>
+                </Link>
+              )}
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              {nextPost && (
+                <Link href={`/poetry/${nextPost.slug}`} style={{ textDecoration: 'none' }}>
+                  <span style={{
+                    fontFamily: 'var(--font-dm-mono), monospace',
+                    fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase',
+                    color: 'var(--txt3)', display: 'block', marginBottom: '0.5rem',
+                  }}>Next →</span>
+                  <span style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic', fontWeight: 300,
+                    fontSize: '17px', color: 'var(--txt)', lineHeight: 1.3,
+                  }}>{nextPost.title}</span>
+                </Link>
+              )}
+            </div>
+          </nav>
+        )}
 
-        {/* comments section */}
-        <section style={{ maxWidth: 580, margin: '0 auto', padding: '0 1.5rem 4rem' }}>
+        {/* ── Comments ── */}
+        <section style={{ maxWidth: 580, margin: '0 auto', padding: '3rem 2rem 4rem' }}>
           <OrnamentalRule />
 
-          {/* count label */}
           {approvedComments.length > 0 && (
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <span
-                style={{
-                  fontFamily: 'var(--font-cormorant), serif',
-                  fontSize: '0.65rem',
-                  fontVariant: 'all-small-caps',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'var(--txt3)',
-                }}
-              >
-                {approvedComments.length} {approvedComments.length === 1 ? 'response' : 'responses'}
-              </span>
-            </div>
-          )}
+            <>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                marginBottom: '2.25rem',
+              }}>
+                <span style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase',
+                  color: 'var(--txt)',
+                }}>Responses</span>
+                <span style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '11px', color: 'var(--purple)',
+                }}>
+                  {String(approvedComments.length).padStart(2, '0')} {approvedComments.length === 1 ? 'response' : 'responses'}
+                </span>
+              </div>
 
-          {/* comments list */}
-          {approvedComments.length > 0 && (
-            <div style={{ marginBottom: '2.5rem' }}>
               {approvedComments.map((comment) => (
-                <div key={comment.id} style={{ marginBottom: '1.75rem' }}>
-                  <div style={{ marginBottom: '0.25rem' }}>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-cormorant), serif',
-                        fontStyle: 'italic',
-                        fontWeight: 600,
-                        fontSize: '0.95rem',
-                        color: 'var(--txt)',
-                      }}
-                    >
-                      {comment.authorName}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-cormorant), serif',
-                        fontStyle: 'italic',
-                        fontSize: '0.8rem',
-                        color: 'var(--txt3)',
-                        marginLeft: '0.75rem',
-                      }}
-                    >
-                      {comment.createdAt?.toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
+                <div key={comment.id} style={{
+                  padding: '1.5rem 0',
+                  borderBottom: '0.5px solid var(--bdr)',
+                }}>
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'baseline', marginBottom: '0.75rem',
+                  }}>
+                    <span style={{
+                      fontFamily: 'var(--font-syne), sans-serif',
+                      fontWeight: 600, fontSize: '14px',
+                      letterSpacing: '-0.01em', color: 'var(--txt)',
+                    }}>{comment.authorName}</span>
+                    <span style={{
+                      fontFamily: 'var(--font-dm-mono), monospace',
+                      fontSize: '11px', color: 'var(--txt3)',
+                    }}>
+                      {comment.createdAt?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
-                  <p
-                    style={{
-                      fontFamily: 'var(--font-cormorant), serif',
-                      fontStyle: 'italic',
-                      fontWeight: 300,
-                      fontSize: '0.95rem',
-                      lineHeight: 1.7,
-                      color: 'var(--txt2)',
-                      margin: '0.25rem 0 0',
-                    }}
-                  >
-                    {comment.body}
-                  </p>
+                  <p style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontStyle: 'italic', fontWeight: 300,
+                    fontSize: '16px', lineHeight: 1.85,
+                    color: 'var(--txt2)', marginBottom: '0.75rem',
+                  }}>{comment.body}</p>
                 </div>
               ))}
-            </div>
+            </>
           )}
 
-          {isLegacy ? (
-            <DisqusComments
-              slug={post.slug}
-              title={post.title}
-              path={`/poetry/${post.slug}`}
-            />
-          ) : (
-            <CommentForm postId={post.id} section="poetry" />
-          )}
+          {/* Comment form */}
+          <div style={{ marginTop: '2.5rem', paddingTop: '2rem', borderTop: '0.5px solid var(--bdr)' }}>
+            <p style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase',
+              color: 'var(--txt2)', marginBottom: '1.5rem',
+            }}>Leave a response</p>
+
+            {isLegacy ? (
+              <DisqusComments slug={post.slug} title={post.title} path={`/poetry/${post.slug}`} />
+            ) : (
+              <CommentForm postId={post.id} section="poetry" />
+            )}
+          </div>
         </section>
       </main>
+
+      <SiteFooter section="01 / Poetry" />
     </>
   )
 }
 
 function OrnamentalRule() {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '1rem',
-        maxWidth: 580,
-        margin: '2rem auto',
-        padding: '0 1.5rem',
-      }}
-    >
-      <span style={{ flex: 1, height: '0.5px', background: 'var(--bdr2)' }} />
-      <span
-        style={{
-          display: 'inline-block',
-          width: 5,
-          height: 5,
-          borderRadius: '50%',
-          background: 'var(--purple-acc)',
-        }}
-      />
-      <span style={{ flex: 1, height: '0.5px', background: 'var(--bdr2)' }} />
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      gap: '1rem', maxWidth: 580, margin: '3rem auto',
+      padding: '0 2rem',
+    }}>
+      <span style={{ flex: 1, height: '0.5px', background: 'var(--bdr)' }} />
+      <span style={{
+        display: 'inline-block', width: 5, height: 5,
+        borderRadius: '50%', background: 'var(--purple)',
+      }} />
+      <span style={{ flex: 1, height: '0.5px', background: 'var(--bdr)' }} />
     </div>
   )
 }
