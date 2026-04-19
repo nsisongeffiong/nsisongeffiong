@@ -55,6 +55,15 @@ export default async function PoetrySinglePage({
     .from(comments)
     .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
 
+  // Process poem HTML: mark empty paragraphs as stanza breaks
+  function processPoem(html: string): string {
+    return html
+      .replace(/<p><\/p>/g, '<p class="stanza-break"></p>')
+      .replace(/<p><br\s*\/?><\/p>/gi, '<p class="stanza-break"></p>')
+      .replace(/<p><br[^>]+><\/p>/gi, '<p class="stanza-break"></p>')
+  }
+  const poemHtml = processPoem(post.content)
+
   const meta      = post.metadata as any
   const category  = meta?.category ?? post.tags?.[0] ?? 'Poetry'
   const poetNote  = meta?.poetNote ?? null
@@ -71,23 +80,32 @@ export default async function PoetrySinglePage({
       <main style={{ background: 'var(--bg)', color: 'var(--txt)' }}>
 
         {/* ── Back link ── */}
-        <div style={{ padding: '1.5rem 2rem 0' }}>
+        <div style={{
+          padding: '1.5rem 2rem',
+          borderBottom: '0.5px solid var(--bdr)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
           <Link href="/poetry" style={{
             fontFamily: 'var(--font-cormorant), serif',
             fontStyle: 'italic', fontSize: '14px',
             color: 'var(--txt2)', textDecoration: 'none',
           }}>← Poetry</Link>
+          <span style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '11px', letterSpacing: '0.04em',
+            color: 'var(--purple)',
+          }}>{category}</span>
         </div>
 
         {/* ── Header ── */}
         <header style={{
           maxWidth: 580, margin: '0 auto',
-          padding: '4rem 2rem 0', textAlign: 'center',
+          padding: '3rem 2rem 0', textAlign: 'center',
         }}>
           <span style={{
             fontFamily: 'var(--font-dm-mono), monospace',
             fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase',
-            color: 'var(--purple)', display: 'inline-block', marginBottom: '1.75rem',
+            color: 'var(--purple)', display: 'inline-block', marginBottom: '1.25rem',
           }}>{category}</span>
 
           <h1 style={{
@@ -117,7 +135,7 @@ export default async function PoetrySinglePage({
         <article
           className="poem-content"
           style={{ maxWidth: 480, margin: '0 auto', padding: '0 2rem' }}
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: poemHtml }}
         />
 
         {/* ── End mark ── */}

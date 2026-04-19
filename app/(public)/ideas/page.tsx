@@ -58,14 +58,14 @@ export default async function IdeasPage() {
       }}>
         <div>
           <span style={{
-            fontFamily: 'var(--font-syne), sans-serif',
+            fontFamily: 'var(--font-inter-tight), var(--font-syne), sans-serif',
             fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase',
             color: 'var(--amber)', fontWeight: 600,
             display: 'block', marginBottom: '0.75rem',
           }}>Essays · Policy · Public Thought</span>
           <h1 style={{
-            fontFamily: 'var(--font-syne), sans-serif',
-            fontSize: 'clamp(52px, 7vw, 88px)',
+            fontFamily: 'var(--font-inter-tight), var(--font-syne), sans-serif',
+            fontSize: 'clamp(56px, 8vw, 104px)',
             fontWeight: 800, lineHeight: 0.92,
             letterSpacing: '-0.04em', color: 'var(--txt)',
           }}>Ideas</h1>
@@ -100,7 +100,7 @@ export default async function IdeasPage() {
                 {(leadEssay.metadata as any)?.kicker ?? leadEssay.tags?.[0] ?? 'Technology & governance'}
               </span>
               <h2 style={{
-                fontFamily: 'var(--font-syne), sans-serif',
+                fontFamily: 'var(--font-inter-tight), var(--font-syne), sans-serif',
                 fontSize: 'clamp(22px, 3vw, 34px)',
                 fontWeight: 700, lineHeight: 1.1, letterSpacing: '-0.025em',
                 marginBottom: '1rem', color: 'var(--txt)', maxWidth: '22ch',
@@ -224,7 +224,7 @@ export default async function IdeasPage() {
                   color: 'var(--amber)', fontWeight: 600, marginBottom: '0.75rem',
                 }}>{(essay.metadata as any)?.kicker ?? essay.tags?.[0] ?? 'Essay'}</p>
                 <h3 style={{
-                  fontFamily: 'var(--font-syne), sans-serif',
+                  fontFamily: 'var(--font-inter-tight), var(--font-syne), sans-serif',
                   fontSize: '17px', fontWeight: 700,
                   lineHeight: 1.25, letterSpacing: '-0.02em',
                   marginBottom: '0.75rem', color: 'var(--txt)', maxWidth: '22ch',

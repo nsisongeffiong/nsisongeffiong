@@ -82,19 +82,20 @@ export default async function IdeasSinglePage({
           borderBottom: '2px solid var(--txt)',
         }}>
           <span style={{
-            fontFamily: 'var(--font-syne), sans-serif',
+            fontFamily: 'var(--font-inter-tight), var(--font-syne), sans-serif',
             fontSize: '11px', fontWeight: 700,
             textTransform: 'uppercase', letterSpacing: '0.22em',
             color: 'var(--amber)', display: 'block', marginBottom: '1rem',
           }}>{kicker}</span>
 
           <h1 style={{
-            fontFamily: 'var(--font-syne), sans-serif',
+            fontFamily: 'var(--font-inter-tight), var(--font-syne), sans-serif',
             fontWeight: 800,
-            fontSize: 'clamp(26px, 3.5vw, 44px)',
-            lineHeight: 1.08, letterSpacing: '-0.025em',
+            fontSize: 'clamp(28px, 4vw, 52px)',
+            lineHeight: 1.06, letterSpacing: '-0.03em',
             color: 'var(--txt)',
-            marginBottom: '1.25rem', maxWidth: '20ch',
+            marginBottom: '1.25rem',
+            maxWidth: '28ch',
           }}>{post.title}</h1>
 
           {deck && (

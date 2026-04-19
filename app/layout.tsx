@@ -5,17 +5,15 @@ import {
   Syne,
   JetBrains_Mono,
   Source_Serif_4,
+  Inter_Tight,
 } from 'next/font/google'
 import './globals.css'
 
-// ─── Font loading ─────────────────────────────────────────────────────────────
-// Fraunces replaces Cormorant Garamond — kept under the same CSS var name
-// so all existing pages (var(--font-cormorant)) update automatically.
 const fraunces = Fraunces({
   subsets: ['latin'],
   weight: ['300', '400', '500'],
   style: ['normal', 'italic'],
-  variable: '--font-cormorant',  // intentional: reuse existing var name
+  variable: '--font-cormorant',
   display: 'swap',
 })
 
@@ -26,12 +24,11 @@ const syne = Syne({
   display: 'swap',
 })
 
-// JetBrains Mono replaces DM Mono — kept under same CSS var name
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['400', '500'],
   style: ['normal', 'italic'],
-  variable: '--font-dm-mono',  // intentional: reuse existing var name
+  variable: '--font-dm-mono',
   display: 'swap',
 })
 
@@ -40,6 +37,15 @@ const sourceSerif = Source_Serif_4({
   weight: ['300', '400', '600'],
   style: ['normal', 'italic'],
   variable: '--font-source-serif',
+  display: 'swap',
+})
+
+// Inter Tight — used for Ideas section display headings only.
+// More neutral than Syne at heavy weights; avoids the compressed look at large sizes.
+const interTight = Inter_Tight({
+  subsets: ['latin'],
+  weight: ['700', '800'],
+  variable: '--font-inter-tight',
   display: 'swap',
 })
 
@@ -83,6 +89,7 @@ export default function RootLayout({
         ${syne.variable}
         ${jetbrainsMono.variable}
         ${sourceSerif.variable}
+        ${interTight.variable}
       `}
     >
       <body>
