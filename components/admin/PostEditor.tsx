@@ -37,7 +37,7 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ codeBlock: false }),
       Placeholder.configure({ placeholder: 'Start writing...' }),
       CodeBlockLowlight.configure({ lowlight }),
     ],
