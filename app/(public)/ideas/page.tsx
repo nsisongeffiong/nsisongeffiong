@@ -30,7 +30,10 @@ export default async function IdeasPage() {
 
   const pullQuote = leadEssay
     ? {
-        text: leadEssay.excerpt ?? 'The question is not whether AI will transform governance — it is who gets to define what transformation means, and for whom.',
+        text: (leadEssay.metadata as any)?.pullQuote
+          ?? (leadEssay.excerpt && leadEssay.excerpt.length < 140
+              ? leadEssay.excerpt
+              : 'The question is not whether AI will transform governance — it is who gets to define what transformation means, and for whom.'),
         attribution: `— from "${leadEssay.title}"`,
       }
     : {
@@ -43,7 +46,7 @@ export default async function IdeasPage() {
     : 'Vol. I · April 2026'
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--txt)',  }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--txt)', minHeight: '100vh' }}>
       <SiteNav />
 
       {/* ── Masthead ── */}
@@ -62,9 +65,9 @@ export default async function IdeasPage() {
           }}>Essays · Policy · Public Thought</span>
           <h1 style={{
             fontFamily: 'var(--font-syne), sans-serif',
-            fontSize: 'clamp(60px, 11vw, 130px)',
-            fontWeight: 800, lineHeight: 0.88,
-            letterSpacing: '-0.045em', color: 'var(--txt)',
+            fontSize: 'clamp(52px, 7vw, 88px)',
+            fontWeight: 800, lineHeight: 0.92,
+            letterSpacing: '-0.04em', color: 'var(--txt)',
           }}>Ideas</h1>
         </div>
         <div style={{ textAlign: 'right' }}>
