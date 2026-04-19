@@ -98,7 +98,7 @@ export default async function TechSinglePage({
             fontSize: 'clamp(24px, 4vw, 44px)',
             fontWeight: 500, letterSpacing: '-0.03em',
             lineHeight: 1.1, color: 'var(--txt)',
-            marginBottom: '1rem', maxWidth: '20ch',
+            marginBottom: '1rem', maxWidth: '28ch',
           }}>{post.title}</h1>
 
           {post.excerpt && (
