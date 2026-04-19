@@ -1,12 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-
-declare global {
-  interface Window {
-    turnstileToken?: string
-  }
-}
+import { TurnstileWidget } from './TurnstileWidget'
 
 interface CommentFormProps {
   postId:   string
@@ -239,6 +234,8 @@ export function CommentForm({
           {errorMsg}
         </p>
       )}
+
+      <TurnstileWidget />
 
       <button
         type="submit"
