@@ -1,6 +1,12 @@
 import AdminNav from '@/components/admin/AdminNav';
 import PostEditor from '@/components/admin/PostEditor';
+import { db } from '@/lib/db';
+import { posts } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 
 export default async function EditPostPage({
   params,
@@ -9,15 +15,8 @@ export default async function EditPostPage({
 }) {
   const { id } = await params;
 
-  const post = {
-    id,
-    title: 'Editing post ' + id,
-    type: 'tech' as const,
-    content: '<p>Post content here</p>',
-    excerpt: '',
-    tags: [] as string[],
-    published: false,
-  };
+  const [post] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
+  if (!post) notFound();
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -47,7 +46,15 @@ export default async function EditPostPage({
         >
           Edit post
         </h1>
-        <PostEditor initialData={post} />
+        <PostEditor initialData={{
+          id: post.id,
+          title: post.title,
+          type: post.type as 'tech' | 'ideas' | 'poetry',
+          content: post.content ?? '',
+          excerpt: post.excerpt ?? '',
+          tags: post.tags ?? [],
+          published: post.published ?? false,
+        }} />
       </main>
     </div>
   );
