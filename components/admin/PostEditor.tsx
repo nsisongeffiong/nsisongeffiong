@@ -26,6 +26,7 @@ interface PostEditorProps {
 const lowlight = createLowlight(common);
 
 export default function PostEditor({ initialData, onSave }: PostEditorProps) {
+  console.log('initialData received:', initialData);
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [type, setType] = useState<'poetry' | 'tech' | 'ideas'>(initialData?.type ?? 'poetry');
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? '');
@@ -51,6 +52,7 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
 
   useEffect(() => {
     if (editor && initialData?.content) {
+      console.log('editor ready, setting content:', initialData?.content?.slice(0, 50));
       editor.commands.setContent(initialData.content);
     }
   }, [editor, initialData?.content]);
