@@ -390,6 +390,8 @@ article.ideas-body > p:first-of-type::first-letter {
 .hover-indent:hover    { padding-left: 0.5rem !important; }
 .hover-underline:hover h2,
 .hover-underline:hover h3 { text-decoration: underline; text-underline-offset: 5px; }
+.post-title-link { color: var(--txt); text-decoration: none; }
+.post-title-link:hover { color: var(--txt2); }
 
 /* ─── Poem stanza break (server-processed class) ────────────────────────────── */
 .poem-content p.stanza-break {
