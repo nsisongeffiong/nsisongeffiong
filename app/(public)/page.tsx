@@ -17,23 +17,32 @@ function formatDate(iso: string): string {
 
 export default async function HomePage() {
   const [latestPoetry, latestTech, latestIdeas] = await Promise.all([
-    db.select({ title: posts.title, slug: posts.slug })
+    db.select({ id: posts.id, title: posts.title, slug: posts.slug })
       .from(posts).where(and(eq(posts.published, true), eq(posts.type, 'poetry')))
       .orderBy(desc(posts.publishedAt)).limit(1),
-    db.select({ title: posts.title, slug: posts.slug })
+    db.select({ id: posts.id, title: posts.title, slug: posts.slug })
       .from(posts).where(and(eq(posts.published, true), eq(posts.type, 'tech')))
       .orderBy(desc(posts.publishedAt)).limit(1),
-    db.select({ title: posts.title, slug: posts.slug })
+    db.select({ id: posts.id, title: posts.title, slug: posts.slug })
       .from(posts).where(and(eq(posts.published, true), eq(posts.type, 'ideas')))
       .orderBy(desc(posts.publishedAt)).limit(1),
   ])
 
+  const sectionIds = new Set([
+    latestPoetry[0]?.id,
+    latestTech[0]?.id,
+    latestIdeas[0]?.id,
+  ].filter(Boolean))
+
   const recentRaw = await db
     .select({ id: posts.id, type: posts.type, title: posts.title, slug: posts.slug, publishedAt: posts.publishedAt })
     .from(posts).where(eq(posts.published, true))
-    .orderBy(desc(posts.publishedAt)).limit(3)
+    .orderBy(desc(posts.publishedAt)).limit(6)
 
-  const recentPosts = recentRaw.map((p) => ({
+  const recentPosts = recentRaw
+    .filter((p) => !sectionIds.has(p.id))
+    .slice(0, 3)
+    .map((p) => ({
     type:  p.type.charAt(0).toUpperCase() + p.type.slice(1),
     title: p.title,
     date:  p.publishedAt ? p.publishedAt.toISOString().split('T')[0] : '',

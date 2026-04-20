@@ -42,6 +42,16 @@ export default async function TechSinglePage({
     .from(comments)
     .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
 
+  const headingRegex = /(<h([23])[^>]*>)(.*?)<\/h[23]>/gi
+  const tocItems: { level: string; text: string; id: string }[] = []
+  const contentWithIds = post.content.replace(headingRegex, (_full, openTag: string, level: string, inner: string) => {
+    const text = inner.replace(/<[^>]+>/g, '').trim()
+    const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    tocItems.push({ level, text, id })
+    const newOpenTag = openTag.includes(' id=') ? openTag : openTag.replace('>', ` id="${id}">`)
+    return `${newOpenTag}${inner}</h${level}>`
+  })
+
   const meta      = post.metadata as any
   const readTime  = meta?.readTime ?? null
   const isLegacy  = meta?.legacyDisqus === true
@@ -132,7 +142,7 @@ export default async function TechSinglePage({
               padding: '3rem 2rem',
               borderRight: '0.5px solid var(--bdr)',
             }}
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: contentWithIds }}
           />
 
           {/* Sidebar */}
@@ -148,15 +158,16 @@ export default async function TechSinglePage({
               color: 'var(--txt3)', display: 'block', marginBottom: '1rem',
             }}>// contents</span>
 
-            {/* TOC — generated from headings in content client-side;
-                for now shows tags as a fallback reference */}
-            {(post.tags ?? []).map((tag, i) => (
-              <span key={tag} style={{
+            {tocItems.map((item) => (
+              <a key={item.id} href={`#${item.id}`} style={{
                 fontFamily: 'var(--font-dm-mono), monospace',
-                fontSize: '12px', color: i === 0 ? 'var(--teal-mid)' : 'var(--txt2)',
+                fontSize: item.level === '2' ? '12px' : '11px',
+                color: item.level === '2' ? 'var(--teal-mid)' : 'var(--txt2)',
                 display: 'block', padding: '0.5rem 0',
                 borderBottom: '0.5px solid var(--bdr)',
-              }}>{tag}</span>
+                textDecoration: 'none',
+                paddingLeft: item.level === '3' ? '0.75rem' : '0',
+              }}>{item.text}</a>
             ))}
           </aside>
         </div>
