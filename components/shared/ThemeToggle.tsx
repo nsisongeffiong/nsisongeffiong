@@ -3,7 +3,6 @@
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 
-// Sun icon
 function SunIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -21,7 +20,6 @@ function SunIcon() {
   )
 }
 
-// Moon icon
 function MoonIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -31,7 +29,6 @@ function MoonIcon() {
   )
 }
 
-// Monitor icon
 function MonitorIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -43,59 +40,44 @@ function MonitorIcon() {
   )
 }
 
-const BUTTONS = [
-  { value: 'light',  Icon: SunIcon,     title: 'Light mode'   },
-  { value: 'dark',   Icon: MoonIcon,    title: 'Dark mode'    },
-  { value: 'system', Icon: MonitorIcon, title: 'System default' },
-] as const
+const CYCLE: Array<{ value: 'light' | 'dark' | 'system'; Icon: () => JSX.Element; title: string }> = [
+  { value: 'light',  Icon: SunIcon,     title: 'Switch to dark mode'   },
+  { value: 'dark',   Icon: MoonIcon,    title: 'Switch to system mode' },
+  { value: 'system', Icon: MonitorIcon, title: 'Switch to light mode'  },
+]
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => setMounted(true), [])
-  if (!mounted) return <div style={{ width: 96, height: 30 }} /> // layout placeholder
+  if (!mounted) return <div style={{ width: 30, height: 28 }} />
 
-  const current = theme ?? 'system'
+  const current = (theme ?? 'system') as 'light' | 'dark' | 'system'
+  const idx = CYCLE.findIndex(c => c.value === current)
+  const { Icon, title } = CYCLE[idx === -1 ? 2 : idx]
+  const next = CYCLE[(idx === -1 ? 2 : idx + 1) % CYCLE.length].value
 
   return (
-    <div
-      role="group"
-      aria-label="Theme"
+    <button
+      onClick={() => setTheme(next)}
+      title={title}
+      aria-label={title}
       style={{
-        display:      'flex',
-        alignItems:   'center',
-        border:       '0.5px solid var(--bdr2)',
-        borderRadius: '3px',
-        overflow:     'hidden',
+        display:        'flex',
+        alignItems:     'center',
+        justifyContent: 'center',
+        width:          30,
+        height:         28,
+        background:     'var(--bg3)',
+        color:          'var(--txt)',
+        border:         '0.5px solid var(--bdr2)',
+        borderRadius:   '3px',
+        cursor:         'pointer',
+        transition:     'background 0.15s, color 0.15s',
       }}
     >
-      {BUTTONS.map(({ value, Icon, title }, i) => {
-        const isActive = current === value
-        return (
-          <button
-            key={value}
-            onClick={() => setTheme(value)}
-            title={title}
-            aria-pressed={isActive}
-            style={{
-              display:        'flex',
-              alignItems:     'center',
-              justifyContent: 'center',
-              width:          30,
-              height:         28,
-              background:     isActive ? 'var(--bg3)' : 'transparent',
-              color:          isActive ? 'var(--txt)' : 'var(--txt3)',
-              border:         'none',
-              borderRight:    i < BUTTONS.length - 1 ? '0.5px solid var(--bdr2)' : 'none',
-              cursor:         'pointer',
-              transition:     'background 0.15s, color 0.15s',
-            }}
-          >
-            <Icon />
-          </button>
-        )
-      })}
-    </div>
+      <Icon />
+    </button>
   )
 }
