@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           },
           {
             heading: 'Data requests',
-            body: 'To request access to, correction of, or deletion of any personal data held about you, email nsisongeffiong@gmail.com.',
+            body: 'To request access to, correction of, or deletion of any personal data held about you, email hello@nsisongeffiong.com.',
           },
         ].map(({ heading, body }) => (
           <section key={heading} style={{ marginBottom: '2.5rem' }}>

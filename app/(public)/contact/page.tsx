@@ -25,7 +25,7 @@ export default function ContactPage() {
         </p>
 
         <a
-          href="mailto:nsisongeffiong@gmail.com"
+          href="mailto:hello@nsisongeffiong.com"
           style={{
             fontFamily: 'var(--font-dm-mono), monospace',
             fontSize: '14px', color: 'var(--txt)', letterSpacing: '0.04em',
