@@ -335,6 +335,8 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [htmlMode, setHtmlMode] = useState(false);
+  const [rawHtml, setRawHtml] = useState('');
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -372,7 +374,7 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
     const body = {
       title,
       type,
-      content: editor.getHTML(),
+      content: htmlMode ? rawHtml : editor.getHTML(),
       excerpt,
       tags: tags.split(',').map((t: string) => t.trim()).filter(Boolean),
       published,
@@ -496,6 +498,24 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
               </button>
             )
           )}
+          <div style={{ width: '0.5px', height: '14px', background: 'var(--bdr2)', margin: '0 2px', flexShrink: 0 }} />
+          <button
+            title="Toggle raw HTML"
+            onMouseDown={ev => {
+              ev.preventDefault();
+              if (!editor) return;
+              if (!htmlMode) {
+                setRawHtml(editor.getHTML());
+                setHtmlMode(true);
+              } else {
+                editor.commands.setContent(rawHtml);
+                setHtmlMode(false);
+              }
+            }}
+            style={{ ...btnBase, color: htmlMode ? 'var(--teal-mid)' : 'var(--txt2)' }}
+          >
+            HTML
+          </button>
         </div>
 
         {/* Block type label */}
@@ -512,9 +532,30 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
         </div>
 
         {/* Editor area */}
-        <div style={{ border: '0.5px solid var(--bdr)', borderRadius: '3px', padding: '1rem 1.25rem' }}>
-          <EditorContent editor={editor} style={{ minHeight: '500px' }} />
-        </div>
+        {htmlMode ? (
+          <textarea
+            value={rawHtml}
+            onChange={e => setRawHtml(e.target.value)}
+            style={{
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '13px',
+              minHeight: '500px',
+              width: '100%',
+              background: 'var(--bg2)',
+              border: '0.5px solid var(--bdr)',
+              padding: '1rem',
+              color: 'var(--txt)',
+              borderRadius: '3px',
+              resize: 'vertical',
+              outline: 'none',
+              lineHeight: 1.6,
+            }}
+          />
+        ) : (
+          <div style={{ border: '0.5px solid var(--bdr)', borderRadius: '3px', padding: '1rem 1.25rem' }}>
+            <EditorContent editor={editor} style={{ minHeight: '500px' }} />
+          </div>
+        )}
       </div>
 
       {/* Sidebar */}
