@@ -1,7 +1,7 @@
 'use client'
 
 import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 function SunIcon() {
   return (
@@ -40,29 +40,54 @@ function MonitorIcon() {
   )
 }
 
-const CYCLE: Array<{ value: 'light' | 'dark' | 'system'; Icon: () => JSX.Element; title: string }> = [
+type KnownTheme = 'light' | 'dark' | 'system'
+
+const CYCLE: Array<{ value: KnownTheme; Icon: () => JSX.Element; title: string }> = [
   { value: 'light',  Icon: SunIcon,     title: 'Switch to dark mode'   },
   { value: 'dark',   Icon: MoonIcon,    title: 'Switch to system mode' },
   { value: 'system', Icon: MonitorIcon, title: 'Switch to light mode'  },
 ]
 
+function isKnown(v: string | undefined): v is KnownTheme {
+  return v === 'light' || v === 'dark' || v === 'system'
+}
+
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  // Stable display value — only updated when theme is a known string
+  const [display, setDisplay] = useState<KnownTheme>('system')
+  const [disabled, setDisabled] = useState(false)
+  const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => setMounted(true), [])
+  useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    if (mounted && isKnown(theme)) {
+      setDisplay(theme)
+    }
+  }, [mounted, theme])
+
   if (!mounted) return <div style={{ width: 30, height: 28 }} />
 
-  const current = (theme ?? 'system') as 'light' | 'dark' | 'system'
-  const idx = CYCLE.findIndex(c => c.value === current)
-  const { Icon, title } = CYCLE[idx === -1 ? 2 : idx]
-  const next = CYCLE[(idx === -1 ? 2 : idx + 1) % CYCLE.length].value
+  const idx = CYCLE.findIndex(c => c.value === display)
+  const safeIdx = idx === -1 ? 2 : idx
+  const { Icon, title } = CYCLE[safeIdx]
+  const next = CYCLE[(safeIdx + 1) % CYCLE.length].value
+
+  function handleClick() {
+    if (disabled) return
+    setTheme(next)
+    setDisabled(true)
+    cooldownRef.current = setTimeout(() => setDisabled(false), 300)
+  }
 
   return (
     <button
-      onClick={() => setTheme(next)}
+      onClick={handleClick}
       title={title}
       aria-label={title}
+      disabled={disabled}
       style={{
         display:        'flex',
         alignItems:     'center',
@@ -73,7 +98,7 @@ export function ThemeToggle() {
         color:          'var(--txt)',
         border:         '0.5px solid var(--bdr2)',
         borderRadius:   '3px',
-        cursor:         'pointer',
+        cursor:         disabled ? 'default' : 'pointer',
         transition:     'background 0.15s, color 0.15s',
       }}
     >
