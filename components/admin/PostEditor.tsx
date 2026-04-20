@@ -106,9 +106,6 @@ const ClassedBlockquote = Node.create({
         }
         if (nodeDepth === -1) return false;
 
-        // Only exit when cursor is at the very end of the blockquote's content
-        if ($from.pos !== $from.end(nodeDepth)) return false;
-
         const insertPos = $from.after(nodeDepth);
         return this.editor
           .chain()
