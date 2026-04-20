@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect, type CSSProperties } from 'react';
-import dynamic from 'next/dynamic';
-
-const PostEditor = dynamic(() => import('./PostEditor'), { ssr: false });
-const MarkdownEditor = dynamic(() => import('./MarkdownEditor'), { ssr: false });
-const BlockNoteEditor = dynamic(() => import('./BlockNoteEditor'), { ssr: false });
+import { useEffect, useState, type CSSProperties } from 'react';
+import { useCreateBlockNote } from '@blocknote/react';
+import { BlockNoteView } from '@blocknote/mantine';
+import '@blocknote/mantine/style.css';
 
 interface PostData {
   id?: string;
@@ -24,84 +22,17 @@ interface Props {
   onSave?: (post: unknown) => void;
 }
 
-type EditorType = 'rich' | 'markdown' | 'html' | 'blocknote';
-
-const TABS: { key: EditorType; label: string }[] = [
-  { key: 'rich', label: 'Rich text' },
-  { key: 'markdown', label: 'Markdown' },
-  { key: 'html', label: 'HTML' },
-  { key: 'blocknote', label: 'BlockNote' },
-];
-
-export default function EditorSwitcher({ initialData, onSave }: Props) {
-  const [editorType, setEditorType] = useState<EditorType>('rich');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('preferred-editor') as EditorType | null;
-    if (saved && ['rich', 'markdown', 'html', 'blocknote'].includes(saved)) {
-      setEditorType(saved);
-    }
-  }, []);
-
-  function switchEditor(type: EditorType) {
-    setEditorType(type);
-    localStorage.setItem('preferred-editor', type);
-  }
-
-  const btnBase: CSSProperties = {
-    fontFamily: 'var(--font-dm-mono), monospace',
-    fontSize: '11px',
-    padding: '4px 12px',
-    border: '0.5px solid var(--bdr2)',
-    borderRadius: '3px',
-    cursor: 'pointer',
-    lineHeight: 1.4,
-  };
-
-  return (
-    <div>
-      {/* Editor type switcher */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '1.75rem' }}>
-        {TABS.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => switchEditor(tab.key)}
-            style={{
-              ...btnBase,
-              background: editorType === tab.key ? 'var(--bg3)' : 'var(--bg2)',
-              color: editorType === tab.key ? 'var(--txt)' : 'var(--txt3)',
-              borderColor: editorType === tab.key ? 'var(--bdr2)' : 'var(--bdr)',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Active editor */}
-      {mounted && editorType === 'rich' && (
-        <PostEditor initialData={initialData} onSave={onSave} />
-      )}
-      {mounted && editorType === 'markdown' && (
-        <MarkdownEditor initialData={initialData} onSave={onSave} />
-      )}
-      {mounted && editorType === 'html' && (
-        <RawHtmlPane initialData={initialData} onSave={onSave} />
-      )}
-      {mounted && editorType === 'blocknote' && (
-        <BlockNoteEditor initialData={initialData} onSave={onSave} />
-      )}
-    </div>
-  );
+function toDatetimeLocal(val?: string | null): string {
+  if (!val) return '';
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// ── Inline raw HTML editor ─────────────────────────────────────────────────────
-function RawHtmlPane({ initialData, onSave }: Props) {
+export default function BlockNoteEditor({ initialData, onSave }: Props) {
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [type, setType] = useState<'poetry' | 'tech' | 'ideas'>(initialData?.type ?? 'poetry');
-  const [content, setContent] = useState(initialData?.content ?? '');
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? '');
   const [tags, setTags] = useState(initialData?.tags?.join(', ') ?? '');
   const [published, setPublished] = useState(initialData?.published ?? false);
@@ -111,6 +42,16 @@ function RawHtmlPane({ initialData, onSave }: Props) {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
 
+  const editor = useCreateBlockNote();
+
+  useEffect(() => {
+    if (initialData?.content) {
+      const blocks = editor.tryParseHTMLToBlocks(initialData.content);
+      editor.replaceBlocks(editor.document, blocks);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
     setError('');
@@ -118,6 +59,8 @@ function RawHtmlPane({ initialData, onSave }: Props) {
 
     const method = initialData?.id ? 'PATCH' : 'POST';
     const url = initialData?.id ? `/api/posts/${initialData.id}` : '/api/posts';
+
+    const content = editor.blocksToHTMLLossy(editor.document);
 
     const body = {
       title,
@@ -201,25 +144,15 @@ function RawHtmlPane({ initialData, onSave }: Props) {
             outline: 'none',
           }}
         />
-        <textarea
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          placeholder="<p>Enter raw HTML here...</p>"
-          style={{
-            fontFamily: 'var(--font-dm-mono), monospace',
-            fontSize: '13px',
-            minHeight: '500px',
-            width: '100%',
-            background: 'var(--bg2)',
-            border: '0.5px solid var(--bdr)',
-            padding: '1rem',
-            color: 'var(--txt)',
-            borderRadius: '3px',
-            resize: 'vertical',
-            outline: 'none',
-            lineHeight: 1.6,
-          }}
-        />
+
+        <div style={{
+          border: '0.5px solid var(--bdr)',
+          borderRadius: '3px',
+          minHeight: '500px',
+          overflow: 'hidden',
+        }}>
+          <BlockNoteView editor={editor} />
+        </div>
       </div>
 
       {/* Sidebar */}
@@ -239,16 +172,31 @@ function RawHtmlPane({ initialData, onSave }: Props) {
 
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Excerpt</label>
-          <textarea value={excerpt} onChange={e => setExcerpt(e.target.value)} rows={3} style={{ ...fieldStyle, resize: 'vertical' }} />
+          <textarea
+            value={excerpt}
+            onChange={e => setExcerpt(e.target.value)}
+            rows={3}
+            style={{ ...fieldStyle, resize: 'vertical' }}
+          />
         </div>
 
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Tags</label>
-          <input type="text" value={tags} onChange={e => setTags(e.target.value)} placeholder="poetry, nature, memory" style={fieldStyle} />
+          <input
+            type="text"
+            value={tags}
+            onChange={e => setTags(e.target.value)}
+            placeholder="poetry, nature, memory"
+            style={fieldStyle}
+          />
         </div>
 
         <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ fontFamily: 'var(--font-dm-mono), monospace', fontSize: '12px', color: 'var(--txt)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+          <label style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '12px', color: 'var(--txt)',
+            display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer',
+          }}>
             <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} />
             Published
           </label>
@@ -256,12 +204,22 @@ function RawHtmlPane({ initialData, onSave }: Props) {
 
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Published date</label>
-          <input type="datetime-local" value={publishedAt} onChange={e => setPublishedAt(e.target.value)} style={fieldStyle} />
+          <input
+            type="datetime-local"
+            value={publishedAt}
+            onChange={e => setPublishedAt(e.target.value)}
+            style={fieldStyle}
+          />
         </div>
 
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Created date</label>
-          <input type="datetime-local" value={createdAt} onChange={e => setCreatedAt(e.target.value)} style={fieldStyle} />
+          <input
+            type="datetime-local"
+            value={createdAt}
+            onChange={e => setCreatedAt(e.target.value)}
+            style={fieldStyle}
+          />
         </div>
 
         <button
@@ -285,13 +243,17 @@ function RawHtmlPane({ initialData, onSave }: Props) {
         </button>
 
         {error && (
-          <div style={{ fontFamily: 'var(--font-dm-mono), monospace', fontSize: '11px', color: 'var(--danger)', marginTop: '0.5rem' }}>
+          <div style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '11px', color: 'var(--danger)', marginTop: '0.5rem',
+          }}>
             {error}
           </div>
         )}
 
         <button
           onClick={() => {
+            const content = editor.blocksToHTMLLossy(editor.document);
             localStorage.setItem('post-preview', JSON.stringify({
               title, type, content, excerpt,
               tags: tags.split(',').map((t: string) => t.trim()).filter(Boolean),
@@ -318,12 +280,4 @@ function RawHtmlPane({ initialData, onSave }: Props) {
       </div>
     </div>
   );
-}
-
-function toDatetimeLocal(val?: string | null): string {
-  if (!val) return '';
-  const d = new Date(val);
-  if (isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
