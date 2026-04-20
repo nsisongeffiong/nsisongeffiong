@@ -33,7 +33,7 @@ export default function NewPostPage() {
         >
           New post
         </h1>
-        <PostEditor />
+        <PostEditor postId={undefined} />
       </main>
     </div>
   );

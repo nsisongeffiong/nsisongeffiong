@@ -46,7 +46,7 @@ export default async function EditPostPage({
         >
           Edit post
         </h1>
-        <PostEditor initialData={{
+        <PostEditor postId={post.id} initialData={{
           id: post.id,
           title: post.title,
           type: post.type as 'tech' | 'ideas' | 'poetry',

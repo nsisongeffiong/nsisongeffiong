@@ -406,6 +406,7 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
       const data: unknown = await res.json();
       setSaved(true);
       localStorage.removeItem(DRAFT_KEY);
+      localStorage.removeItem('editor-draft-id');
       setTimeout(() => setSaved(false), 2000);
       if (onSave) onSave(data);
     } catch {

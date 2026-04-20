@@ -21,6 +21,7 @@ interface PostData {
 interface Props {
   initialData?: PostData;
   onSave?: (post: unknown) => void;
+  postId?: string;
 }
 
 type EditorType = 'rich' | 'markdown';
@@ -31,8 +32,9 @@ const TABS: { key: EditorType; label: string }[] = [
 ];
 
 const DRAFT_KEY = 'editor-content-draft';
+const DRAFT_ID_KEY = 'editor-draft-id';
 
-export default function EditorSwitcher({ initialData, onSave }: Props) {
+export default function EditorSwitcher({ initialData, onSave, postId }: Props) {
   const [editorType, setEditorType] = useState<EditorType>('rich');
   const [mounted, setMounted] = useState(false);
   // Tracks latest content from the active editor so we can draft-save before switching
@@ -43,6 +45,16 @@ export default function EditorSwitcher({ initialData, onSave }: Props) {
     const saved = localStorage.getItem('preferred-editor');
     if (saved === 'rich' || saved === 'markdown') {
       setEditorType(saved);
+    }
+    // Clear stale draft if it belongs to a different post
+    const draftId = localStorage.getItem(DRAFT_ID_KEY);
+    if (draftId !== (postId ?? null)) {
+      localStorage.removeItem(DRAFT_KEY);
+      if (postId !== undefined) {
+        localStorage.setItem(DRAFT_ID_KEY, postId);
+      } else {
+        localStorage.removeItem(DRAFT_ID_KEY);
+      }
     }
   }, []);
 
