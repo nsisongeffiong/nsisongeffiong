@@ -40,3 +40,4 @@ CONTEXT.md
 prompts/
 ghost-export.json
 scripts/run.py
+app/\(public\)/page.tsx.bak

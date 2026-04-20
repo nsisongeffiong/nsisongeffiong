@@ -81,7 +81,7 @@ export default async function PoetryPage() {
       </div>
 
       {/* ── Featured + grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '0.5px solid var(--bdr)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
 
         {featured && (
           <div style={{

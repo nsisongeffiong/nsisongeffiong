@@ -2,11 +2,11 @@ import React from 'react'
 
 const navLinks = (
   <>
-    <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Contact</a>
+    <a href="/contact" style={{ color: 'inherit', textDecoration: 'none' }}>Contact</a>
     {' · '}
-    <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
+    <a href="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
     {' · '}
-    <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Legal</a>
+    <a href="/legal" style={{ color: 'inherit', textDecoration: 'none' }}>Legal</a>
   </>
 )
 
@@ -27,7 +27,7 @@ export function SiteFooter({ section }: { section?: string }) {
         justifyContent: 'space-between',
         alignItems: 'center',
       }}>
-        <span style={monoStyle}>© Nsisong Effiong {year}</span>
+        <span style={monoStyle}>© Nsisong Effiong 2012–{year}</span>
 
         <span
           title="Chenned, Deadhouse Gates — Steven Erikson"
@@ -61,7 +61,7 @@ export function SiteFooter({ section }: { section?: string }) {
       </span>
 
       <span style={monoStyle}>
-        © Nsisong Effiong {year} · {navLinks}
+        © Nsisong Effiong 2012–{year} · {navLinks}
       </span>
     </footer>
   )
