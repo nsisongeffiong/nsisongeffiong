@@ -327,43 +327,6 @@ function toDatetimeLocal(val?: string | null): string {
 // ── Component ──────────────────────────────────────────────────────────────────
 const DRAFT_KEY = 'editor-content-draft';
 
-// Auto-close pairs and tag names shared with HTML textarea
-const CLOSE_PAIRS: Record<string, string> = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
-const CLOSEABLE_TAGS = ['p', 'h2', 'h3', 'h4', 'blockquote', 'div', 'span', 'em', 'strong', 'a', 'li', 'ul', 'ol', 'code', 'pre'];
-
-function applyAutoClose(
-  e: React.KeyboardEvent<HTMLTextAreaElement>,
-  value: string,
-  setValue: (v: string) => void,
-) {
-  const el = e.currentTarget;
-  const start = el.selectionStart;
-  const end = el.selectionEnd;
-
-  if (CLOSE_PAIRS[e.key]) {
-    e.preventDefault();
-    const newVal = value.slice(0, start) + e.key + CLOSE_PAIRS[e.key] + value.slice(end);
-    setValue(newVal);
-    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + 1; });
-    return;
-  }
-
-  if (e.key === '>') {
-    const before = value.slice(0, start);
-    const tagMatch = before.match(/<([a-zA-Z][a-zA-Z0-9]*)(?:\s[^>]*)?\s*$/);
-    if (tagMatch) {
-      const tag = tagMatch[1].toLowerCase();
-      if (CLOSEABLE_TAGS.includes(tag)) {
-        e.preventDefault();
-        const selected = value.slice(start, end);
-        const insert = '>' + selected + '</' + tag + '>';
-        setValue(value.slice(0, start) + insert + value.slice(end));
-        requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + 1; });
-      }
-    }
-  }
-}
-
 export default function PostEditor({ initialData, onSave, onContentChange }: PostEditorProps) {
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [type, setType] = useState<'poetry' | 'tech' | 'ideas'>(initialData?.type ?? 'poetry');
@@ -375,11 +338,6 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
-  const [htmlMode, setHtmlMode] = useState(false);
-  const [rawHtml, setRawHtml] = useState(() =>
-    !initialData?.content ? (typeof window !== 'undefined' ? localStorage.getItem(DRAFT_KEY) ?? '' : '') : ''
-  );
-
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -426,7 +384,7 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
     const body = {
       title,
       type,
-      content: htmlMode ? rawHtml : editor.getHTML(),
+      content: editor.getHTML(),
       excerpt,
       tags: tags.split(',').map((t: string) => t.trim()).filter(Boolean),
       published,
@@ -551,24 +509,6 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
               </button>
             )
           )}
-          <div style={{ width: '0.5px', height: '14px', background: 'var(--bdr2)', margin: '0 2px', flexShrink: 0 }} />
-          <button
-            title="Toggle raw HTML"
-            onMouseDown={ev => {
-              ev.preventDefault();
-              if (!editor) return;
-              if (!htmlMode) {
-                setRawHtml(editor.getHTML());
-                setHtmlMode(true);
-              } else {
-                editor.commands.setContent(rawHtml);
-                setHtmlMode(false);
-              }
-            }}
-            style={{ ...btnBase, color: htmlMode ? 'var(--teal-mid)' : 'var(--txt2)' }}
-          >
-            HTML
-          </button>
         </div>
 
         {/* Block type label + escape hint */}
@@ -590,40 +530,9 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
         </div>
 
         {/* Editor area */}
-        {htmlMode ? (
-          <textarea
-            value={rawHtml}
-            onChange={e => {
-              const val = e.target.value;
-              setRawHtml(val);
-              localStorage.setItem(DRAFT_KEY, val);
-              onContentChange?.(val);
-            }}
-            onKeyDown={e => applyAutoClose(e, rawHtml, (val) => {
-              setRawHtml(val);
-              localStorage.setItem(DRAFT_KEY, val);
-              onContentChange?.(val);
-            })}
-            style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '13px',
-              minHeight: '500px',
-              width: '100%',
-              background: 'var(--bg2)',
-              border: '0.5px solid var(--bdr)',
-              padding: '1rem',
-              color: 'var(--txt)',
-              borderRadius: '3px',
-              resize: 'vertical',
-              outline: 'none',
-              lineHeight: 1.6,
-            }}
-          />
-        ) : (
-          <div style={{ border: '0.5px solid var(--bdr)', borderRadius: '3px', padding: '1rem 1.25rem' }}>
-            <EditorContent editor={editor} style={{ minHeight: '500px' }} />
-          </div>
-        )}
+        <div style={{ border: '0.5px solid var(--bdr)', borderRadius: '3px', padding: '1rem 1.25rem' }}>
+          <EditorContent editor={editor} style={{ minHeight: '500px' }} />
+        </div>
       </div>
 
       {/* Sidebar */}
