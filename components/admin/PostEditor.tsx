@@ -68,9 +68,54 @@ const ClassedBlockquote = Node.create({
       },
     };
   },
-  parseHTML() { return [{ tag: 'blockquote[class]', priority: 1001 }]; },
+  parseHTML() {
+    return [
+      { tag: 'blockquote[class]', priority: 1001 },
+      {
+        tag: 'div',
+        priority: 1001,
+        getAttrs: (el) => {
+          const cls = (el as HTMLElement).getAttribute('class') ?? '';
+          return cls.includes('ideas-pq') ? { class: cls } : false;
+        },
+      },
+      {
+        tag: 'aside',
+        priority: 1001,
+        getAttrs: (el) => {
+          const cls = (el as HTMLElement).getAttribute('class') ?? '';
+          return cls.includes('ideas-pq') ? { class: cls } : false;
+        },
+      },
+    ];
+  },
   renderHTML({ HTMLAttributes }) {
     return ['blockquote', mergeAttributes(HTMLAttributes), 0];
+  },
+  addKeyboardShortcuts() {
+    return {
+      Enter: () => {
+        const { state } = this.editor;
+        const { $from, empty } = state.selection;
+        if (!empty) return false;
+
+        let nodeDepth = -1;
+        for (let d = $from.depth; d >= 0; d--) {
+          if ($from.node(d).type === this.type) { nodeDepth = d; break; }
+        }
+        if (nodeDepth === -1) return false;
+
+        // Only exit when cursor is at the very end of the blockquote's content
+        if ($from.pos !== $from.end(nodeDepth)) return false;
+
+        const insertPos = $from.after(nodeDepth);
+        return this.editor
+          .chain()
+          .insertContentAt(insertPos, { type: 'paragraph' })
+          .focus(insertPos + 1)
+          .run();
+      },
+    };
   },
 });
 
@@ -568,6 +613,37 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
             {error}
           </div>
         )}
+
+        {/* Preview */}
+        <button
+          onClick={() => {
+            if (!editor) return;
+            localStorage.setItem('post-preview', JSON.stringify({
+              title,
+              type,
+              content: editor.getHTML(),
+              excerpt,
+              tags: tags.split(',').map((t: string) => t.trim()).filter(Boolean),
+              published,
+            }));
+            window.open('/admin/preview', '_blank');
+          }}
+          style={{
+            width: '100%',
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '11px',
+            textTransform: 'uppercase',
+            background: 'transparent',
+            color: 'var(--amber)',
+            border: '0.5px solid var(--amber)',
+            padding: '0.75rem',
+            borderRadius: '3px',
+            cursor: 'pointer',
+            marginTop: '0.75rem',
+          }}
+        >
+          Preview
+        </button>
       </div>
     </div>
   );
