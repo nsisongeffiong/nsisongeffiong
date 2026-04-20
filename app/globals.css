@@ -299,7 +299,7 @@ body {
   margin: 2.5rem 0 1rem;
 }
 /* Drop cap on first paragraph only — scoped to article tag */
-article.ideas-body p:first-of-type::first-letter {
+article.ideas-body > p:first-of-type::first-letter {
   font-family: var(--font-inter-tight), var(--font-syne), sans-serif;
   font-size: 5.2em;
   font-weight: 800;

@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, type CSSProperties } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 
 const PostEditor = dynamic(() => import('./PostEditor'), { ssr: false });
 const MarkdownEditor = dynamic(() => import('./MarkdownEditor'), { ssr: false });
-const BlockNoteEditor = dynamic(() => import('./BlockNoteEditor'), { ssr: false });
 
 interface PostData {
   id?: string;
@@ -24,28 +23,33 @@ interface Props {
   onSave?: (post: unknown) => void;
 }
 
-type EditorType = 'rich' | 'markdown' | 'html' | 'blocknote';
+type EditorType = 'rich' | 'markdown' | 'html';
 
 const TABS: { key: EditorType; label: string }[] = [
   { key: 'rich', label: 'Rich text' },
   { key: 'markdown', label: 'Markdown' },
   { key: 'html', label: 'HTML' },
-  { key: 'blocknote', label: 'BlockNote' },
 ];
+
+const DRAFT_KEY = 'editor-content-draft';
 
 export default function EditorSwitcher({ initialData, onSave }: Props) {
   const [editorType, setEditorType] = useState<EditorType>('rich');
   const [mounted, setMounted] = useState(false);
+  // Tracks latest content from the active editor so we can draft-save before switching
+  const latestContent = useRef(initialData?.content ?? '');
 
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('preferred-editor') as EditorType | null;
-    if (saved && ['rich', 'markdown', 'html', 'blocknote'].includes(saved)) {
-      setEditorType(saved);
+    if (saved && ['rich', 'markdown', 'html'].includes(saved)) {
+      setEditorType(saved as EditorType);
     }
   }, []);
 
   function switchEditor(type: EditorType) {
+    // Persist current content draft before unmounting the active editor
+    localStorage.setItem(DRAFT_KEY, latestContent.current);
     setEditorType(type);
     localStorage.setItem('preferred-editor', type);
   }
@@ -58,6 +62,10 @@ export default function EditorSwitcher({ initialData, onSave }: Props) {
     borderRadius: '3px',
     cursor: 'pointer',
     lineHeight: 1.4,
+  };
+
+  const contentChangeHandler = (content: string) => {
+    latestContent.current = content;
   };
 
   return (
@@ -82,26 +90,80 @@ export default function EditorSwitcher({ initialData, onSave }: Props) {
 
       {/* Active editor */}
       {mounted && editorType === 'rich' && (
-        <PostEditor initialData={initialData} onSave={onSave} />
+        <PostEditor
+          initialData={initialData}
+          onSave={onSave}
+          onContentChange={contentChangeHandler}
+        />
       )}
       {mounted && editorType === 'markdown' && (
-        <MarkdownEditor initialData={initialData} onSave={onSave} />
+        <MarkdownEditor
+          initialData={initialData}
+          onSave={onSave}
+          onContentChange={contentChangeHandler}
+        />
       )}
       {mounted && editorType === 'html' && (
-        <RawHtmlPane initialData={initialData} onSave={onSave} />
-      )}
-      {mounted && editorType === 'blocknote' && (
-        <BlockNoteEditor initialData={initialData} onSave={onSave} />
+        <RawHtmlPane
+          initialData={initialData}
+          onSave={onSave}
+          onContentChange={contentChangeHandler}
+        />
       )}
     </div>
   );
 }
 
+// ── Auto-close helpers ─────────────────────────────────────────────────────────
+const CLOSE_PAIRS: Record<string, string> = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+const CLOSEABLE_TAGS = ['p', 'h2', 'h3', 'h4', 'blockquote', 'div', 'span', 'em', 'strong', 'a', 'li', 'ul', 'ol', 'code', 'pre'];
+
+function applyAutoClose(
+  e: React.KeyboardEvent<HTMLTextAreaElement>,
+  value: string,
+  setValue: (v: string) => void,
+) {
+  const el = e.currentTarget;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+
+  if (CLOSE_PAIRS[e.key]) {
+    e.preventDefault();
+    const newVal = value.slice(0, start) + e.key + CLOSE_PAIRS[e.key] + value.slice(end);
+    setValue(newVal);
+    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + 1; });
+    return;
+  }
+
+  if (e.key === '>') {
+    const before = value.slice(0, start);
+    const tagMatch = before.match(/<([a-zA-Z][a-zA-Z0-9]*)(?:\s[^>]*)?\s*$/);
+    if (tagMatch) {
+      const tag = tagMatch[1].toLowerCase();
+      if (CLOSEABLE_TAGS.includes(tag)) {
+        e.preventDefault();
+        const selected = value.slice(start, end);
+        const insert = '>' + selected + '</' + tag + '>';
+        setValue(value.slice(0, start) + insert + value.slice(end));
+        requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + 1; });
+      }
+    }
+  }
+}
+
 // ── Inline raw HTML editor ─────────────────────────────────────────────────────
-function RawHtmlPane({ initialData, onSave }: Props) {
+interface RawHtmlPaneProps extends Props {
+  onContentChange?: (content: string) => void;
+}
+
+function RawHtmlPane({ initialData, onSave, onContentChange }: RawHtmlPaneProps) {
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [type, setType] = useState<'poetry' | 'tech' | 'ideas'>(initialData?.type ?? 'poetry');
-  const [content, setContent] = useState(initialData?.content ?? '');
+  const [content, setContent] = useState(() => {
+    if (initialData?.content) return initialData.content;
+    if (typeof window !== 'undefined') return localStorage.getItem(DRAFT_KEY) ?? '';
+    return '';
+  });
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? '');
   const [tags, setTags] = useState(initialData?.tags?.join(', ') ?? '');
   const [published, setPublished] = useState(initialData?.published ?? false);
@@ -110,6 +172,12 @@ function RawHtmlPane({ initialData, onSave }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+
+  const handleContentChange = (val: string) => {
+    setContent(val);
+    localStorage.setItem(DRAFT_KEY, val);
+    onContentChange?.(val);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -120,9 +188,7 @@ function RawHtmlPane({ initialData, onSave }: Props) {
     const url = initialData?.id ? `/api/posts/${initialData.id}` : '/api/posts';
 
     const body = {
-      title,
-      type,
-      content,
+      title, type, content,
       excerpt,
       tags: tags.split(',').map((t: string) => t.trim()).filter(Boolean),
       published,
@@ -132,8 +198,7 @@ function RawHtmlPane({ initialData, onSave }: Props) {
 
     try {
       const res = await fetch(url, {
-        method,
-        credentials: 'include',
+        method, credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
@@ -146,6 +211,7 @@ function RawHtmlPane({ initialData, onSave }: Props) {
 
       const data: unknown = await res.json();
       setSaved(true);
+      localStorage.removeItem(DRAFT_KEY);
       setTimeout(() => setSaved(false), 2000);
       if (onSave) onSave(data);
     } catch {
@@ -157,139 +223,96 @@ function RawHtmlPane({ initialData, onSave }: Props) {
 
   const labelStyle: CSSProperties = {
     fontFamily: 'var(--font-dm-mono), monospace',
-    fontSize: '10px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.12em',
-    color: 'var(--txt3)',
-    display: 'block',
-    marginBottom: '0.4rem',
+    fontSize: '10px', textTransform: 'uppercase',
+    letterSpacing: '0.12em', color: 'var(--txt3)',
+    display: 'block', marginBottom: '0.4rem',
   };
 
   const fieldStyle: CSSProperties = {
     fontFamily: 'var(--font-dm-mono), monospace',
-    fontSize: '12px',
-    border: '0.5px solid var(--bdr2)',
-    background: 'var(--bg2)',
-    color: 'var(--txt)',
-    padding: '0.5rem 0.75rem',
-    borderRadius: '3px',
-    width: '100%',
-    outline: 'none',
+    fontSize: '12px', border: '0.5px solid var(--bdr2)',
+    background: 'var(--bg2)', color: 'var(--txt)',
+    padding: '0.5rem 0.75rem', borderRadius: '3px',
+    width: '100%', outline: 'none',
   };
 
   return (
     <div style={{ display: 'flex', gap: 0 }}>
-      {/* Editor column */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <input
-          type="text"
-          value={title}
+          type="text" value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder="Post title"
           style={{
-            width: '100%',
-            fontFamily: 'var(--font-syne), sans-serif',
-            fontSize: '24px',
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            border: 'none',
-            borderBottom: '0.5px solid var(--bdr)',
-            background: 'transparent',
-            color: 'var(--txt)',
-            padding: '0.75rem 0',
-            marginBottom: '1rem',
-            outline: 'none',
+            width: '100%', fontFamily: 'var(--font-syne), sans-serif',
+            fontSize: '24px', fontWeight: 700, letterSpacing: '-0.02em',
+            border: 'none', borderBottom: '0.5px solid var(--bdr)',
+            background: 'transparent', color: 'var(--txt)',
+            padding: '0.75rem 0', marginBottom: '1rem', outline: 'none',
           }}
         />
         <textarea
           value={content}
-          onChange={e => setContent(e.target.value)}
+          onChange={e => handleContentChange(e.target.value)}
+          onKeyDown={e => applyAutoClose(e, content, handleContentChange)}
           placeholder="<p>Enter raw HTML here...</p>"
           style={{
-            fontFamily: 'var(--font-dm-mono), monospace',
-            fontSize: '13px',
-            minHeight: '500px',
-            width: '100%',
-            background: 'var(--bg2)',
-            border: '0.5px solid var(--bdr)',
-            padding: '1rem',
-            color: 'var(--txt)',
-            borderRadius: '3px',
-            resize: 'vertical',
-            outline: 'none',
-            lineHeight: 1.6,
+            fontFamily: 'var(--font-dm-mono), monospace', fontSize: '13px',
+            minHeight: '500px', width: '100%', background: 'var(--bg2)',
+            border: '0.5px solid var(--bdr)', padding: '1rem', color: 'var(--txt)',
+            borderRadius: '3px', resize: 'vertical', outline: 'none', lineHeight: 1.6,
           }}
         />
       </div>
 
-      {/* Sidebar */}
       <div style={{ width: '260px', minWidth: '260px', paddingLeft: '2rem', borderLeft: '0.5px solid var(--bdr)' }}>
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Type</label>
-          <select
-            value={type}
-            onChange={e => setType(e.target.value as 'poetry' | 'tech' | 'ideas')}
-            style={fieldStyle}
-          >
+          <select value={type} onChange={e => setType(e.target.value as 'poetry' | 'tech' | 'ideas')} style={fieldStyle}>
             <option value="poetry">poetry</option>
             <option value="tech">Tech</option>
             <option value="ideas">Ideas</option>
           </select>
         </div>
-
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Excerpt</label>
           <textarea value={excerpt} onChange={e => setExcerpt(e.target.value)} rows={3} style={{ ...fieldStyle, resize: 'vertical' }} />
         </div>
-
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Tags</label>
           <input type="text" value={tags} onChange={e => setTags(e.target.value)} placeholder="poetry, nature, memory" style={fieldStyle} />
         </div>
-
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={{ fontFamily: 'var(--font-dm-mono), monospace', fontSize: '12px', color: 'var(--txt)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
             <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} />
             Published
           </label>
         </div>
-
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Published date</label>
           <input type="datetime-local" value={publishedAt} onChange={e => setPublishedAt(e.target.value)} style={fieldStyle} />
         </div>
-
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Created date</label>
           <input type="datetime-local" value={createdAt} onChange={e => setCreatedAt(e.target.value)} style={fieldStyle} />
         </div>
-
         <button
-          onClick={handleSave}
-          disabled={saving}
+          onClick={handleSave} disabled={saving}
           style={{
-            width: '100%',
-            fontFamily: 'var(--font-dm-mono), monospace',
-            fontSize: '11px',
-            textTransform: 'uppercase',
-            background: 'var(--teal-hero)',
-            color: 'var(--teal-light)',
-            border: 'none',
-            padding: '0.75rem',
-            borderRadius: '3px',
-            cursor: saving ? 'default' : 'pointer',
-            opacity: saving ? 0.6 : 1,
+            width: '100%', fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '11px', textTransform: 'uppercase',
+            background: 'var(--teal-hero)', color: 'var(--teal-light)',
+            border: 'none', padding: '0.75rem', borderRadius: '3px',
+            cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1,
           }}
         >
           {saving ? 'Saving...' : saved ? 'Saved' : 'Save post'}
         </button>
-
         {error && (
           <div style={{ fontFamily: 'var(--font-dm-mono), monospace', fontSize: '11px', color: 'var(--danger)', marginTop: '0.5rem' }}>
             {error}
           </div>
         )}
-
         <button
           onClick={() => {
             localStorage.setItem('post-preview', JSON.stringify({
@@ -300,17 +323,11 @@ function RawHtmlPane({ initialData, onSave }: Props) {
             window.open('/admin/preview', '_blank');
           }}
           style={{
-            width: '100%',
-            fontFamily: 'var(--font-dm-mono), monospace',
-            fontSize: '11px',
-            textTransform: 'uppercase',
-            background: 'transparent',
-            color: 'var(--amber)',
-            border: '0.5px solid var(--amber)',
-            padding: '0.75rem',
-            borderRadius: '3px',
-            cursor: 'pointer',
-            marginTop: '0.75rem',
+            width: '100%', fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '11px', textTransform: 'uppercase',
+            background: 'transparent', color: 'var(--amber)',
+            border: '0.5px solid var(--amber)', padding: '0.75rem',
+            borderRadius: '3px', cursor: 'pointer', marginTop: '0.75rem',
           }}
         >
           Preview

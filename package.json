@@ -12,9 +12,6 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@blocknote/core": "^0.48.1",
-    "@blocknote/mantine": "^0.48.1",
-    "@blocknote/react": "^0.48.1",
     "@mantine/core": "^8.3.18",
     "@mantine/hooks": "^8.3.18",
     "@supabase/ssr": "^0.5.0",

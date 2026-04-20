@@ -27,6 +27,7 @@ interface PostData {
 interface PostEditorProps {
   initialData?: PostData;
   onSave?: (post: unknown) => void;
+  onContentChange?: (content: string) => void;
 }
 
 type BtnDef = {
@@ -94,7 +95,7 @@ const ClassedBlockquote = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      Enter: () => {
+      'Mod-Enter': () => {
         const { state } = this.editor;
         const { $from, empty } = state.selection;
         if (!empty) return false;
@@ -324,7 +325,46 @@ function toDatetimeLocal(val?: string | null): string {
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
-export default function PostEditor({ initialData, onSave }: PostEditorProps) {
+const DRAFT_KEY = 'editor-content-draft';
+
+// Auto-close pairs and tag names shared with HTML textarea
+const CLOSE_PAIRS: Record<string, string> = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+const CLOSEABLE_TAGS = ['p', 'h2', 'h3', 'h4', 'blockquote', 'div', 'span', 'em', 'strong', 'a', 'li', 'ul', 'ol', 'code', 'pre'];
+
+function applyAutoClose(
+  e: React.KeyboardEvent<HTMLTextAreaElement>,
+  value: string,
+  setValue: (v: string) => void,
+) {
+  const el = e.currentTarget;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+
+  if (CLOSE_PAIRS[e.key]) {
+    e.preventDefault();
+    const newVal = value.slice(0, start) + e.key + CLOSE_PAIRS[e.key] + value.slice(end);
+    setValue(newVal);
+    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + 1; });
+    return;
+  }
+
+  if (e.key === '>') {
+    const before = value.slice(0, start);
+    const tagMatch = before.match(/<([a-zA-Z][a-zA-Z0-9]*)(?:\s[^>]*)?\s*$/);
+    if (tagMatch) {
+      const tag = tagMatch[1].toLowerCase();
+      if (CLOSEABLE_TAGS.includes(tag)) {
+        e.preventDefault();
+        const selected = value.slice(start, end);
+        const insert = '>' + selected + '</' + tag + '>';
+        setValue(value.slice(0, start) + insert + value.slice(end));
+        requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + 1; });
+      }
+    }
+  }
+}
+
+export default function PostEditor({ initialData, onSave, onContentChange }: PostEditorProps) {
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [type, setType] = useState<'poetry' | 'tech' | 'ideas'>(initialData?.type ?? 'poetry');
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? '');
@@ -336,7 +376,9 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [htmlMode, setHtmlMode] = useState(false);
-  const [rawHtml, setRawHtml] = useState('');
+  const [rawHtml, setRawHtml] = useState(() =>
+    !initialData?.content ? (typeof window !== 'undefined' ? localStorage.getItem(DRAFT_KEY) ?? '' : '') : ''
+  );
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -354,13 +396,23 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
     editorProps: {
       attributes: { class: 'tiptap' },
     },
+    onUpdate: ({ editor: e }) => {
+      const html = e.getHTML();
+      localStorage.setItem(DRAFT_KEY, html);
+      onContentChange?.(html);
+    },
   });
 
   useEffect(() => {
-    if (editor && initialData?.content) {
+    if (!editor) return;
+    if (initialData?.content) {
       editor.commands.setContent(initialData.content);
+    } else {
+      const draft = localStorage.getItem(DRAFT_KEY);
+      if (draft) editor.commands.setContent(draft);
     }
-  }, [editor, initialData?.content]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]);
 
   const handleSave = async () => {
     if (!editor) return;
@@ -398,6 +450,7 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
 
       const data: unknown = await res.json();
       setSaved(true);
+      localStorage.removeItem(DRAFT_KEY);
       setTimeout(() => setSaved(false), 2000);
       if (onSave) onSave(data);
     } catch {
@@ -518,24 +571,39 @@ export default function PostEditor({ initialData, onSave }: PostEditorProps) {
           </button>
         </div>
 
-        {/* Block type label */}
-        <div style={{
-          fontFamily: 'var(--font-dm-mono), monospace',
-          fontSize: '10px',
-          color: 'var(--txt3)',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          marginBottom: '0.35rem',
-          minHeight: '14px',
-        }}>
-          {blockLabel}
+        {/* Block type label + escape hint */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.35rem', minHeight: '14px' }}>
+          <span style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '10px', color: 'var(--txt3)',
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+          }}>
+            {blockLabel}
+          </span>
+          <span style={{
+            fontFamily: 'var(--font-dm-mono), monospace',
+            fontSize: '10px', color: 'var(--txt4)',
+            letterSpacing: '0.04em',
+          }}>
+            Tip: Ctrl+Enter / Cmd+Enter to exit a block component back to paragraph
+          </span>
         </div>
 
         {/* Editor area */}
         {htmlMode ? (
           <textarea
             value={rawHtml}
-            onChange={e => setRawHtml(e.target.value)}
+            onChange={e => {
+              const val = e.target.value;
+              setRawHtml(val);
+              localStorage.setItem(DRAFT_KEY, val);
+              onContentChange?.(val);
+            }}
+            onKeyDown={e => applyAutoClose(e, rawHtml, (val) => {
+              setRawHtml(val);
+              localStorage.setItem(DRAFT_KEY, val);
+              onContentChange?.(val);
+            })}
             style={{
               fontFamily: 'var(--font-dm-mono), monospace',
               fontSize: '13px',
