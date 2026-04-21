@@ -42,9 +42,22 @@ export default async function IdeasSinglePage({
     .from(comments)
     .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
 
+  function toRoman(n: number): string {
+    const vals = [1000,900,500,400,100,90,50,40,10,9,5,4,1]
+    const syms = ['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I']
+    let result = ''
+    for (let i = 0; i < vals.length; i++) {
+      while (n >= vals[i]) { result += syms[i]; n -= vals[i] }
+    }
+    return result
+  }
+  function getVolume(year: number): string {
+    return `Vol. ${toRoman(year - 2011 + 1)}`
+  }
+
   const meta     = post.metadata as any
   const kicker   = meta?.kicker ?? post.tags?.[0] ?? 'Essay'
-  const volume   = meta?.volume ?? 'Vol. I'
+  const volume   = post.publishedAt ? getVolume(post.publishedAt.getFullYear()) : 'Vol. I'
   const readTime = meta?.readTime ?? null
   const deck     = meta?.deck ?? post.excerpt ?? null
   const isLegacy = meta?.legacyDisqus === true
@@ -129,6 +142,27 @@ export default async function IdeasSinglePage({
           style={{ maxWidth: 700, margin: '0 auto', padding: '3rem 2rem' }}
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
+
+        {/* ── Original publication attribution ── */}
+        {meta?.originalPublication && (
+          <div style={{
+            maxWidth: 700, margin: '0 auto', padding: '0 2rem',
+            marginTop: '2rem', paddingTop: '1rem',
+            borderTop: '0.5px solid var(--bdr)',
+          }}>
+            <p style={{
+              fontFamily: 'var(--font-source-serif), serif',
+              fontStyle: 'italic', fontSize: '13px',
+              color: 'var(--txt3)',
+            }}>
+              This essay first appeared on Straight Talk Nigeria in{' '}
+              {meta.originalDate
+                ? new Date(meta.originalDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                : ''}
+              .
+            </p>
+          </div>
+        )}
 
         {/* ── Prev / Next ── */}
         <div style={{ borderTop: '2px solid var(--txt)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>

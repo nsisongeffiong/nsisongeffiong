@@ -41,8 +41,21 @@ export default async function IdeasPage() {
         attribution: '— Nsisong Effiong',
       }
 
-  const issueLabel = leadEssay
-    ? `Vol. I · ${leadEssay.publishedAt?.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) ?? 'April 2026'}`
+  function toRoman(n: number): string {
+    const vals = [1000,900,500,400,100,90,50,40,10,9,5,4,1]
+    const syms = ['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I']
+    let result = ''
+    for (let i = 0; i < vals.length; i++) {
+      while (n >= vals[i]) { result += syms[i]; n -= vals[i] }
+    }
+    return result
+  }
+  function getVolume(year: number): string {
+    return `Vol. ${toRoman(year - 2011 + 1)}`
+  }
+
+  const issueLabel = leadEssay && leadEssay.publishedAt
+    ? `${getVolume(leadEssay.publishedAt.getFullYear())} · ${leadEssay.publishedAt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
     : 'Vol. I · April 2026'
 
   return (

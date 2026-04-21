@@ -27,7 +27,7 @@ export function SiteFooter({ section }: { section?: string }) {
         justifyContent: 'space-between',
         alignItems: 'center',
       }}>
-        <span style={monoStyle}>© Nsisong Effiong 2012–{year}</span>
+        <span style={monoStyle}>© Nsisong Effiong 2011–{year}</span>
 
         <span
           title="Chenned, Deadhouse Gates — Steven Erikson"
@@ -61,7 +61,7 @@ export function SiteFooter({ section }: { section?: string }) {
       </span>
 
       <span style={monoStyle}>
-        © Nsisong Effiong 2012–{year} · {navLinks}
+        © Nsisong Effiong 2011–{year} · {navLinks}
       </span>
     </footer>
   )
