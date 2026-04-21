@@ -223,12 +223,14 @@ export default async function IdeasPage() {
 
       {/* ── Card grid ── */}
       {cardEssays.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <div style={{ position: 'relative' }}>
+          <div style={{ position: 'absolute', top: 0, bottom: 0, left: 'calc(100% / 3)', width: '0.5px', background: 'var(--bdr)', zIndex: 1 }} />
+          <div style={{ position: 'absolute', top: 0, bottom: 0, left: 'calc(200% / 3)', width: '0.5px', background: 'var(--bdr)', zIndex: 1 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
           {cardEssays.map((essay, i) => (
             <Link key={essay.id} href={`/ideas/${essay.slug}`} style={{ textDecoration: 'none' }}>
               <article className="hover-bg" style={{
                 padding: '2rem',
-                borderRight: i % 3 < 2 ? '0.5px solid var(--bdr)' : 'none',
                 borderBottom: '0.5px solid var(--bdr)',
               }}>
                 <p style={{
@@ -262,6 +264,7 @@ export default async function IdeasPage() {
               </article>
             </Link>
           ))}
+          </div>
         </div>
       )}
 
