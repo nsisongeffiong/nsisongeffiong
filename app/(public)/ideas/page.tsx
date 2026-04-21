@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
+import { IdeaMasonryGrid } from '@/components/shared/IdeaMasonryGrid'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { desc, eq, and } from 'drizzle-orm'
@@ -223,14 +224,12 @@ export default async function IdeasPage() {
 
       {/* ── Card grid ── */}
       {cardEssays.length > 0 && (
-        <div style={{ position: 'relative' }}>
-          <div style={{ position: 'absolute', top: 0, bottom: 0, left: 'calc(100% / 3)', width: '0.5px', background: 'var(--bdr)', zIndex: 1 }} />
-          <div style={{ position: 'absolute', top: 0, bottom: 0, left: 'calc(200% / 3)', width: '0.5px', background: 'var(--bdr)', zIndex: 1 }} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
-          {cardEssays.map((essay, i) => (
+        <IdeaMasonryGrid>
+          {cardEssays.map((essay) => (
             <Link key={essay.id} href={`/ideas/${essay.slug}`} style={{ textDecoration: 'none' }}>
-              <article className="hover-bg" style={{
-                padding: '2rem',
+              <article data-masonry-card className="hover-bg" style={{
+                display: 'inline-block', width: '100%', breakInside: 'avoid',
+                boxSizing: 'border-box', padding: '2rem',
                 borderBottom: '0.5px solid var(--bdr)',
               }}>
                 <p style={{
@@ -264,8 +263,7 @@ export default async function IdeasPage() {
               </article>
             </Link>
           ))}
-          </div>
-        </div>
+        </IdeaMasonryGrid>
       )}
 
       <SiteFooter section="03 / Ideas" />
