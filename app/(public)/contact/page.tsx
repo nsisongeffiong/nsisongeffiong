@@ -31,7 +31,7 @@ export default function ContactPage() {
             fontSize: '14px', color: 'var(--txt)', letterSpacing: '0.04em',
           }}
         >
-          nsisongeffiong@gmail.com
+          hello@nsisongeffiong.com
         </a>
       </main>
 
