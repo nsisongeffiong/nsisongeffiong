@@ -64,15 +64,21 @@ const StanzaNode = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      // Enter in a stanza inserts a soft newline rather than splitting the block.
       Enter: () => {
-        const { $from } = this.editor.state.selection;
+        const { state } = this.editor;
+        const { $from, empty } = state.selection;
+        if (!empty) return false;
+        let nodeDepth = -1;
         for (let d = $from.depth; d >= 0; d--) {
-          if ($from.node(d).type === this.type) {
-            return this.editor.chain().focus().insertContent('\n').run();
-          }
+          if ($from.node(d).type === this.type) { nodeDepth = d; break; }
         }
-        return false;
+        if (nodeDepth === -1) return false;
+        const insertPos = $from.after(nodeDepth);
+        return this.editor
+          .chain()
+          .insertContentAt(insertPos, { type: 'stanza', content: [] })
+          .focus(insertPos + 1)
+          .run();
       },
     };
   },
@@ -131,25 +137,7 @@ const ClassedBlockquote = Node.create({
     };
   },
   parseHTML() {
-    return [
-      { tag: 'blockquote[class]', priority: 1001 },
-      {
-        tag: 'div',
-        priority: 1001,
-        getAttrs: (el) => {
-          const cls = (el as HTMLElement).getAttribute('class') ?? '';
-          return cls.includes('ideas-pq') ? { class: cls } : false;
-        },
-      },
-      {
-        tag: 'aside',
-        priority: 1001,
-        getAttrs: (el) => {
-          const cls = (el as HTMLElement).getAttribute('class') ?? '';
-          return cls.includes('ideas-pq') ? { class: cls } : false;
-        },
-      },
-    ];
+    return [{ tag: 'blockquote[class]', priority: 1001 }];
   },
   renderHTML({ HTMLAttributes }) {
     return ['blockquote', mergeAttributes(HTMLAttributes), 0];
@@ -192,31 +180,9 @@ const SectionBreak = Node.create({
 // ── Toolbar item arrays ────────────────────────────────────────────────────────
 const SEP: Sep = { sep: true };
 
-const SHARED: ToolbarItem[] = [
-  { label: '↩', title: 'Undo', action: e => e.chain().focus().undo().run() },
-  { label: '↪', title: 'Redo', action: e => e.chain().focus().redo().run() },
-  SEP,
+const POETRY_TOOLBAR: ToolbarItem[] = [
   {
-    label: 'B', title: 'Bold',
-    action: e => e.chain().focus().toggleBold().run(),
-    active: e => e.isActive('bold'),
-  },
-  {
-    label: 'I', title: 'Italic',
-    action: e => e.chain().focus().toggleItalic().run(),
-    active: e => e.isActive('italic'),
-  },
-  SEP,
-  {
-    label: 'clr', title: 'Clear formatting',
-    action: e => e.chain().focus().clearNodes().unsetAllMarks().run(),
-  },
-];
-
-const POETRY: ToolbarItem[] = [
-  SEP,
-  {
-    label: 'stanza', title: 'Insert stanza',
+    label: '+stanza', title: 'Insert stanza',
     action: e => e.chain().focus().insertContent({ type: 'stanza', content: [] }).run(),
     active: e => e.isActive('stanza'),
   },
@@ -237,25 +203,38 @@ const POETRY: ToolbarItem[] = [
   },
   SEP,
   {
-    label: '¶', title: 'Stanza break',
-    action: e => e.chain().focus().setHorizontalRule().run(),
+    label: 'B', title: 'Bold',
+    action: e => e.chain().focus().toggleBold().run(),
+    active: e => e.isActive('bold'),
   },
   {
-    label: 'Iv', title: 'Italic verse',
+    label: 'I', title: 'Italic',
     action: e => e.chain().focus().toggleItalic().run(),
     active: e => e.isActive('italic'),
   },
   {
-    label: '[pn]', title: "Poet's note",
-    action: e => e.chain().focus().insertContent({
-      type: 'classedBlockquote',
-      attrs: { class: 'poets-note' },
-      content: [{ type: 'paragraph', content: [{ type: 'text', text: "[Poet's note] " }] }],
-    }).run(),
+    label: 'clr', title: 'Clear formatting',
+    action: e => e.chain().focus().clearNodes().unsetAllMarks().run(),
   },
+  SEP,
+  { label: '↩', title: 'Undo', action: e => e.chain().focus().undo().run() },
+  { label: '↪', title: 'Redo', action: e => e.chain().focus().redo().run() },
 ];
 
-const TECH: ToolbarItem[] = [
+const TECH_TOOLBAR: ToolbarItem[] = [
+  { label: '↩', title: 'Undo', action: e => e.chain().focus().undo().run() },
+  { label: '↪', title: 'Redo', action: e => e.chain().focus().redo().run() },
+  SEP,
+  {
+    label: 'B', title: 'Bold',
+    action: e => e.chain().focus().toggleBold().run(),
+    active: e => e.isActive('bold'),
+  },
+  {
+    label: 'I', title: 'Italic',
+    action: e => e.chain().focus().toggleItalic().run(),
+    active: e => e.isActive('italic'),
+  },
   SEP,
   {
     label: 'H2', title: 'Heading 2',
@@ -274,35 +253,35 @@ const TECH: ToolbarItem[] = [
     active: e => e.isActive('codeBlock'),
   },
   {
-    label: '`c`', title: 'Inline code',
+    label: '`', title: 'Inline code',
     action: e => e.chain().focus().toggleCode().run(),
     active: e => e.isActive('code'),
   },
   {
-    label: '▎', title: 'Callout',
-    action: e => e.chain().focus().insertContent({
-      type: 'classedBlockquote',
-      attrs: { class: 'tech-callout' },
-      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Note: ' }] }],
-    }).run(),
-    active: e => e.isActive('classedBlockquote', { class: 'tech-callout' }),
+    label: '"', title: 'Blockquote',
+    action: e => e.chain().focus().toggleBlockquote().run(),
+    active: e => e.isActive('blockquote'),
   },
-  SEP,
   {
-    label: 'link', title: 'Link / unlink',
-    action: e => {
-      if (e.isActive('link')) {
-        e.chain().focus().unsetLink().run();
-      } else {
-        const url = window.prompt('URL');
-        if (url) e.chain().focus().setLink({ href: url }).run();
-      }
-    },
-    active: e => e.isActive('link'),
+    label: 'HR', title: 'Horizontal rule',
+    action: e => e.chain().focus().setHorizontalRule().run(),
   },
 ];
 
-const IDEAS: ToolbarItem[] = [
+const IDEAS_TOOLBAR: ToolbarItem[] = [
+  { label: '↩', title: 'Undo', action: e => e.chain().focus().undo().run() },
+  { label: '↪', title: 'Redo', action: e => e.chain().focus().redo().run() },
+  SEP,
+  {
+    label: 'B', title: 'Bold',
+    action: e => e.chain().focus().toggleBold().run(),
+    active: e => e.isActive('bold'),
+  },
+  {
+    label: 'I', title: 'Italic',
+    action: e => e.chain().focus().toggleItalic().run(),
+    active: e => e.isActive('italic'),
+  },
   SEP,
   {
     label: 'H2', title: 'Heading 2',
@@ -337,7 +316,7 @@ const IDEAS: ToolbarItem[] = [
     label: '⊡PQ', title: 'Pull quote center',
     action: e => e.chain().focus().insertContent({
       type: 'classedBlockquote',
-      attrs: { class: 'ideas-pq ideas-pq--centre' },
+      attrs: { class: 'ideas-pq ideas-pq--center' },
       content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Pull quote' }] }],
     }).run(),
     active: e => e.isActive('classedBlockquote'),
@@ -350,17 +329,6 @@ const IDEAS: ToolbarItem[] = [
       content: [{ type: 'text', text: 'I.' }],
     }).run(),
     active: e => e.isActive('sectionBreak'),
-  },
-  SEP,
-  {
-    label: 'B', title: 'Bold',
-    action: e => e.chain().focus().toggleBold().run(),
-    active: e => e.isActive('bold'),
-  },
-  {
-    label: 'I', title: 'Italic',
-    action: e => e.chain().focus().toggleItalic().run(),
-    active: e => e.isActive('italic'),
   },
 ];
 
@@ -492,10 +460,8 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
     }
   };
 
-  const toolbarItems: ToolbarItem[] = [
-    ...SHARED,
-    ...(type === 'poetry' ? POETRY : type === 'tech' ? TECH : IDEAS),
-  ];
+  const toolbarItems: ToolbarItem[] =
+    type === 'poetry' ? POETRY_TOOLBAR : type === 'tech' ? TECH_TOOLBAR : IDEAS_TOOLBAR;
 
   const blockLabel = getBlockLabel(editor);
   const buttonLabel = saving ? 'Saving...' : saved ? 'Saved' : 'Save post';
