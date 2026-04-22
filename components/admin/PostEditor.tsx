@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type CSSProperties } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import { Node, Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -378,9 +378,12 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
   const [published, setPublished] = useState(initialData?.published ?? false);
   const [publishedAt, setPublishedAt] = useState(toDatetimeLocal(initialData?.publishedAt));
   const [createdAt, setCreatedAt] = useState(toDatetimeLocal(initialData?.createdAt));
+  const [poetNote, setPoetNote] = useState(initialData?.metadata?.poetNote as string ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const typeRef = useRef(type);
+  useEffect(() => { typeRef.current = type; }, [type]);
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -400,6 +403,40 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
     ],
     editorProps: {
       attributes: { class: 'tiptap' },
+      handlePaste: (view, event) => {
+        if (typeRef.current !== 'poetry') return false;
+        const text = event.clipboardData?.getData('text/plain');
+        if (!text) return false;
+
+        const { schema } = view.state;
+        const stanzaType = schema.nodes.stanza;
+        const lineNodeType = schema.nodes.lineNode;
+        const indentLineNodeType = schema.nodes.indentLineNode;
+        const deepIndentLineNodeType = schema.nodes.deepIndentLineNode;
+        if (!stanzaType || !lineNodeType || !indentLineNodeType || !deepIndentLineNodeType) return false;
+
+        const stanzaBlocks = text.split(/\n\n+/);
+        const nodes = stanzaBlocks.map(stanzaText => {
+          const lineNodes = stanzaText.split('\n').map(line => {
+            let nodeType = lineNodeType;
+            let content = line;
+            if (/^ {4}/.test(line) || /^\t\t/.test(line)) {
+              nodeType = deepIndentLineNodeType;
+              content = line.replace(/^ {4,}|^\t{2,}/, '');
+            } else if (/^ {2}/.test(line) || /^\t/.test(line)) {
+              nodeType = indentLineNodeType;
+              content = line.replace(/^ {2,}|^\t/, '');
+            }
+            const textNode = content ? [schema.text(content)] : [];
+            return nodeType.create(null, textNode);
+          });
+          return stanzaType.create(null, lineNodes);
+        });
+
+        const { tr, selection } = view.state;
+        view.dispatch(tr.replaceWith(selection.from, selection.to, nodes));
+        return true;
+      },
     },
     onUpdate: ({ editor: e }) => {
       const html = e.getHTML();
@@ -437,6 +474,7 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
       published,
       publishedAt: publishedAt || null,
       createdAt: createdAt || null,
+      metadata: { ...(initialData?.metadata ?? {}), poetNote: poetNote || null },
     };
 
     try {
@@ -620,6 +658,19 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
             style={fieldStyle}
           />
         </div>
+
+        {/* Poet's note */}
+        {type === 'poetry' && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={labelStyle}>Poet&apos;s note</label>
+            <textarea
+              value={poetNote}
+              onChange={e => setPoetNote(e.target.value)}
+              rows={4}
+              style={{ ...fieldStyle, resize: 'vertical' }}
+            />
+          </div>
+        )}
 
         {/* Published */}
         <div style={{ marginBottom: '1.5rem' }}>
