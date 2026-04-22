@@ -400,6 +400,27 @@ article.ideas-body > p:first-of-type::first-letter {
   display: block;
 }
 
+/* ─── Stanza-based poem format (<div class=stanza> / <span class=line>) ─────── */
+.poem-content div.stanza {
+  display: block;
+  margin-bottom: 1.75em;
+}
+.poem-content div.stanza:last-child { margin-bottom: 0; }
+
+.poem-content span.line {
+  display: block;
+  font-family: var(--font-cormorant), serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(17px, 2vw, 21px);
+  line-height: 1.75;
+  color: var(--txt);
+}
+
+/* Indent levels reused from Tiptap editor marks */
+.poem-content span.line.i1 { padding-left: 2em; }
+.poem-content span.line.i2 { padding-left: 4em; }
+
 [data-masonry-card][data-col-last] { border-bottom: none !important; }
 
 /* ─── Ideas masonry card grid ─────────────────────────────────────────────── */
