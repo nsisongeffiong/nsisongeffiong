@@ -401,3 +401,10 @@ article.ideas-body > p:first-of-type::first-letter {
 }
 
 [data-masonry-card][data-col-last] { border-bottom: none !important; }
+
+/* ─── Ideas masonry card grid ─────────────────────────────────────────────── */
+[data-masonry-card] {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
