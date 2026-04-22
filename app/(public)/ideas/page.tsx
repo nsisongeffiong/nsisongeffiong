@@ -64,11 +64,9 @@ export default async function IdeasPage() {
       <SiteNav />
 
       {/* ── Masthead ── */}
-      <div style={{
+      <div className="ideas-masthead" style={{
         padding: '3.5rem 2rem 1.5rem',
         borderBottom: '2px solid var(--txt)',
-        display: 'grid', gridTemplateColumns: '1fr auto',
-        alignItems: 'end', gap: '2rem',
       }}>
         <div>
           <span style={{
@@ -101,7 +99,7 @@ export default async function IdeasPage() {
       </div>
 
       {/* ── Lead + Sidebar ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', borderBottom: '0.5px solid var(--bdr)' }}>
+      <div className="ideas-lead-sidebar" style={{ borderBottom: '0.5px solid var(--bdr)' }}>
         <article style={{ padding: '2.5rem', borderRight: '0.5px solid var(--bdr)' }}>
           {leadEssay ? (
             <Link href={`/ideas/${leadEssay.slug}`} style={{ textDecoration: 'none' }}>

@@ -71,7 +71,7 @@ export default async function TechPage() {
             Deep dives on AI systems, software architecture, and building with emerging tools.
           </p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-end' }}>
+        <div className="tech-hero-right" style={{ flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-end' }}>
           <span style={{
             fontFamily: 'var(--font-dm-mono), monospace',
             fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--txt3)',

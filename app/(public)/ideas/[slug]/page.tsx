@@ -165,7 +165,7 @@ export default async function IdeasSinglePage({
         )}
 
         {/* ── Prev / Next ── */}
-        <div style={{ borderTop: '2px solid var(--txt)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+        <div className="post-nav-grid" style={{ borderTop: '2px solid var(--txt)' }}>
           <div style={{ padding: '1.75rem 2rem' }}>
             {prevPost && (
               <Link href={`/ideas/${prevPost.slug}`} style={{ textDecoration: 'none' }}>

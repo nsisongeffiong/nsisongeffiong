@@ -132,9 +132,7 @@ export default async function TechSinglePage({
         </header>
 
         {/* ── Body: main + sidebar ── */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 220px',
-        }}>
+        <div className="tech-body-grid">
           {/* Main content */}
           <article
             className="tech-content"

@@ -17,10 +17,7 @@ interface Props {
 
 export function HomeSectionCards({ poetry, tech, ideas }: Props) {
   return (
-    <div style={{
-      display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-      borderTop: '0.5px solid var(--bdr)',
-    }}>
+    <div className="home-section-grid" style={{ borderTop: '0.5px solid var(--bdr)' }}>
 
       {/* Poetry */}
       <Link href="/poetry" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>

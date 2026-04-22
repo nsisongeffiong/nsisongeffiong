@@ -167,12 +167,10 @@ export default async function PoetrySinglePage({
 
         {/* ── Prev / Next ── */}
         {(prevPost || nextPost) && (
-          <nav style={{
+          <nav className="post-nav-grid" style={{
             maxWidth: 580, margin: '3rem auto 0',
             padding: '2rem 2rem',
             borderTop: '0.5px solid var(--bdr)',
-            display: 'grid', gridTemplateColumns: '1fr 1fr',
-            gap: '2rem',
           }}>
             <div>
               {prevPost && (

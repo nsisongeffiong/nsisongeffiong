@@ -81,14 +81,12 @@ export default async function PoetryPage() {
       </div>
 
       {/* ── Featured + grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      <div className="poetry-card-grid">
 
         {featured && (
-          <div style={{
+          <div className="poetry-featured-grid" style={{
             gridColumn: '1 / -1', padding: '3rem 2rem',
             borderBottom: '0.5px solid var(--bdr)',
-            display: 'grid', gridTemplateColumns: '1fr 1.1fr',
-            gap: '3rem', alignItems: 'center',
             background: 'var(--bg2)',
           }}>
             <div>
