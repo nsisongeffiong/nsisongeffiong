@@ -52,6 +52,67 @@ const DeepIndentMark = Mark.create({
   renderHTML() { return ['span', { class: 'i2' }, 0]; },
 });
 
+// Poetry stanza — block node holding inline content, rendered as <div class="stanza">.
+const StanzaNode = Node.create({
+  name: 'stanza',
+  group: 'block',
+  content: 'inline*',
+  defining: true,
+  parseHTML() { return [{ tag: 'div.stanza' }]; },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes({ class: 'stanza' }, HTMLAttributes), 0];
+  },
+  addKeyboardShortcuts() {
+    return {
+      // Enter in a stanza inserts a soft newline rather than splitting the block.
+      Enter: () => {
+        const { $from } = this.editor.state.selection;
+        for (let d = $from.depth; d >= 0; d--) {
+          if ($from.node(d).type === this.type) {
+            return this.editor.chain().focus().insertContent('\n').run();
+          }
+        }
+        return false;
+      },
+    };
+  },
+});
+
+// Poetry line marks — wrap individual lines inside a stanza.
+const LineMark = Mark.create({
+  name: 'line',
+  parseHTML() {
+    return [{
+      tag: 'span',
+      getAttrs: (el) => {
+        const cls = (el as HTMLElement).getAttribute('class') ?? '';
+        return cls === 'line' ? {} : false;
+      },
+    }];
+  },
+  renderHTML() { return ['span', { class: 'line' }, 0]; },
+});
+
+const IndentLineMark = Mark.create({
+  name: 'indentLine',
+  parseHTML() {
+    return [{
+      tag: 'span.line.i1',
+    }];
+  },
+  renderHTML() { return ['span', { class: 'line i1' }, 0]; },
+});
+
+const DeepIndentLineMark = Mark.create({
+  name: 'deepIndentLine',
+  parseHTML() {
+    return [{
+      tag: 'span.line.i2',
+    }];
+  },
+  renderHTML() { return ['span', { class: 'line i2' }, 0]; },
+});
+
 // Blockquote node that preserves class — used for pull quotes and typed callouts.
 // Parses only blockquotes that carry a class attribute so StarterKit's plain
 // blockquote still handles the unclassed variant.
@@ -155,18 +216,29 @@ const SHARED: ToolbarItem[] = [
 const POETRY: ToolbarItem[] = [
   SEP,
   {
-    label: '¶', title: 'Stanza break',
-    action: e => e.chain().focus().setHorizontalRule().run(),
+    label: 'stanza', title: 'Insert stanza',
+    action: e => e.chain().focus().insertContent({ type: 'stanza', content: [] }).run(),
+    active: e => e.isActive('stanza'),
+  },
+  {
+    label: 'line', title: 'Toggle line mark',
+    action: e => e.chain().focus().toggleMark('line').run(),
+    active: e => e.isActive('line'),
   },
   {
     label: 'i1', title: 'Indent line',
-    action: e => e.chain().focus().toggleMark('indent').run(),
-    active: e => e.isActive('indent'),
+    action: e => e.chain().focus().toggleMark('indentLine').run(),
+    active: e => e.isActive('indentLine'),
   },
   {
-    label: 'i2', title: 'Deep indent',
-    action: e => e.chain().focus().toggleMark('deepIndent').run(),
-    active: e => e.isActive('deepIndent'),
+    label: 'i2', title: 'Deep indent line',
+    action: e => e.chain().focus().toggleMark('deepIndentLine').run(),
+    active: e => e.isActive('deepIndentLine'),
+  },
+  SEP,
+  {
+    label: '¶', title: 'Stanza break',
+    action: e => e.chain().focus().setHorizontalRule().run(),
   },
   {
     label: 'Iv', title: 'Italic verse',
@@ -345,6 +417,10 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
       Typography,
       IndentMark,
       DeepIndentMark,
+      StanzaNode,
+      LineMark,
+      IndentLineMark,
+      DeepIndentLineMark,
       ClassedBlockquote,
       SectionBreak,
     ],
