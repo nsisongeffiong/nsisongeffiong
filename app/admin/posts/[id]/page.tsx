@@ -56,6 +56,7 @@ export default async function EditPostPage({
           published: post.published ?? false,
           publishedAt: post.publishedAt?.toISOString() ?? null,
           createdAt: post.createdAt?.toISOString() ?? null,
+          metadata: (post.metadata ?? {}) as Record<string, unknown>,
         }} />
       </main>
     </div>
