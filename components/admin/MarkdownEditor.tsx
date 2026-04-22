@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, type CSSProperties } from 'react';
+import { useState, useRef, useEffect, type CSSProperties } from 'react';
 import { marked } from 'marked';
 
 interface PostData {
@@ -64,6 +64,12 @@ export default function MarkdownEditor({ initialData, onSave, onContentChange }:
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [tagDropdown, setTagDropdown] = useState<TagDropdown | null>(null);
+
+  useEffect(() => {
+    if (initialData?.metadata) {
+      setPoetNote((initialData.metadata as any)?.poetNote ?? '');
+    }
+  }, [initialData?.metadata]);
 
   const mdRef = useRef<HTMLTextAreaElement>(null);
 

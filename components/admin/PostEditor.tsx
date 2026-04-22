@@ -119,7 +119,7 @@ const DeepIndentLineNode = Node.create({
   content: 'inline*',
   parseHTML() {
     return [{
-      tag: 'span',
+      tag: 'span.line.i2',
       getAttrs: (el) =>
         (el as HTMLElement).classList.contains('line') && (el as HTMLElement).classList.contains('i2') ? {} : false,
     }];
@@ -388,6 +388,11 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
   const [saved, setSaved] = useState(false);
   const typeRef = useRef(type);
   useEffect(() => { typeRef.current = type; }, [type]);
+  useEffect(() => {
+    if (initialData?.metadata) {
+      setPoetNote((initialData.metadata as any)?.poetNote ?? '');
+    }
+  }, [initialData?.metadata]);
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
