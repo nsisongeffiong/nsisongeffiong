@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
-import { Node, Mark, mergeAttributes } from '@tiptap/core';
+import { Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
@@ -40,18 +40,6 @@ type Sep = { sep: true };
 type ToolbarItem = BtnDef | Sep;
 
 // ── Custom extensions ──────────────────────────────────────────────────────────
-const IndentMark = Mark.create({
-  name: 'indent',
-  parseHTML() { return [{ tag: 'span.i1' }]; },
-  renderHTML() { return ['span', { class: 'i1' }, 0]; },
-});
-
-const DeepIndentMark = Mark.create({
-  name: 'deepIndent',
-  parseHTML() { return [{ tag: 'span.i2' }]; },
-  renderHTML() { return ['span', { class: 'i2' }, 0]; },
-});
-
 // Poetry stanza — block node holding inline content, rendered as <div class="stanza">.
 const StanzaNode = Node.create({
   name: 'stanza',
@@ -389,10 +377,8 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
   const typeRef = useRef(type);
   useEffect(() => { typeRef.current = type; }, [type]);
   useEffect(() => {
-    if (initialData?.metadata) {
-      setPoetNote((initialData.metadata as any)?.poetNote ?? '');
-    }
-  }, [initialData?.metadata]);
+    setPoetNote((initialData?.metadata as any)?.poetNote ?? '');
+  }, [initialData]);
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -401,8 +387,6 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
       CodeBlockLowlight.configure({ lowlight }),
       Link.configure({ openOnClick: false }),
       Typography,
-      IndentMark,
-      DeepIndentMark,
       StanzaNode,
       LineNode,
       IndentLineNode,
