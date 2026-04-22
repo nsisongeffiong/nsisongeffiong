@@ -32,8 +32,8 @@ export function SiteNav() {
           position:        'sticky',
           top:             0,
           zIndex:          10,
-          display:         'grid',
-          gridTemplateColumns: '1fr auto 1fr',
+          display:         'flex',
+          justifyContent:  'space-between',
           alignItems:      'center',
           padding:         '1.25rem 2rem',
           borderBottom:    '0.5px solid var(--bdr)',
@@ -53,14 +53,13 @@ export function SiteNav() {
             letterSpacing:  '-0.01em',
             color:          'var(--txt)',
             textDecoration: 'none',
-            justifySelf:    'start',
           }}
         >
           Nsisong Effiong
         </Link>
 
         {/* Nav links — center (hidden on mobile) */}
-        <div className="nav-desktop" style={{ alignItems: 'center', gap: '1.75rem' }}>
+        <div className="nav-desktop" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', alignItems: 'center', gap: '1.75rem' }}>
           {NAV_LINKS.map((link) => {
             const isActive =
               pathname === link.href || pathname.startsWith(`${link.href}/`)
@@ -92,7 +91,6 @@ export function SiteNav() {
             display:     'flex',
             alignItems:  'center',
             gap:         '1rem',
-            justifySelf: 'end',
           }}
         >
           {section && (
