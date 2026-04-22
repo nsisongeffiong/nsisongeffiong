@@ -56,7 +56,7 @@ const DeepIndentMark = Mark.create({
 const StanzaNode = Node.create({
   name: 'stanza',
   group: 'block',
-  content: 'inline*',
+  content: '(lineNode | indentLineNode | deepIndentLineNode)+',
   defining: true,
   parseHTML() { return [{ tag: 'div.stanza' }]; },
   renderHTML({ HTMLAttributes }) {
@@ -76,7 +76,7 @@ const StanzaNode = Node.create({
         const insertPos = $from.after(nodeDepth);
         return this.editor
           .chain()
-          .insertContentAt(insertPos, { type: 'stanza', content: [] })
+          .insertContentAt(insertPos, { type: 'stanza', content: [{ type: 'lineNode', content: [] }] })
           .focus(insertPos + 1)
           .run();
       },
@@ -84,39 +84,45 @@ const StanzaNode = Node.create({
   },
 });
 
-// Poetry line marks — wrap individual lines inside a stanza.
-const LineMark = Mark.create({
-  name: 'line',
+// Poetry line nodes — block nodes inside a stanza, each renders as a <span class="line">.
+const LineNode = Node.create({
+  name: 'lineNode',
+  group: 'block',
+  content: 'inline*',
   parseHTML() {
     return [{
-      tag: 'span',
-      getAttrs: (el) => {
-        const cls = (el as HTMLElement).getAttribute('class') ?? '';
-        return cls === 'line' ? {} : false;
-      },
+      tag: 'span.line',
+      getAttrs: (el) =>
+        !(el as HTMLElement).classList.contains('i1') && !(el as HTMLElement).classList.contains('i2') ? {} : false,
     }];
   },
-  renderHTML() { return ['span', { class: 'line' }, 0]; },
+  renderHTML({ HTMLAttributes }) {
+    return ['span', mergeAttributes({ class: 'line' }, HTMLAttributes), 0];
+  },
 });
 
-const IndentLineMark = Mark.create({
-  name: 'indentLine',
+const IndentLineNode = Node.create({
+  name: 'indentLineNode',
+  group: 'block',
+  content: 'inline*',
   parseHTML() {
-    return [{
-      tag: 'span.line.i1',
-    }];
+    return [{ tag: 'span.line.i1' }];
   },
-  renderHTML() { return ['span', { class: 'line i1' }, 0]; },
+  renderHTML({ HTMLAttributes }) {
+    return ['span', mergeAttributes({ class: 'line i1' }, HTMLAttributes), 0];
+  },
 });
 
-const DeepIndentLineMark = Mark.create({
-  name: 'deepIndentLine',
+const DeepIndentLineNode = Node.create({
+  name: 'deepIndentLineNode',
+  group: 'block',
+  content: 'inline*',
   parseHTML() {
-    return [{
-      tag: 'span.line.i2',
-    }];
+    return [{ tag: 'span.line.i2' }];
   },
-  renderHTML() { return ['span', { class: 'line i2' }, 0]; },
+  renderHTML({ HTMLAttributes }) {
+    return ['span', mergeAttributes({ class: 'line i2' }, HTMLAttributes), 0];
+  },
 });
 
 // Blockquote node that preserves class — used for pull quotes and typed callouts.
@@ -183,23 +189,23 @@ const SEP: Sep = { sep: true };
 const POETRY_TOOLBAR: ToolbarItem[] = [
   {
     label: '+stanza', title: 'Insert stanza',
-    action: e => e.chain().focus().insertContent({ type: 'stanza', content: [] }).run(),
+    action: e => e.chain().focus().insertContent({ type: 'stanza', content: [{ type: 'lineNode', content: [] }] }).run(),
     active: e => e.isActive('stanza'),
   },
   {
-    label: 'line', title: 'Toggle line mark',
-    action: e => e.chain().focus().toggleMark('line').run(),
-    active: e => e.isActive('line'),
+    label: 'line', title: 'Insert line',
+    action: e => e.chain().focus().insertContent({ type: 'lineNode', content: [] }).run(),
+    active: e => e.isActive('lineNode'),
   },
   {
-    label: 'i1', title: 'Indent line',
-    action: e => e.chain().focus().toggleMark('indentLine').run(),
-    active: e => e.isActive('indentLine'),
+    label: 'i1', title: 'Insert indent line',
+    action: e => e.chain().focus().insertContent({ type: 'indentLineNode', content: [] }).run(),
+    active: e => e.isActive('indentLineNode'),
   },
   {
-    label: 'i2', title: 'Deep indent line',
-    action: e => e.chain().focus().toggleMark('deepIndentLine').run(),
-    active: e => e.isActive('deepIndentLine'),
+    label: 'i2', title: 'Insert deep indent line',
+    action: e => e.chain().focus().insertContent({ type: 'deepIndentLineNode', content: [] }).run(),
+    active: e => e.isActive('deepIndentLineNode'),
   },
   SEP,
   {
@@ -386,9 +392,9 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
       IndentMark,
       DeepIndentMark,
       StanzaNode,
-      LineMark,
-      IndentLineMark,
-      DeepIndentLineMark,
+      LineNode,
+      IndentLineNode,
+      DeepIndentLineNode,
       ClassedBlockquote,
       SectionBreak,
     ],
