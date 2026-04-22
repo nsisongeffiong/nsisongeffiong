@@ -408,3 +408,12 @@ article.ideas-body > p:first-of-type::first-letter {
   width: 100%;
   box-sizing: border-box;
 }
+
+/* ─── Mobile nav ─────────────────────────────────────────────────────────── */
+.nav-desktop   { display: flex; }
+.nav-hamburger { display: none !important; }
+
+@media (max-width: 768px) {
+  .nav-desktop   { display: none !important; }
+  .nav-hamburger { display: flex !important; }
+}
