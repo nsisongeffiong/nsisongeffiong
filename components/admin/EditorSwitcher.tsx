@@ -16,6 +16,7 @@ interface PostData {
   published?: boolean;
   publishedAt?: string | null;
   createdAt?: string | null;
+  metadata?: Record<string, unknown>;
 }
 
 interface Props {
