@@ -10,6 +10,7 @@ interface PostData {
   content: string;
   excerpt?: string;
   tags?: string[];
+  metadata?: Record<string, unknown>;
   published?: boolean;
   publishedAt?: string | null;
   createdAt?: string | null;
@@ -58,6 +59,7 @@ export default function MarkdownEditor({ initialData, onSave, onContentChange }:
   const [published, setPublished] = useState(initialData?.published ?? false);
   const [publishedAt, setPublishedAt] = useState(toDatetimeLocal(initialData?.publishedAt));
   const [createdAt, setCreatedAt] = useState(toDatetimeLocal(initialData?.createdAt));
+  const [poetNote, setPoetNote] = useState((initialData?.metadata as any)?.poetNote ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -187,6 +189,7 @@ export default function MarkdownEditor({ initialData, onSave, onContentChange }:
       published,
       publishedAt: publishedAt || null,
       createdAt: createdAt || null,
+      metadata: { ...(initialData?.metadata ?? {}), poetNote: poetNote || null },
     };
 
     try {
@@ -344,6 +347,17 @@ export default function MarkdownEditor({ initialData, onSave, onContentChange }:
           <label style={labelStyle}>Tags</label>
           <input type="text" value={tags} onChange={e => setTags(e.target.value)} placeholder="poetry, nature, memory" style={fieldStyle} />
         </div>
+        {type === 'poetry' && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={labelStyle}>Poet&apos;s note</label>
+            <textarea
+              value={poetNote}
+              onChange={e => setPoetNote(e.target.value)}
+              rows={4}
+              style={{ ...fieldStyle, resize: 'vertical' }}
+            />
+          </div>
+        )}
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={{ fontFamily: 'var(--font-dm-mono), monospace', fontSize: '12px', color: 'var(--txt)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
             <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} />

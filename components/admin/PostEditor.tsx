@@ -118,7 +118,11 @@ const DeepIndentLineNode = Node.create({
   group: 'block',
   content: 'inline*',
   parseHTML() {
-    return [{ tag: 'span.line.i2' }];
+    return [{
+      tag: 'span',
+      getAttrs: (el) =>
+        (el as HTMLElement).classList.contains('line') && (el as HTMLElement).classList.contains('i2') ? {} : false,
+    }];
   },
   renderHTML({ HTMLAttributes }) {
     return ['span', mergeAttributes({ class: 'line i2' }, HTMLAttributes), 0];
@@ -378,7 +382,7 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
   const [published, setPublished] = useState(initialData?.published ?? false);
   const [publishedAt, setPublishedAt] = useState(toDatetimeLocal(initialData?.publishedAt));
   const [createdAt, setCreatedAt] = useState(toDatetimeLocal(initialData?.createdAt));
-  const [poetNote, setPoetNote] = useState(initialData?.metadata?.poetNote as string ?? '');
+  const [poetNote, setPoetNote] = useState((initialData?.metadata as any)?.poetNote ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
