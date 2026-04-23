@@ -62,9 +62,9 @@ export default async function AboutPage() {
             color: 'var(--txt3)', display: 'block', marginBottom: '1rem',
           }}>About the author</span>
           <h1 style={{
-            fontFamily: 'var(--font-syne), sans-serif',
-            fontSize: 'clamp(48px, 8vw, 96px)', fontWeight: 800,
-            lineHeight: 0.88, letterSpacing: '-0.04em', color: 'var(--txt)',
+            fontFamily: 'var(--font-inter-tight), var(--font-syne), sans-serif',
+            fontSize: 'clamp(56px, 8vw, 104px)', fontWeight: 800,
+            lineHeight: 0.92, letterSpacing: '-0.04em', color: 'var(--txt)',
           }}>Nsisong<br />Effiong</h1>
         </div>
         <div className="about-banner-tagline">
@@ -79,7 +79,7 @@ export default async function AboutPage() {
           <span style={{
             fontFamily: 'var(--font-dm-mono), monospace', fontSize: '10px',
             letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--txt3)',
-          }}>Est. 2011</span>
+          }}>SINCE 2011</span>
         </div>
       </div>
 
