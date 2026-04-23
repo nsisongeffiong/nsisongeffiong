@@ -5,8 +5,8 @@ export default defineConfig({
   out:       './drizzle/migrations',
   dialect:   'postgresql',
   dbCredentials: {
-    // Use direct connection (not pooled) for migrations
-    url: process.env.DATABASE_URL!,
+    // Pooler URL resolves to IPv4; direct URL resolves to IPv6 (unusable on home network)
+    url: process.env.DATABASE_URL_POOLED ?? process.env.DATABASE_URL!,
   },
   verbose: true,
   strict:  true,
