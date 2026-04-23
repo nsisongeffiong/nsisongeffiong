@@ -1,5 +1,6 @@
 import {
   pgTable,
+  serial,
   uuid,
   text,
   boolean,
