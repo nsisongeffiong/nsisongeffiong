@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
+import { useRouter } from 'next/navigation';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -129,13 +130,23 @@ const ClassedBlockquote = Node.create({
     return {
       class: {
         default: null,
-        parseHTML: el => el.getAttribute('class'),
+        parseHTML: el => (el as HTMLElement).getAttribute('class'),
         renderHTML: attrs => (attrs.class ? { class: attrs.class } : {}),
       },
     };
   },
   parseHTML() {
-    return [{ tag: 'blockquote[class]', priority: 1001 }];
+    return [
+      { tag: 'blockquote[class]', priority: 1001 },
+      {
+        tag: 'aside',
+        priority: 1001,
+        getAttrs: (el) => {
+          const cls = (el as HTMLElement).getAttribute('class') ?? '';
+          return cls.includes('ideas-pq') ? { class: cls } : false;
+        },
+      },
+    ];
   },
   renderHTML({ HTMLAttributes }) {
     return ['blockquote', mergeAttributes(HTMLAttributes), 0];
@@ -363,6 +374,7 @@ function toDatetimeLocal(val?: string | null): string {
 const DRAFT_KEY = 'editor-content-draft';
 
 export default function PostEditor({ initialData, onSave, onContentChange }: PostEditorProps) {
+  const router = useRouter();
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [type, setType] = useState<'poetry' | 'tech' | 'ideas'>(initialData?.type ?? 'poetry');
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? '');
@@ -494,6 +506,25 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
       setError('Network error — could not save');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!initialData?.id) return;
+    if (!window.confirm('Delete this post? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/posts/${initialData.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        setError(data.error ?? 'Failed to delete post');
+        return;
+      }
+      router.push('/admin/posts');
+    } catch {
+      setError('Network error — could not delete');
     }
   };
 
@@ -752,6 +783,27 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
         >
           Preview
         </button>
+
+        {initialData?.id && (
+          <button
+            onClick={handleDelete}
+            style={{
+              width: '100%',
+              fontFamily: 'var(--font-dm-mono), monospace',
+              fontSize: '11px',
+              textTransform: 'uppercase',
+              background: 'none',
+              color: 'var(--danger)',
+              border: '0.5px solid var(--danger)',
+              padding: '0.75rem',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              marginTop: '0.75rem',
+            }}
+          >
+            Delete post
+          </button>
+        )}
       </div>
     </div>
   );
