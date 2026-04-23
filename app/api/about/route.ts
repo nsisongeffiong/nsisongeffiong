@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db }             from '@/lib/db'
 import { aboutContent }   from '@/lib/db/schema'
-import { createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { eq }             from 'drizzle-orm'
 
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim())
