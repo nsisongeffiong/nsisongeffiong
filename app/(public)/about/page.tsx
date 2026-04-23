@@ -47,7 +47,7 @@ export default async function AboutPage() {
   const vol   = getVolume(year)
 
   return (
-    <>
+    <div style={{ background: 'var(--bg)', color: 'var(--txt)', minHeight: '100vh' }}>
       <SiteNav />
 
       {/* Banner */}
@@ -276,6 +276,6 @@ export default async function AboutPage() {
       </div>
 
       <SiteFooter />
-    </>
+    </div>
   )
 }

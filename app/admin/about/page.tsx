@@ -2,6 +2,7 @@
 
 // app/admin/about/page.tsx
 import { useState, useEffect, useCallback } from 'react'
+import AdminNav from '@/components/admin/AdminNav'
 
 interface Book { title: string; author: string }
 type BookList  = Record<string, Book[]>
@@ -84,11 +85,24 @@ export default function AdminAboutPage() {
 
   const cq = currentQuarter()
 
-  if (loading) return <div style={{ padding: '3rem 2rem', fontFamily: 'var(--font-dm-mono), monospace', fontSize: '12px', color: 'var(--txt3)' }}>Loading…</div>
-  if (error)   return <div style={{ padding: '3rem 2rem', fontFamily: 'var(--font-dm-mono), monospace', fontSize: '12px', color: 'red' }}>{error}</div>
+  if (loading) return (
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <AdminNav />
+      <div style={{ marginLeft: 220, flex: 1, padding: '3rem 2rem', fontFamily: 'var(--font-dm-mono), monospace', fontSize: '12px', color: 'var(--txt3)' }}>Loading…</div>
+    </div>
+  )
+  if (error) return (
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <AdminNav />
+      <div style={{ marginLeft: 220, flex: 1, padding: '3rem 2rem', fontFamily: 'var(--font-dm-mono), monospace', fontSize: '12px', color: 'red' }}>{error}</div>
+    </div>
+  )
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '2.5rem 2rem' }}>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <AdminNav />
+      <div style={{ marginLeft: 220, flex: 1 }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2.5rem 2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
                     marginBottom: '2.5rem', borderBottom: '0.5px solid var(--bdr)', paddingBottom: '1.25rem' }}>
         <h1 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: '22px',
@@ -203,6 +217,8 @@ export default function AdminAboutPage() {
         <button onClick={save} disabled={saving} style={{ ...btnA, fontSize: '11px', padding: '0.55rem 1.5rem' }}>
           {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save changes'}
         </button>
+      </div>
+    </div>
       </div>
     </div>
   )
