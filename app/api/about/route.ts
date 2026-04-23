@@ -6,9 +6,13 @@ import { createClient } from '@/lib/supabase/server'
 import { eq }             from 'drizzle-orm'
 
 export async function GET() {
-  const rows = await db.select().from(aboutContent).where(eq(aboutContent.id, 1)).limit(1)
-  if (!rows[0]) return NextResponse.json({ nowItems: [], bookList: {} })
-  return NextResponse.json({ nowItems: rows[0].nowItems, bookList: rows[0].bookList })
+  try {
+    const rows = await db.select().from(aboutContent).where(eq(aboutContent.id, 1)).limit(1)
+    if (!rows[0]) return NextResponse.json({ nowItems: [], bookList: {} })
+    return NextResponse.json({ nowItems: rows[0].nowItems, bookList: rows[0].bookList })
+  } catch {
+    return NextResponse.json({ nowItems: [], bookList: {} })
+  }
 }
 
 export async function POST(req: NextRequest) {

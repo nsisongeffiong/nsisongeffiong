@@ -34,7 +34,10 @@ function getCurrentQuarterBooks(
 }
 
 export default async function AboutPage() {
-  const rows  = await db.select().from(aboutContent).limit(1)
+  let rows: (typeof aboutContent.$inferSelect)[] = []
+  try {
+    rows = await db.select().from(aboutContent).limit(1)
+  } catch { /* table not yet migrated */ }
   const data  = rows[0]
 
   const nowItems     = data?.nowItems ?? []
