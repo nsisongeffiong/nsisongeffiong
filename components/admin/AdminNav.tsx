@@ -9,6 +9,7 @@ const navItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
   { label: 'Posts', href: '/admin/posts' },
   { label: 'Comments', href: '/admin/comments' },
+
 ];
 
 export default function AdminNav() {

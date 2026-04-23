@@ -111,3 +111,17 @@ export type IdeasMetadata = {
   featured?:     boolean
   legacyDisqus?: boolean
 }
+
+// ── about_content ─────────────────────────────────────────────────────────────
+// Single-row config table (id always = 1).
+// nowItems  — JSON array of "Now" strings shown on the about page
+// bookList  — JSON object keyed 1–12 (month), value = { title, author }[]
+//             The about page filters to the current calendar quarter at render time.
+export const aboutContent = pgTable('about_content', {
+  id:        serial('id').primaryKey(),
+  nowItems:  jsonb('now_items').$type<string[]>().notNull().default([]),
+  bookList:  jsonb('book_list').$type<Record<string, { title: string; author: string }[]>>().notNull().default({}),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+})
+
+export type AboutContent = typeof aboutContent.$inferSelect
