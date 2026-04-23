@@ -137,7 +137,7 @@ export default async function AboutPage() {
               letterSpacing: '0.18em', textTransform: 'uppercase',
               color: 'var(--txt3)', lineHeight: 1.9,
             }}>
-              Lagos, Nigeria<br />{month}<br />{vol}
+              Toronto, ON<br />{month}<br />{vol}
             </div>
           </div>
         </div>

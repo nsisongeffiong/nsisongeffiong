@@ -11,7 +11,6 @@ const SECTION_LABELS: Record<string, { label: string; color: string }> = {
   '/poetry': { label: '01 / Poetry', color: 'var(--purple)'   },
   '/tech':   { label: '02 / Tech',   color: 'var(--teal-mid)' },
   '/ideas':  { label: '03 / Ideas',  color: 'var(--amber)'    },
-  '/about':  { label: 'About',       color: 'var(--txt2)'     },
 }
 
 function getSectionLabel(pathname: string) {
