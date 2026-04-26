@@ -37,7 +37,7 @@ export default async function HomePageV2() {
           display: 'flex', alignItems: 'center', gap: '0.8rem',
         }}>
           <span style={{ display: 'inline-block', width: 20, height: 1, background: 'var(--txt4)' }} />
-          Poet · Engineer · Tinker
+          Poet · Engineer · Maverick
         </span>
 
         <h1 style={{
