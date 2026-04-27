@@ -34,7 +34,7 @@ export function HomeSectionCards({ poetry, tech, ideas }: Props) {
               The literary space
             </h2>
             <p style={{ fontSize: '14px', color: 'var(--txt2)', lineHeight: 1.65, marginBottom: 'auto', paddingBottom: '2rem' }}>
-              Verse, imagery, and language pressed into new shapes. Poetry as a way of knowing.
+              Grief, memory, love. And the indifference of the natural world.
             </p>
             <div style={{ borderTop: '0.5px solid var(--bdr)', paddingTop: '1rem' }}>
               <p style={{ fontFamily: 'var(--font-dm-mono), monospace', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--txt3)', marginBottom: '0.5rem' }}>Latest</p>
@@ -115,7 +115,7 @@ export function HomeSectionCards({ poetry, tech, ideas }: Props) {
               03 · Ideas
             </div>
             <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.1, marginBottom: '0.75rem', color: 'var(--txt)' }}>
-              Essays &amp; Policy
+              Essays &amp; Culture
             </h2>
             <p style={{ fontSize: '14px', color: 'var(--txt2)', lineHeight: 1.65, marginBottom: 'auto', paddingBottom: '2rem' }}>
               On technology, politics, culture, and the ideas that keep me up at night

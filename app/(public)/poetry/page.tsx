@@ -57,7 +57,7 @@ export default async function PoetryPage() {
           fontSize: '18px', fontStyle: 'italic', fontWeight: 300,
           color: 'var(--txt2)', maxWidth: '44ch', lineHeight: 1.7,
         }}>
-          Verse as a way of knowing. Language pressed into unfamiliar shapes to say what prose cannot.
+          Grief, memory, love. And the indifference of the natural world.
         </p>
       </section>
 
