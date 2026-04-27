@@ -3,12 +3,10 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
-import { IdeaMasonryGrid } from '@/components/shared/IdeaMasonryGrid'
+import { IdeasFilterGrid } from '@/components/shared/IdeasFilterGrid'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { desc, eq, and } from 'drizzle-orm'
-
-const topics = ['All', 'AI & society', 'Public policy', 'Political economy', 'Digital rights', 'Media']
 
 export default async function IdeasPage() {
   const essays = await db
@@ -197,72 +195,7 @@ export default async function IdeasPage() {
         }}>{pullQuote.attribution}</p>
       </div>
 
-      {/* ── Topics filter ── */}
-      <div style={{
-        display: 'flex', gap: '0.4rem', padding: '1rem 2rem',
-        flexWrap: 'wrap', alignItems: 'center',
-        borderBottom: '0.5px solid var(--bdr)',
-      }}>
-        <span style={{
-          fontFamily: 'var(--font-syne), sans-serif',
-          fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: 'var(--txt3)', marginRight: '0.5rem',
-        }}>Topics</span>
-        {topics.map((t, i) => (
-          <button key={t} style={{
-            fontFamily: 'var(--font-dm-mono), monospace',
-            fontSize: '10px', padding: '4px 11px', borderRadius: '999px',
-            border: '0.5px solid var(--bdr2)',
-            color: i === 0 ? 'var(--bg)' : 'var(--txt2)',
-            background: i === 0 ? 'var(--txt)' : 'transparent',
-            cursor: 'pointer',
-          }}>{t}</button>
-        ))}
-      </div>
-
-      {/* ── Card grid ── */}
-      {cardEssays.length > 0 && (
-        <IdeaMasonryGrid>
-          {cardEssays.map((essay) => (
-            <Link key={essay.id} href={`/ideas/${essay.slug}`} style={{ textDecoration: 'none' }}>
-              <article data-masonry-card className="hover-bg" style={{
-                display: 'inline-block', width: '100%', breakInside: 'avoid',
-                boxSizing: 'border-box', padding: '2rem',
-                borderBottom: '0.5px solid var(--bdr)',
-              }}>
-                <p style={{
-                  fontFamily: 'var(--font-syne), sans-serif',
-                  fontSize: '9px', letterSpacing: '0.22em', textTransform: 'uppercase',
-                  color: 'var(--amber)', fontWeight: 600, marginBottom: '0.75rem',
-                }}>{(essay.metadata as any)?.kicker ?? essay.tags?.[0] ?? 'Essay'}</p>
-                <h3 style={{
-                  fontFamily: 'var(--font-inter-tight), var(--font-syne), sans-serif',
-                  fontSize: '17px', fontWeight: 700,
-                  lineHeight: 1.25, letterSpacing: '-0.02em',
-                  marginBottom: '0.75rem', color: 'var(--txt)', maxWidth: '22ch',
-                }}>{essay.title}</h3>
-                {essay.excerpt && (
-                  <p style={{
-                    fontFamily: 'var(--font-source-serif), serif',
-                    fontSize: '13px', lineHeight: 1.7,
-                    color: 'var(--txt2)', fontWeight: 300, marginBottom: '1rem',
-                  }}>{essay.excerpt}</p>
-                )}
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between',
-                  fontFamily: 'var(--font-dm-mono), monospace',
-                  fontSize: '10px', color: 'var(--txt3)',
-                }}>
-                  {essay.publishedAt && (
-                    <span>{essay.publishedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-                  )}
-                  {(essay.metadata as any)?.readTime && <span>{(essay.metadata as any).readTime} min</span>}
-                </div>
-              </article>
-            </Link>
-          ))}
-        </IdeaMasonryGrid>
-      )}
+      <IdeasFilterGrid essays={cardEssays} />
 
       <SiteFooter section="03 / Ideas" />
     </div>

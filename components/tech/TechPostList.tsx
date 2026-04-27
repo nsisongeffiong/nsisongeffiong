@@ -16,8 +16,6 @@ type TechPost = {
   metadata: unknown
 }
 
-const chips: string[] = ['all', 'AI/ML', 'systems', 'web', 'devtools']
-
 function tagStyle(tag: string): CSSProperties {
   const t = tag.toLowerCase()
   if (t === 'devtools' || t === 'python' || t === 'performance')
@@ -28,9 +26,17 @@ function tagStyle(tag: string): CSSProperties {
 }
 
 export function TechPostList({ posts }: { posts: TechPost[] }) {
-  const [sort, setSort] = useState<'newest' | 'oldest'>('newest')
+  const [sort, setSort]           = useState<'newest' | 'oldest'>('newest')
+  const [activeTag, setActiveTag] = useState<string>('all')
 
-  const sorted = [...posts].sort((a, b) => {
+  // Derive unique tags from actual post data
+  const allTags = ['all', ...Array.from(new Set(posts.flatMap((a) => a.tags ?? [])))]
+
+  const filtered = activeTag === 'all'
+    ? posts
+    : posts.filter((a) => (a.tags ?? []).includes(activeTag))
+
+  const sorted = [...filtered].sort((a, b) => {
     const ta = a.publishedAt?.getTime() ?? 0
     const tb = b.publishedAt?.getTime() ?? 0
     return sort === 'newest' ? tb - ta : ta - tb
@@ -45,17 +51,25 @@ export function TechPostList({ posts }: { posts: TechPost[] }) {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '1rem 2rem', borderBottom: '0.5px solid var(--bdr)',
       }}>
-        <div style={{ display: 'flex', gap: '0.4rem' }}>
-          {chips.map((chip, i) => (
-            <button key={chip} style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '10px', padding: '4px 12px',
-              border: '0.5px solid var(--bdr2)', borderRadius: '999px',
-              color: i === 0 ? 'var(--bg)' : 'var(--txt2)',
-              background: i === 0 ? 'var(--txt)' : 'transparent',
-              cursor: 'pointer',
-            }}>{chip}</button>
-          ))}
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          {allTags.map((tag) => {
+            const active = tag === activeTag
+            return (
+              <button
+                key={tag}
+                onClick={() => setActiveTag(tag)}
+                style={{
+                  fontFamily: 'var(--font-dm-mono), monospace',
+                  fontSize: '10px', padding: '4px 12px',
+                  border: '0.5px solid var(--bdr2)', borderRadius: '999px',
+                  color: active ? 'var(--bg)' : 'var(--txt2)',
+                  background: active ? 'var(--txt)' : 'transparent',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+              >{tag}</button>
+            )
+          })}
         </div>
         <button
           onClick={() => setSort(s => s === 'newest' ? 'oldest' : 'newest')}
@@ -70,7 +84,15 @@ export function TechPostList({ posts }: { posts: TechPost[] }) {
       </div>
 
       {/* ── Post list ── */}
-      {sorted.map((a, i) => (
+      {sorted.length === 0 ? (
+        <div style={{
+          padding: '4rem 2rem',
+          fontFamily: 'var(--font-dm-mono), monospace',
+          fontSize: '12px', color: 'var(--txt3)',
+        }}>
+          No articles tagged &ldquo;{activeTag}&rdquo; yet.
+        </div>
+      ) : sorted.map((a, i) => (
         <Link key={a.id} href={`/tech/${a.slug}`} className="hover-bg" style={{
           display: 'grid', gridTemplateColumns: '3rem 1fr auto',
           gap: '2rem', padding: '1.75rem 2rem',
