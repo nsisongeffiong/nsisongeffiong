@@ -37,7 +37,7 @@ export default async function HomePageV2() {
           display: 'flex', alignItems: 'center', gap: '0.8rem',
         }}>
           <span style={{ display: 'inline-block', width: 20, height: 1, background: 'var(--txt4)' }} />
-          Poet · Engineer · Maverick
+          Poet · Engineer · Thinker
         </span>
 
         <h1 style={{
@@ -55,7 +55,7 @@ export default async function HomePageV2() {
           fontSize: '18px', lineHeight: 1.65, color: 'var(--txt2)',
           maxWidth: '44ch', fontWeight: 400,
         }}>
-          I write poems, build things, and think too hard about how the world works.
+          I write poems, build things, and ask hard questions about how the world works.
           This is where all of it lives.
         </p>
 

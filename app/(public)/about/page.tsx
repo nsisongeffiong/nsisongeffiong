@@ -117,8 +117,8 @@ export default async function AboutPage() {
               ['LinkedIn',  'https://linkedin.com/in/nsisongeffiong', 'linkedin.com/in/nsisongeffiong'],
               ['Twitter',   'https://twitter.com/nsisong101',         'twitter.com/nsisong101'],
               ['Instagram', 'https://instagram.com/nsisong101',       'instagram.com/nsisong101'],
-            ] as const).map(([label, href, display]) => (
-              <div key={label} style={{ padding: '0.6rem 0', borderBottom: '0.5px solid var(--bdr)' }}>
+            ] as const).map(([label, href, display], i, arr) => (
+              <div key={label} style={{ padding: '0.6rem 0', borderBottom: i < arr.length - 1 ? '0.5px solid var(--bdr)' : 'none' }}>
                 <span style={{
                   fontFamily: 'var(--font-dm-mono), monospace', fontSize: '9px',
                   color: 'var(--txt3)', display: 'block', marginBottom: '0.15rem',
@@ -198,7 +198,8 @@ export default async function AboutPage() {
           {nowItems.length > 0 ? nowItems.map((item, i) => (
             <div key={i} style={{
               display: 'flex', gap: '0.75rem', marginBottom: '0.75rem',
-              paddingBottom: '0.75rem', borderBottom: '0.5px solid var(--bdr)',
+              paddingBottom: '0.75rem',
+              borderBottom: i < nowItems.length - 1 ? '0.5px solid var(--bdr)' : 'none',
               alignItems: 'baseline',
             }}>
               <span style={{
@@ -217,7 +218,25 @@ export default async function AboutPage() {
             }}>Nothing here yet.</p>
           )}
 
-          <div style={{ marginTop: '1.75rem' }}>
+          <div style={{ marginTop: '1.75rem', paddingTop: '1.5rem', borderTop: '0.5px solid var(--bdr)' }}>
+            <div style={{
+              fontFamily: 'var(--font-dm-mono), monospace', fontSize: '9px',
+              letterSpacing: '0.18em', textTransform: 'uppercase',
+              color: 'var(--txt3)', marginBottom: '0.75rem',
+            }}>When the screen is off</div>
+            <p style={{
+              fontFamily: 'var(--font-source-serif), serif', fontSize: '13px',
+              lineHeight: 1.75, color: 'var(--txt2)', fontWeight: 300,
+            }}>
+              Books, vinyl, and trails. I read everything I can get my hands on. I collect
+              records the way some people collect arguments: slowly, deliberately, always
+              looking for the one that changes the room. Whenever I can, I am somewhere in
+              Canada&apos;s national or provincial parks, hiking trails that make the rest
+              of it make sense.
+            </p>
+          </div>
+
+          <div style={{ marginTop: '1.75rem', paddingTop: '1.5rem', borderTop: '0.5px solid var(--bdr)' }}>
             <div style={{
               fontFamily: 'var(--font-dm-mono), monospace', fontSize: '9px',
               letterSpacing: '0.18em', textTransform: 'uppercase',
@@ -251,7 +270,7 @@ export default async function AboutPage() {
               letterSpacing: '0.18em', textTransform: 'uppercase',
               color: 'var(--txt3)', marginBottom: '0.75rem',
             }}>Also published in</div>
-            {['Straight Talk Nigeria', 'The Republic', 'Rest of World (contributor)'].map((p) => (
+            {['Straight Talk Nigeria', 'Little Steps', 'YNaija'].map((p) => (
               <p key={p} style={{
                 fontFamily: 'var(--font-source-serif), serif', fontStyle: 'italic',
                 fontWeight: 300, fontSize: '13px', color: 'var(--txt2)', marginBottom: '0.35rem',
