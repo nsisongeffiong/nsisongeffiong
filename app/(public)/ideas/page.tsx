@@ -74,7 +74,7 @@ export default async function IdeasPage() {
             fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase',
             color: 'var(--amber)', fontWeight: 600,
             display: 'block', marginBottom: '0.75rem',
-          }}>Essays · Policy · Public Thought</span>
+          }}>Policy · Politics · Culture</span>
           <h1 style={{
             fontFamily: 'var(--font-inter-tight), var(--font-syne), sans-serif',
             fontSize: 'clamp(56px, 8vw, 104px)',
@@ -89,7 +89,7 @@ export default async function IdeasPage() {
             color: 'var(--txt2)', lineHeight: 1.7,
             maxWidth: '240px', marginBottom: '0.5rem',
           }}>
-            Writing on governance, technology in society, and questions that deserve more friction.
+            On technology, politics, culture, and the ideas that keep me up at night
           </p>
           <p style={{
             fontFamily: 'var(--font-dm-mono), monospace',
