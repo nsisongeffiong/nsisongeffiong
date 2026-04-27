@@ -118,7 +118,7 @@ export function HomeSectionCards({ poetry, tech, ideas }: Props) {
               Essays &amp; Policy
             </h2>
             <p style={{ fontSize: '14px', color: 'var(--txt2)', lineHeight: 1.65, marginBottom: 'auto', paddingBottom: '2rem' }}>
-              Writing on governance, technology in society, and ideas that deserve more friction.
+              On technology, politics, culture, and the ideas that keep me up at night
             </p>
             <div style={{ borderTop: '0.5px solid var(--bdr)', paddingTop: '1rem' }}>
               <p style={{ fontFamily: 'var(--font-dm-mono), monospace', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--txt3)', marginBottom: '0.5rem' }}>Latest</p>
