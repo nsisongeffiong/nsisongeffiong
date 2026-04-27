@@ -73,8 +73,7 @@ export default async function AboutPage() {
             fontStyle: 'italic', fontWeight: 300, color: 'var(--txt2)',
             lineHeight: 1.75, marginBottom: '0.75rem',
           }}>
-            Poet, engineer, and essayist based in Lagos. Writing at the intersection
-            of language, technology, and public life.
+            A poet who builds things and a builder who still can&apos;t stop writing poems.
           </p>
           <span style={{
             fontFamily: 'var(--font-dm-mono), monospace', fontSize: '10px',
@@ -113,10 +112,11 @@ export default async function AboutPage() {
               marginBottom: '0.75rem',
             }}>Contact</div>
             {([
-              ['Email',    'mailto:hello@nsisongeffiong.com',       'hello@nsisongeffiong.com'],
-              ['GitHub',   'https://github.com/nsisongeffiong',     'github.com/nsisongeffiong'],
-              ['Substack', 'https://nsisong.substack.com',          'nsisong.substack.com'],
-              ['LinkedIn', 'https://linkedin.com/in/nsisongeffiong','linkedin.com/in/nsisongeffiong'],
+              ['Email',     'mailto:hello@nsisongeffiong.com',        'hello@nsisongeffiong.com'],
+              ['GitHub',    'https://github.com/nsisongeffiong',      'github.com/nsisongeffiong'],
+              ['LinkedIn',  'https://linkedin.com/in/nsisongeffiong', 'linkedin.com/in/nsisongeffiong'],
+              ['Twitter',   'https://twitter.com/nsisong101',         'twitter.com/nsisong101'],
+              ['Instagram', 'https://instagram.com/nsisong101',       'instagram.com/nsisong101'],
             ] as const).map(([label, href, display]) => (
               <div key={label} style={{ padding: '0.6rem 0', borderBottom: '0.5px solid var(--bdr)' }}>
                 <span style={{
@@ -148,22 +148,34 @@ export default async function AboutPage() {
             fontFamily: 'var(--font-dm-mono), monospace', fontSize: '9px',
             letterSpacing: '0.18em', textTransform: 'uppercase',
             color: 'var(--amber)', fontWeight: 600, marginBottom: '1.25rem',
-          }}>Biography</div>
+          }}>Bio</div>
 
           <p style={{
             fontFamily: 'var(--font-source-serif), serif', fontSize: '15px',
             lineHeight: 1.9, color: 'var(--txt)', fontWeight: 300, marginBottom: '1.25rem',
           } as React.CSSProperties}>
-            I grew up between the Niger Delta and Lagos, and the tension between those two
-            places — between water and concrete, between patience and speed — has shaped
-            everything I make.
+            I am a poet who builds things and a builder who still can&apos;t stop writing poems.
+            For most of my life I wore one hat at a time, which is why this site has sometimes
+            been a poetry blog, sometimes a tech journal, rarely both at once. Both were
+            attempts at the same thing: figuring out how to think clearly enough to say
+            something true — that hasn&apos;t changed.
           </p>
           <p style={{
             fontFamily: 'var(--font-source-serif), serif', fontSize: '14px',
             lineHeight: 1.9, color: 'var(--txt2)', fontWeight: 300, marginBottom: '1.25rem',
           } as React.CSSProperties}>
-            I build AI systems by profession and write poetry and essays by compulsion.
-            This site is where those two practices interrogate each other.
+            My career has lived in the part of tech most people only notice when it fails.
+            Enterprise infrastructure. Networking. Cloud engineering. DevOps. It taught me
+            the same thing poetry taught me: what holds something together is invisible,
+            and usually the most important part.
+          </p>
+          <p style={{
+            fontFamily: 'var(--font-source-serif), serif', fontSize: '14px',
+            lineHeight: 1.9, color: 'var(--txt2)', fontWeight: 300, marginBottom: '1.25rem',
+          } as React.CSSProperties}>
+            Right now I am deploying infrastructure and networks for automation and telemetry
+            systems in the Canadian mining industry, while launching onto the AI wave and
+            learning the currents.
           </p>
           <p style={{
             fontFamily: 'var(--font-source-serif), serif', fontSize: '14px',
@@ -173,36 +185,9 @@ export default async function AboutPage() {
             and why both questions sound different depending on where you&apos;re standing.
           </p>
 
-          <div style={{ margin: '2rem 0', borderLeft: '2px solid var(--amber)', paddingLeft: '1.1rem' }}>
-            <p style={{
-              fontFamily: 'var(--font-syne), sans-serif', fontSize: '15px',
-              fontWeight: 700, lineHeight: 1.35, letterSpacing: '-0.015em',
-              color: 'var(--txt)', marginBottom: '0.5rem',
-            }}>
-              &ldquo;The poem wants to stay in the image. The essay wants to follow the argument.&rdquo;
-            </p>
-            <span style={{
-              fontFamily: 'var(--font-dm-mono), monospace', fontSize: '9px',
-              textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--txt3)',
-            }}>— on writing</span>
-          </div>
-
-          <div style={{ paddingTop: '1.5rem', borderTop: '0.5px solid var(--bdr)' }}>
-            <div style={{
-              fontFamily: 'var(--font-dm-mono), monospace', fontSize: '9px',
-              letterSpacing: '0.18em', textTransform: 'uppercase',
-              color: 'var(--txt3)', marginBottom: '0.75rem',
-            }}>Also published in</div>
-            {['Straight Talk Nigeria', 'The Republic', 'Rest of World (contributor)'].map((p) => (
-              <p key={p} style={{
-                fontFamily: 'var(--font-source-serif), serif', fontStyle: 'italic',
-                fontWeight: 300, fontSize: '13px', color: 'var(--txt2)', marginBottom: '0.35rem',
-              }}>{p}</p>
-            ))}
-          </div>
         </div>
 
-        {/* Col 3 — now + reading + roles */}
+        {/* Col 3 — now + reading + also published in */}
         <div className="about-col">
           <div style={{
             fontFamily: 'var(--font-dm-mono), monospace', fontSize: '9px',
@@ -265,13 +250,12 @@ export default async function AboutPage() {
               fontFamily: 'var(--font-dm-mono), monospace', fontSize: '9px',
               letterSpacing: '0.18em', textTransform: 'uppercase',
               color: 'var(--txt3)', marginBottom: '0.75rem',
-            }}>Roles</div>
-            {(['Poet', 'Engineer', 'Essayist'] as const).map((role, i) => (
-              <p key={role} style={{
-                fontFamily: 'var(--font-cormorant), serif', fontStyle: 'italic',
-                fontWeight: 300, fontSize: '20px', lineHeight: 1.35,
-                color: i === 0 ? 'var(--txt)' : 'var(--txt2)',
-              }}>{role}</p>
+            }}>Also published in</div>
+            {['Straight Talk Nigeria', 'The Republic', 'Rest of World (contributor)'].map((p) => (
+              <p key={p} style={{
+                fontFamily: 'var(--font-source-serif), serif', fontStyle: 'italic',
+                fontWeight: 300, fontSize: '13px', color: 'var(--txt2)', marginBottom: '0.35rem',
+              }}>{p}</p>
             ))}
           </div>
         </div>
