@@ -249,12 +249,12 @@ export default async function PoetrySinglePage({
                       {comment.createdAt?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
-                  <p style={{
+                  <div style={{
                     fontFamily: 'var(--font-cormorant), serif',
                     fontStyle: 'italic', fontWeight: 300,
                     fontSize: '16px', lineHeight: 1.85,
                     color: 'var(--txt2)', marginBottom: '0.75rem',
-                  }}>{comment.body}</p>
+                  }} dangerouslySetInnerHTML={{ __html: comment.body }} />
                 </div>
               ))}
             </>

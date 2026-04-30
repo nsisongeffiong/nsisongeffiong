@@ -236,12 +236,12 @@ export default async function TechSinglePage({
                   {comment.createdAt?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               </div>
-              <p style={{
+              <div style={{
                 fontFamily: 'var(--font-syne), sans-serif',
                 fontSize: '14px', lineHeight: 1.7,
                 color: 'var(--txt2)',
                 paddingLeft: 'calc(28px + 0.75rem)',
-              }}>{comment.body}</p>
+              }} dangerouslySetInnerHTML={{ __html: comment.body }} />
             </div>
           ))}
 

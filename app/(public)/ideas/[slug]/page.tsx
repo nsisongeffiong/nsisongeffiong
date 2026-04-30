@@ -237,12 +237,12 @@ export default async function IdeasSinglePage({
                   {comment.createdAt?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </span>
               </div>
-              <p style={{
+              <div style={{
                 fontFamily: 'var(--font-source-serif), serif',
                 fontWeight: 300, fontSize: '15px',
                 lineHeight: 1.8, color: 'var(--txt2)',
                 marginBottom: '0.75rem',
-              }}>{comment.body}</p>
+              }} dangerouslySetInnerHTML={{ __html: comment.body }} />
               <span style={{
                 fontFamily: 'var(--font-syne), sans-serif',
                 fontSize: '10px', fontWeight: 600,
