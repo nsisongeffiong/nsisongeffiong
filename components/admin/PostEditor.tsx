@@ -19,6 +19,7 @@ interface PostData {
   content: string;
   excerpt?: string;
   tags?: string[];
+  topicIds?: string[];
   metadata?: Record<string, unknown>;
   published?: boolean;
   publishedAt?: string | null;
@@ -386,6 +387,25 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+
+  // Topics
+  const [availableTopics, setAvailableTopics] = useState<{ id: string; label: string }[]>([]);
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>(initialData?.topicIds ?? []);
+
+  const isFirstRender = useRef(true);
+
+  // Fetch available topics whenever post type changes
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+    } else {
+      setSelectedTopicIds([]);
+    }
+    fetch(`/api/topics?section=${type}`)
+      .then(r => r.json())
+      .then(data => setAvailableTopics(Array.isArray(data) ? data : []))
+      .catch(() => setAvailableTopics([]))
+  }, [type]);
   const typeRef = useRef(type);
   useEffect(() => { typeRef.current = type; }, [type]);
   useEffect(() => {
@@ -476,6 +496,7 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
       content: editor.getHTML(),
       excerpt,
       tags: tags.split(',').map((t: string) => t.trim()).filter(Boolean),
+      topicIds: selectedTopicIds,
       published,
       publishedAt: publishedAt || null,
       createdAt: createdAt || null,
@@ -681,6 +702,38 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
             placeholder="poetry, nature, memory"
             style={fieldStyle}
           />
+        </div>
+
+        {/* Topics */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={labelStyle}>Topics</label>
+          {availableTopics.length === 0 ? (
+            <p style={{ fontFamily: 'var(--font-dm-mono), monospace', fontSize: '11px', color: 'var(--txt3)' }}>
+              No topics for this section yet.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {availableTopics.map(topic => {
+                const selected = selectedTopicIds.includes(topic.id)
+                return (
+                  <label key={topic.id} style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    fontFamily: 'var(--font-dm-mono), monospace', fontSize: '11px',
+                    color: selected ? 'var(--txt)' : 'var(--txt2)', cursor: 'pointer',
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => setSelectedTopicIds(prev =>
+                        selected ? prev.filter(id => id !== topic.id) : [...prev, topic.id]
+                      )}
+                    />
+                    {topic.label}
+                  </label>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Poet's note */}

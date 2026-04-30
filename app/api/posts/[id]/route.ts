@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
+import { postTopics } from '@/lib/db/schema'
 import { createClient } from '@/lib/supabase/server'
 
 async function requireAdmin() {
@@ -33,7 +34,7 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { title, type, content, excerpt, tags, metadata, published, publishedAt, createdAt } = body
+    const { title, type, content, excerpt, tags, metadata, published, publishedAt, createdAt, topicIds } = body
 
     const [existing] = await db.select().from(posts).where(eq(posts.id, id)).limit(1)
     if (!existing) {
@@ -65,6 +66,16 @@ export async function PATCH(
       .set(updates)
       .where(eq(posts.id, id))
       .returning()
+
+    // Sync topic assignments — replace all existing with new selection
+    if (Array.isArray(topicIds)) {
+      await db.delete(postTopics).where(eq(postTopics.postId, id))
+      if (topicIds.length > 0) {
+        await db.insert(postTopics)
+          .values(topicIds.map((topicId: string) => ({ postId: id, topicId })))
+          .onConflictDoNothing()
+      }
+    }
 
     return NextResponse.json({ success: true, data: post })
   } catch (error) {

@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { createClient } from '@/lib/supabase/server'
 import { eq, desc, and } from 'drizzle-orm'
+import { postTopics } from '@/lib/db/schema'
 import { generateSlug } from '@/lib/utils'
 import type { PostType } from '@/types'
 
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, type, content, excerpt, tags, metadata, published } = body
+    const { title, type, content, excerpt, tags, metadata, published, topicIds } = body
 
     if (!title || !type || !content) {
       return NextResponse.json(
@@ -119,8 +120,14 @@ export async function POST(request: NextRequest) {
       })
       .returning()
 
+    // Sync topic assignments
+    if (Array.isArray(topicIds) && topicIds.length > 0) {
+      await db.insert(postTopics)
+        .values(topicIds.map((topicId: string) => ({ postId: post.id, topicId })))
+        .onConflictDoNothing()
+    }
+
     return NextResponse.json({ success: true, data: post }, { status: 201 })
-  } catch (error: any) {
     // Unique constraint on slug
     if (error?.code === '23505') {
       return NextResponse.json(

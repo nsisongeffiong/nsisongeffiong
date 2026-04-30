@@ -1,7 +1,7 @@
 import AdminNav from '@/components/admin/AdminNav';
 import PostEditor from '@/components/admin/PostEditorClient';
 import { db } from '@/lib/db';
-import { posts } from '@/lib/db/schema';
+import { posts, postTopics } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -17,6 +17,13 @@ export default async function EditPostPage({
 
   const [post] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
   if (!post) notFound();
+
+  const existingTopics = await db
+    .select({ topicId: postTopics.topicId })
+    .from(postTopics)
+    .where(eq(postTopics.postId, id));
+
+  const topicIds = existingTopics.map(t => t.topicId);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -57,6 +64,7 @@ export default async function EditPostPage({
           publishedAt: post.publishedAt?.toISOString() ?? null,
           createdAt: post.createdAt?.toISOString() ?? null,
           metadata: (post.metadata ?? {}) as Record<string, unknown>,
+          topicIds,
         }} />
       </main>
     </div>
