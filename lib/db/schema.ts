@@ -7,6 +7,8 @@ import {
   timestamp,
   jsonb,
   pgEnum,
+  uniqueIndex,
+  primaryKey,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
@@ -71,16 +73,63 @@ export const comments = pgTable('comments', {
   updatedAt:   timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
+// ─── Topics ───────────────────────────────────────────────────────────────────
+// Admin-managed top-level filter categories, scoped per section.
+// Tags are stored as free text on posts; topics group them into display buckets.
+
+export const topics = pgTable('topics', {
+  id:          uuid('id').defaultRandom().primaryKey(),
+  label:       text('label').notNull(),              // "Technology", "Nigeria"
+  slug:        text('slug').notNull().unique(),       // "technology", "nigeria"
+  section:     postTypeEnum('section').notNull(),     // 'poetry' | 'tech' | 'ideas'
+  description: text('description'),                  // admin-only note
+  position:    text('position').notNull().default('0'), // display order (stored as text for simplicity, sort numerically)
+  createdAt:   timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// Many-to-many: topics ↔ raw tag strings
+// A tag can belong to multiple topics; a topic covers multiple tags.
+export const topicTags = pgTable('topic_tags', {
+  id:      uuid('id').defaultRandom().primaryKey(),
+  topicId: uuid('topic_id').notNull().references(() => topics.id, { onDelete: 'cascade' }),
+  tag:     text('tag').notNull(),                    // lowercased, matches posts.tags values
+},
+(t) => [{ name: 'topic_tags_topic_tag_unique', columns: [t.topicId, t.tag] }]
+)
+
+// Many-to-many: posts ↔ topics (explicit assignment in editor)
+export const postTopics = pgTable('post_topics', {
+  postId:  uuid('post_id').notNull().references(() => posts.id,   { onDelete: 'cascade' }),
+  topicId: uuid('topic_id').notNull().references(() => topics.id, { onDelete: 'cascade' }),
+},
+(t) => [{ name: 'post_topics_pkey', columns: [t.postId, t.topicId] }]
+)
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 export const postsRelations = relations(posts, ({ many }) => ({
-  comments: many(comments),
+  comments:    many(comments),
+  postTopics:  many(postTopics),
 }))
 
 export const commentsRelations = relations(comments, ({ one, many }) => ({
   post:    one(posts, { fields: [comments.postId], references: [posts.id] }),
   parent:  one(comments, { fields: [comments.parentId], references: [comments.id] }),
   replies: many(comments),
+}))
+
+export const topicsRelations = relations(topics, ({ many }) => ({
+  topicTags:  many(topicTags),
+  postTopics: many(postTopics),
+}))
+
+export const topicTagsRelations = relations(topicTags, ({ one }) => ({
+  topic: one(topics, { fields: [topicTags.topicId], references: [topics.id] }),
+}))
+
+export const postTopicsRelations = relations(postTopics, ({ one }) => ({
+  post:  one(posts,   { fields: [postTopics.postId],  references: [posts.id] }),
+  topic: one(topics,  { fields: [postTopics.topicId], references: [topics.id] }),
 }))
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -126,3 +175,10 @@ export const aboutContent = pgTable('about_content', {
 })
 
 export type AboutContent = typeof aboutContent.$inferSelect
+
+// ─── Topic types ──────────────────────────────────────────────────────────────
+
+export type Topic      = typeof topics.$inferSelect
+export type NewTopic   = typeof topics.$inferInsert
+export type TopicTag   = typeof topicTags.$inferSelect
+export type PostTopic  = typeof postTopics.$inferSelect
