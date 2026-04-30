@@ -5,12 +5,28 @@ import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { IdeasFilterGrid } from '@/components/shared/IdeasFilterGrid'
 import { db } from '@/lib/db'
-import { posts } from '@/lib/db/schema'
-import { desc, eq, and } from 'drizzle-orm'
+import { posts, topics, topicTags } from '@/lib/db/schema'
+import { desc, eq, and, asc } from 'drizzle-orm'
+
+async function getIdeasTopics() {
+  const rows = await db
+    .select({ id: topics.id, label: topics.label, tag: topicTags.tag })
+    .from(topics)
+    .leftJoin(topicTags, eq(topicTags.topicId, topics.id))
+    .where(eq(topics.section, 'ideas'))
+    .orderBy(asc(topics.position))
+
+  const map = new Map<string, { id: string; label: string; tags: string[] }>()
+  for (const row of rows) {
+    if (!map.has(row.id)) map.set(row.id, { id: row.id, label: row.label, tags: [] })
+    if (row.tag) map.get(row.id)!.tags.push(row.tag)
+  }
+  return Array.from(map.values())
+}
 
 export default async function IdeasPage() {
-  const essays = await db
-    .select({
+  const [essays, ideasTopics] = await Promise.all([
+    db.select({
       id:          posts.id,
       title:       posts.title,
       slug:        posts.slug,
@@ -21,7 +37,9 @@ export default async function IdeasPage() {
     })
     .from(posts)
     .where(and(eq(posts.published, true), eq(posts.type, 'ideas')))
-    .orderBy(desc(posts.publishedAt))
+    .orderBy(desc(posts.publishedAt)),
+    getIdeasTopics(),
+  ])
 
   const leadEssay     = essays[0]
   const sidebarEssays = essays.slice(1, 4)
@@ -195,7 +213,7 @@ export default async function IdeasPage() {
         }}>{pullQuote.attribution}</p>
       </div>
 
-      <IdeasFilterGrid essays={cardEssays} />
+      <IdeasFilterGrid essays={cardEssays} topics={ideasTopics} />
 
       <SiteFooter section="03 / Ideas" />
     </div>

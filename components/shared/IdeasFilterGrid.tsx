@@ -14,45 +14,58 @@ type Essay = {
   metadata: unknown
 }
 
-export function IdeasFilterGrid({ essays }: { essays: Essay[] }) {
-  const [activeTag, setActiveTag] = useState<string>('All')
+export type TopicFilter = { id: string; label: string; tags: string[] }
 
-  // Derive unique tags from actual post data
-  const allTags = ['All', ...Array.from(new Set(essays.flatMap((e) => e.tags ?? [])))]
+const ALL_TOPIC: TopicFilter = { id: 'all', label: 'All', tags: [] }
 
-  const filtered = activeTag === 'All'
-    ? essays
-    : essays.filter((e) => (e.tags ?? []).includes(activeTag))
+function essayMatchesTopic(essay: Essay, topic: TopicFilter): boolean {
+  if (topic.id === 'all') return true
+  const essayTags = (essay.tags ?? []).map(t => t.toLowerCase())
+  return topic.tags.some(t => essayTags.includes(t))
+}
+
+export function IdeasFilterGrid({ essays, topics }: { essays: Essay[]; topics: TopicFilter[] }) {
+  const [activeTopic, setActiveTopic] = useState<string>('all')
+
+  const allTopics = [ALL_TOPIC, ...topics]
+  const activeEntry = allTopics.find(t => t.id === activeTopic) ?? ALL_TOPIC
+
+  // Only show topics that have at least one matching essay
+  const visibleTopics = allTopics.filter(t =>
+    t.id === 'all' || essays.some(e => essayMatchesTopic(e, t))
+  )
+
+  const filtered = essays.filter(e => essayMatchesTopic(e, activeEntry))
 
   return (
     <>
       {/* ── Topics filter ── */}
       <div style={{
         display: 'flex', gap: '0.4rem', padding: '1rem 2rem',
-        flexWrap: 'wrap', alignItems: 'center',
-        borderBottom: '0.5px solid var(--bdr)',
+        alignItems: 'center', borderBottom: '0.5px solid var(--bdr)',
+        overflowX: 'auto',
       }}>
         <span style={{
           fontFamily: 'var(--font-syne), sans-serif',
           fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: 'var(--txt3)', marginRight: '0.5rem',
+          color: 'var(--txt3)', marginRight: '0.5rem', flexShrink: 0,
         }}>Topics</span>
-        {allTags.map((tag) => {
-          const active = tag === activeTag
+        {visibleTopics.map((topic) => {
+          const active = topic.id === activeTopic
           return (
             <button
-              key={tag}
-              onClick={() => setActiveTag(tag)}
+              key={topic.id}
+              onClick={() => setActiveTopic(topic.id)}
               style={{
                 fontFamily: 'var(--font-dm-mono), monospace',
                 fontSize: '10px', padding: '4px 11px', borderRadius: '999px',
                 border: '0.5px solid var(--bdr2)',
                 color: active ? 'var(--bg)' : 'var(--txt2)',
                 background: active ? 'var(--txt)' : 'transparent',
-                cursor: 'pointer',
+                cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                 transition: 'background 0.15s, color 0.15s',
               }}
-            >{tag}</button>
+            >{topic.label}</button>
           )
         })}
       </div>
@@ -64,7 +77,7 @@ export function IdeasFilterGrid({ essays }: { essays: Essay[] }) {
           fontFamily: 'var(--font-dm-mono), monospace',
           fontSize: '12px', color: 'var(--txt3)',
         }}>
-          No essays tagged &ldquo;{activeTag}&rdquo; yet.
+          No essays under &ldquo;{activeEntry.label}&rdquo; yet.
         </div>
       ) : (
         <IdeaMasonryGrid>

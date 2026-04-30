@@ -16,25 +16,38 @@ type TechPost = {
   metadata: unknown
 }
 
+export type TopicFilter = { id: string; label: string; tags: string[] }
+
+const ALL_TOPIC: TopicFilter = { id: 'all', label: 'all', tags: [] }
+
+function postMatchesTopic(post: TechPost, topic: TopicFilter): boolean {
+  if (topic.id === 'all') return true
+  const postTags = (post.tags ?? []).map(t => t.toLowerCase())
+  return topic.tags.some(t => postTags.includes(t))
+}
+
 function tagStyle(tag: string): CSSProperties {
   const t = tag.toLowerCase()
-  if (t === 'devtools' || t === 'python' || t === 'performance')
+  if (['devtools','python','bash','automation','aws','azure','gcp'].includes(t))
     return { background: 'var(--amber-bg)', color: 'var(--amber-txt)' }
-  if (t === 'systems' || t === 'web' || t === 'architecture')
+  if (['systems','web','architecture','devops','linux','ubuntu','docker','kubernetes'].includes(t))
     return { background: 'var(--purple-bg)', color: 'var(--purple-txt)' }
   return { background: 'var(--teal-pale)', color: 'var(--teal-txt)' }
 }
 
-export function TechPostList({ posts }: { posts: TechPost[] }) {
+export function TechPostList({ posts, topics }: { posts: TechPost[]; topics: TopicFilter[] }) {
   const [sort, setSort]           = useState<'newest' | 'oldest'>('newest')
-  const [activeTag, setActiveTag] = useState<string>('all')
+  const [activeTopic, setActiveTopic] = useState<string>('all')
 
-  // Derive unique tags from actual post data
-  const allTags = ['all', ...Array.from(new Set(posts.flatMap((a) => a.tags ?? [])))]
+  const allTopics = [ALL_TOPIC, ...topics]
+  const activeEntry = allTopics.find(t => t.label === activeTopic) ?? ALL_TOPIC
 
-  const filtered = activeTag === 'all'
-    ? posts
-    : posts.filter((a) => (a.tags ?? []).includes(activeTag))
+  // Only show topics that have at least one matching post
+  const visibleTopics = allTopics.filter(t =>
+    t.id === 'all' || posts.some(p => postMatchesTopic(p, t))
+  )
+
+  const filtered = posts.filter(p => postMatchesTopic(p, activeEntry))
 
   const sorted = [...filtered].sort((a, b) => {
     const ta = a.publishedAt?.getTime() ?? 0
@@ -51,23 +64,23 @@ export function TechPostList({ posts }: { posts: TechPost[] }) {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '1rem 2rem', borderBottom: '0.5px solid var(--bdr)',
       }}>
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-          {allTags.map((tag) => {
-            const active = tag === activeTag
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'nowrap', overflowX: 'auto' }}>
+          {visibleTopics.map((topic) => {
+            const active = topic.label === activeTopic
             return (
               <button
-                key={tag}
-                onClick={() => setActiveTag(tag)}
+                key={topic.id}
+                onClick={() => setActiveTopic(topic.label)}
                 style={{
                   fontFamily: 'var(--font-dm-mono), monospace',
                   fontSize: '10px', padding: '4px 12px',
                   border: '0.5px solid var(--bdr2)', borderRadius: '999px',
                   color: active ? 'var(--bg)' : 'var(--txt2)',
                   background: active ? 'var(--txt)' : 'transparent',
-                  cursor: 'pointer',
+                  cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                   transition: 'background 0.15s, color 0.15s',
                 }}
-              >{tag}</button>
+              >{topic.label}</button>
             )
           })}
         </div>
@@ -76,7 +89,8 @@ export function TechPostList({ posts }: { posts: TechPost[] }) {
           style={{
             fontFamily: 'var(--font-dm-mono), monospace',
             fontSize: '11px', color: 'var(--txt3)',
-            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: 0, marginLeft: '1rem', flexShrink: 0,
           }}
         >
           sort <span style={{ color: 'var(--txt2)' }}>{sort === 'newest' ? '↓ newest' : '↑ oldest'}</span>
@@ -90,7 +104,7 @@ export function TechPostList({ posts }: { posts: TechPost[] }) {
           fontFamily: 'var(--font-dm-mono), monospace',
           fontSize: '12px', color: 'var(--txt3)',
         }}>
-          No articles tagged &ldquo;{activeTag}&rdquo; yet.
+          No articles under &ldquo;{activeTopic}&rdquo; yet.
         </div>
       ) : sorted.map((a, i) => (
         <Link key={a.id} href={`/tech/${a.slug}`} className="hover-bg" style={{

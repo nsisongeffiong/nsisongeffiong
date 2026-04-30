@@ -14,18 +14,30 @@ type Poem = {
   content: string | null
 }
 
-export function PoetryPostList({ poems }: { poems: Poem[] }) {
-  const [activeTag, setActiveTag] = useState<string>('All')
+export type TopicFilter = { id: string; label: string; tags: string[] }
 
-  // Derive unique tags from actual post data
-  const allTags = ['All', ...Array.from(new Set(poems.flatMap((p) => p.tags ?? [])))]
+const ALL_TOPIC: TopicFilter = { id: 'all', label: 'All', tags: [] }
 
-  const filtered = activeTag === 'All'
-    ? poems
-    : poems.filter((p) => (p.tags ?? []).includes(activeTag))
+function poemMatchesTopic(poem: Poem, topic: TopicFilter): boolean {
+  if (topic.id === 'all') return true
+  const poemTags = (poem.tags ?? []).map(t => t.toLowerCase())
+  return topic.tags.some(t => poemTags.includes(t))
+}
 
-  const featured = filtered[0]
-  const rest     = filtered.slice(1)
+export function PoetryPostList({ poems, topics }: { poems: Poem[]; topics: TopicFilter[] }) {
+  const [activeTopic, setActiveTopic] = useState<string>('all')
+
+  const allTopics = [ALL_TOPIC, ...topics]
+  const activeEntry = allTopics.find(t => t.id === activeTopic) ?? ALL_TOPIC
+
+  // Only show topics that have at least one matching poem
+  const visibleTopics = allTopics.filter(t =>
+    t.id === 'all' || poems.some(p => poemMatchesTopic(p, t))
+  )
+
+  const filtered = poems.filter(p => poemMatchesTopic(p, activeEntry))
+  const featured  = filtered[0]
+  const rest      = filtered.slice(1)
 
   return (
     <>
@@ -34,22 +46,22 @@ export function PoetryPostList({ poems }: { poems: Poem[] }) {
         display: 'flex', gap: 0, padding: '0 2rem',
         borderBottom: '0.5px solid var(--bdr)', overflowX: 'auto',
       }}>
-        {allTags.map((tag) => {
-          const active = tag === activeTag
+        {visibleTopics.map((topic) => {
+          const active = topic.id === activeTopic
           return (
             <button
-              key={tag}
-              onClick={() => setActiveTag(tag)}
+              key={topic.id}
+              onClick={() => setActiveTopic(topic.id)}
               style={{
                 fontFamily: 'var(--font-cormorant), serif',
                 fontSize: '14px', fontStyle: 'italic', fontWeight: 300,
                 color: active ? 'var(--purple)' : 'var(--txt3)',
                 padding: '1rem 1.25rem', background: 'none', border: 'none', cursor: 'pointer',
                 borderBottom: active ? '1px solid var(--purple)' : '1px solid transparent',
-                marginBottom: '-0.5px', whiteSpace: 'nowrap',
+                marginBottom: '-0.5px', whiteSpace: 'nowrap', flexShrink: 0,
                 transition: 'color 0.15s',
               }}
-            >{tag}</button>
+            >{topic.label}</button>
           )
         })}
       </div>
@@ -62,7 +74,7 @@ export function PoetryPostList({ poems }: { poems: Poem[] }) {
             fontFamily: 'var(--font-dm-mono), monospace',
             fontSize: '12px', color: 'var(--txt3)',
           }}>
-            No poems tagged &ldquo;{activeTag}&rdquo; yet.
+            No poems under &ldquo;{activeEntry.label}&rdquo; yet.
           </div>
         ) : (
           <>

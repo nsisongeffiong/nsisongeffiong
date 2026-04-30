@@ -4,12 +4,28 @@ import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { TechPostList } from '@/components/tech/TechPostList'
 import { db } from '@/lib/db'
-import { posts } from '@/lib/db/schema'
-import { desc, eq, and } from 'drizzle-orm'
+import { posts, topics, topicTags } from '@/lib/db/schema'
+import { desc, eq, and, asc } from 'drizzle-orm'
+
+async function getTechTopics() {
+  const rows = await db
+    .select({ id: topics.id, label: topics.label, tag: topicTags.tag })
+    .from(topics)
+    .leftJoin(topicTags, eq(topicTags.topicId, topics.id))
+    .where(eq(topics.section, 'tech'))
+    .orderBy(asc(topics.position))
+
+  const map = new Map<string, { id: string; label: string; tags: string[] }>()
+  for (const row of rows) {
+    if (!map.has(row.id)) map.set(row.id, { id: row.id, label: row.label, tags: [] })
+    if (row.tag) map.get(row.id)!.tags.push(row.tag)
+  }
+  return Array.from(map.values())
+}
 
 export default async function TechPage() {
-  const articles = await db
-    .select({
+  const [articles, techTopics] = await Promise.all([
+    db.select({
       id:          posts.id,
       title:       posts.title,
       slug:        posts.slug,
@@ -20,7 +36,9 @@ export default async function TechPage() {
     })
     .from(posts)
     .where(and(eq(posts.published, true), eq(posts.type, 'tech')))
-    .orderBy(desc(posts.publishedAt))
+    .orderBy(desc(posts.publishedAt)),
+    getTechTopics(),
+  ])
 
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--txt)',  }}>
@@ -61,19 +79,19 @@ export default async function TechPage() {
             fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--txt3)',
           }}>Topics</span>
           <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 200 }}>
-            {['AI/ML', 'systems', 'web', 'devtools'].map((t) => (
-              <span key={t} style={{
+            {techTopics.map((t) => (
+              <span key={t.id} style={{
                 fontFamily: 'var(--font-dm-mono), monospace',
                 fontSize: '10px', padding: '4px 10px',
                 border: '0.5px solid var(--bdr2)', borderRadius: '999px',
                 color: 'var(--teal-mid)',
-              }}>{t}</span>
+              }}>{t.label}</span>
             ))}
           </div>
         </div>
       </section>
 
-      <TechPostList posts={articles} />
+      <TechPostList posts={articles} topics={techTopics} />
 
       <SiteFooter section="02 / Tech" />
     </div>
