@@ -7,6 +7,13 @@ import { postTopics } from '@/lib/db/schema'
 import { generateSlug } from '@/lib/utils'
 import type { PostType } from '@/types'
 
+function computeContentStats(html: string): { wordCount: number; readTime: number } {
+  const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  const wordCount = text ? text.split(' ').length : 0
+  const readTime = Math.max(1, Math.round(wordCount / 200))
+  return { wordCount, readTime }
+}
+
 const ALLOWED_TYPES: PostType[] = ['poetry', 'tech', 'ideas']
 
 function isValidPostType(value: unknown): value is PostType {
@@ -105,6 +112,8 @@ export async function POST(request: NextRequest) {
 
     const slug = generateSlug(title)
 
+    const stats = computeContentStats(content)
+
     const [post] = await db
       .insert(posts)
       .values({
@@ -114,7 +123,7 @@ export async function POST(request: NextRequest) {
         content,
         excerpt:     excerpt ?? null,
         tags:        tags ?? [],
-        metadata:    metadata ?? {},
+        metadata:    { ...(metadata ?? {}), wordCount: stats.wordCount, readTime: stats.readTime },
         published:   published ?? false,
         publishedAt: published ? new Date() : null,
       })

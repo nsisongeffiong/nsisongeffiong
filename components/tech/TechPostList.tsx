@@ -55,8 +55,6 @@ export function TechPostList({ posts, topics }: { posts: TechPost[]; topics: Top
     return sort === 'newest' ? tb - ta : ta - tb
   })
 
-  const uniqueTopics = new Set(posts.flatMap((a) => a.tags ?? []))
-
   return (
     <>
       {/* ── Toolbar ── */}
@@ -160,26 +158,38 @@ export function TechPostList({ posts, topics }: { posts: TechPost[]; topics: Top
 
       {/* ── Stats ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        {[
-          { n: String(posts.length),           label: 'articles published' },
-          { n: '~7k',                          label: 'avg words / article' },
-          { n: String(uniqueTopics.size || 4), label: 'topics covered' },
-        ].map((s, i, arr) => (
-          <div key={s.label} style={{
-            padding: '1.75rem 2rem',
-            borderRight: i < arr.length - 1 ? '0.5px solid var(--bdr)' : 'none',
-          }}>
-            <div style={{
-              fontFamily: 'var(--font-cormorant), serif',
-              fontSize: '40px', fontWeight: 300,
-              color: 'var(--teal-mid)', lineHeight: 1, marginBottom: '0.35rem',
-            }}>{s.n}</div>
-            <div style={{
-              fontFamily: 'var(--font-dm-mono), monospace',
-              fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--txt3)',
-            }}>{s.label}</div>
-          </div>
-        ))}
+        {(() => {
+          const wordCounts = posts
+            .map(p => (p.metadata as any)?.wordCount)
+            .filter((n): n is number => typeof n === 'number' && n > 0)
+          const avgWords = wordCounts.length
+            ? Math.round(wordCounts.reduce((a, b) => a + b, 0) / wordCounts.length)
+            : null
+          const avgLabel = avgWords
+            ? avgWords >= 1000 ? `~${(avgWords / 1000).toFixed(1)}k` : String(avgWords)
+            : '—'
+
+          return [
+            { n: String(posts.length), label: 'articles published' },
+            { n: avgLabel,             label: 'avg words / article' },
+            { n: String(topics.length), label: 'topics covered' },
+          ].map((s, i, arr) => (
+            <div key={s.label} style={{
+              padding: '1.75rem 2rem',
+              borderRight: i < arr.length - 1 ? '0.5px solid var(--bdr)' : 'none',
+            }}>
+              <div style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontSize: '40px', fontWeight: 300,
+                color: 'var(--teal-mid)', lineHeight: 1, marginBottom: '0.35rem',
+              }}>{s.n}</div>
+              <div style={{
+                fontFamily: 'var(--font-dm-mono), monospace',
+                fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--txt3)',
+              }}>{s.label}</div>
+            </div>
+          ))
+        })()}
       </div>
     </>
   )

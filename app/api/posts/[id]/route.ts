@@ -23,6 +23,14 @@ async function requireAdmin() {
   return { user, error: null }
 }
 
+// Strip HTML and compute word count + read time
+function computeContentStats(html: string): { wordCount: number; readTime: number } {
+  const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  const wordCount = text ? text.split(' ').length : 0
+  const readTime = Math.max(1, Math.round(wordCount / 200))
+  return { wordCount, readTime }
+}
+
 // PATCH /api/posts/[id] — update an existing post (admin only)
 export async function PATCH(
   request: NextRequest,
@@ -47,7 +55,14 @@ export async function PATCH(
     if (content   !== undefined) updates.content   = content
     if (excerpt   !== undefined) updates.excerpt   = excerpt
     if (tags      !== undefined) updates.tags      = tags
-    if (metadata  !== undefined) updates.metadata  = metadata
+    if (metadata  !== undefined || content !== undefined) {
+      const stats = content ? computeContentStats(content) : null
+      updates.metadata = {
+        ...(existing.metadata as Record<string, unknown> ?? {}),
+        ...(metadata ?? {}),
+        ...(stats ? { wordCount: stats.wordCount, readTime: stats.readTime } : {}),
+      }
+    }
     if (published !== undefined) {
       updates.published = published
       // Explicit publishedAt from body takes priority; otherwise auto-stamp on first publish
