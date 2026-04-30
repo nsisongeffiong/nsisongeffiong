@@ -1,7 +1,6 @@
 import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { CommentForm } from '@/components/shared/CommentForm'
-import { DisqusComments } from '@/components/shared/DisqusComments'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
@@ -67,7 +66,6 @@ export default async function PoetrySinglePage({
   const meta      = post.metadata as any
   const category  = meta?.category ?? post.tags?.[0] ?? 'Poetry'
   const poetNote  = meta?.poetNote ?? null
-  const isLegacy  = meta?.legacyDisqus === true
   const author    = meta?.authorName ?? 'Nsisong Effiong'
   const date      = post.publishedAt
     ? post.publishedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -270,11 +268,7 @@ export default async function PoetrySinglePage({
               color: 'var(--txt2)', marginBottom: '1.5rem',
             }}>Leave a response</p>
 
-            {isLegacy ? (
-              <DisqusComments slug={post.slug} title={post.title} path={`/poetry/${post.slug}`} />
-            ) : (
               <CommentForm postId={post.id} section="poetry" />
-            )}
           </div>
         </section>
       </main>

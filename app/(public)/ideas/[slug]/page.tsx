@@ -1,7 +1,6 @@
 import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { CommentForm } from '@/components/shared/CommentForm'
-import { DisqusComments } from '@/components/shared/DisqusComments'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
@@ -60,7 +59,6 @@ export default async function IdeasSinglePage({
   const volume   = post.publishedAt ? getVolume(post.publishedAt.getFullYear()) : 'Vol. I'
   const readTime = meta?.readTime ?? null
   const deck     = meta?.deck ?? post.excerpt ?? null
-  const isLegacy = meta?.legacyDisqus === true
   const date     = post.publishedAt
     ? post.publishedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : ''
@@ -263,11 +261,7 @@ export default async function IdeasSinglePage({
               letterSpacing: '0.14em', textTransform: 'uppercase',
               color: 'var(--txt)', marginBottom: '1.5rem',
             }}>Leave a response</p>
-            {isLegacy ? (
-              <DisqusComments slug={post.slug} title={post.title} path={`/ideas/${post.slug}`} />
-            ) : (
               <CommentForm postId={post.id} section="ideas" />
-            )}
           </div>
         </section>
       </main>

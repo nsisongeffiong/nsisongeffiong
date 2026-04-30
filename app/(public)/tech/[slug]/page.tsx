@@ -1,7 +1,6 @@
 import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { CommentForm } from '@/components/shared/CommentForm'
-import { DisqusComments } from '@/components/shared/DisqusComments'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
@@ -54,7 +53,6 @@ export default async function TechSinglePage({
 
   const meta      = post.metadata as any
   const readTime  = meta?.readTime ?? null
-  const isLegacy  = meta?.legacyDisqus === true
   const date      = post.publishedAt
     ? post.publishedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : ''
@@ -254,11 +252,7 @@ export default async function TechSinglePage({
               fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase',
               color: 'var(--txt2)', marginBottom: '1.5rem',
             }}>// add a comment</p>
-            {isLegacy ? (
-              <DisqusComments slug={post.slug} title={post.title} path={`/tech/${post.slug}`} />
-            ) : (
               <CommentForm postId={post.id} section="tech" />
-            )}
           </div>
         </section>
       </main>
