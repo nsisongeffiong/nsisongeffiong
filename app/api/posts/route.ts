@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data: post }, { status: 201 })
+  } catch (error: any) {
     // Unique constraint on slug
     if (error?.code === '23505') {
       return NextResponse.json(
