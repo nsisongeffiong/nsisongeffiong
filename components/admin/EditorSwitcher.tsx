@@ -13,6 +13,7 @@ interface PostData {
   content: string;
   excerpt?: string;
   tags?: string[];
+  topicIds?: string[];
   published?: boolean;
   publishedAt?: string | null;
   createdAt?: string | null;
