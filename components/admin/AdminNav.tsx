@@ -9,7 +9,7 @@ const navItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
   { label: 'Posts', href: '/admin/posts' },
   { label: 'Comments', href: '/admin/comments' },
-  { label: 'About page', href: '/admin/about' },
+  { label: 'Settings', href: '/admin/about' },
 
 ];
 
