@@ -35,8 +35,8 @@ export async function PATCH(
     const body = await request.json()
     const { status } = body
 
-    if (status !== 'approved' && status !== 'rejected') {
-      return NextResponse.json({ success: false, error: 'status must be "approved" or "rejected"' }, { status: 400 })
+    if (status !== 'approved' && status !== 'rejected' && status !== 'pending') {
+      return NextResponse.json({ success: false, error: 'status must be "approved", "rejected", or "pending"' }, { status: 400 })
     }
 
     const [existing] = await db.select({ id: comments.id }).from(comments).where(eq(comments.id, id)).limit(1)
