@@ -22,7 +22,7 @@ const typeBadgeStyles: Record<'poetry' | 'tech' | 'ideas', React.CSSProperties> 
   ideas:  { background: 'var(--amber-bg)',   color: 'var(--amber-txt)' },
 }
 
-const tabs = ['All', 'Pending', 'Approved'] as const
+const tabs = ['All', 'Pending', 'Approved', 'Rejected'] as const
 type Tab = typeof tabs[number]
 
 function truncate(text: string, max: number): string {
@@ -56,25 +56,11 @@ export default function CommentsClient({ initialComments }: { initialComments: C
     }
   }
 
-  async function handleReject(id: string) {
-    setLoadingId(id)
-    try {
-      const res = await fetch(`/api/comments/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'rejected' }),
-      })
-      if (!res.ok) return
-      setComments((prev) => prev.filter((c) => c.id !== id))
-    } finally {
-      setLoadingId(null)
-    }
-  }
-
   const filtered = comments.filter((c) => {
-    if (activeTab === 'All') return true
-    if (activeTab === 'Pending') return c.status === 'pending'
+    if (activeTab === 'All')      return true
+    if (activeTab === 'Pending')  return c.status === 'pending'
     if (activeTab === 'Approved') return c.status === 'approved'
+    if (activeTab === 'Rejected') return c.status === 'rejected'
     return true
   })
 
@@ -204,7 +190,7 @@ export default function CommentsClient({ initialComments }: { initialComments: C
 
                 {/* Action row */}
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                  {comment.status === 'pending' ? (
+                  {comment.status === 'pending' && (
                     <>
                       <button
                         type="button"
@@ -227,7 +213,7 @@ export default function CommentsClient({ initialComments }: { initialComments: C
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={() => handleReject(comment.id)}
+                        onClick={() => patchStatus(comment.id, 'rejected')}
                         style={{
                           fontFamily: 'var(--font-dm-mono)',
                           fontSize: 10,
@@ -243,7 +229,9 @@ export default function CommentsClient({ initialComments }: { initialComments: C
                         Reject
                       </button>
                     </>
-                  ) : (
+                  )}
+
+                  {comment.status === 'approved' && (
                     <>
                       <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--teal-mid)' }}>
                         Approved
@@ -263,6 +251,46 @@ export default function CommentsClient({ initialComments }: { initialComments: C
                         }}
                       >
                         Undo
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => patchStatus(comment.id, 'rejected')}
+                        style={{
+                          fontFamily: 'var(--font-dm-mono)',
+                          fontSize: 10,
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--txt3)',
+                          cursor: busy ? 'not-allowed' : 'pointer',
+                          padding: 0,
+                        }}
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+
+                  {comment.status === 'rejected' && (
+                    <>
+                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--txt3)' }}>
+                        Rejected
+                      </span>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => patchStatus(comment.id, 'pending')}
+                        style={{
+                          fontFamily: 'var(--font-dm-mono)',
+                          fontSize: 10,
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--teal-mid)',
+                          cursor: busy ? 'not-allowed' : 'pointer',
+                          padding: 0,
+                        }}
+                      >
+                        Restore
                       </button>
                     </>
                   )}

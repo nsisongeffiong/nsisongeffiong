@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { TurnstileWidget } from './TurnstileWidget'
+import { TurnstileWidget, resetTurnstile } from './TurnstileWidget'
 
 interface CommentFormProps {
   postId:   string
@@ -40,7 +40,7 @@ export function CommentForm({
 
       if (!turnstileToken) {
         setStatus('error')
-        setErrorMsg('Verification is not ready yet. Please try again later.')
+        setErrorMsg('Verification is not ready yet. Please try again in a moment.')
         return
       }
 
@@ -63,6 +63,8 @@ export function CommentForm({
       if (!data.success) {
         setStatus('error')
         setErrorMsg(data.error ?? 'Something went wrong. Please try again.')
+        // Reset the widget — the token was consumed, user needs a fresh one
+        resetTurnstile()
         return
       }
 
@@ -74,6 +76,7 @@ export function CommentForm({
     } catch {
       setStatus('error')
       setErrorMsg('Network error. Please check your connection and try again.')
+      resetTurnstile()
     }
   }
 
