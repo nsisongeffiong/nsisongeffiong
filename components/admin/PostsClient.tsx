@@ -6,6 +6,7 @@ import Link from 'next/link'
 
 const filters = ['All', 'Poetry', 'Tech', 'Ideas', 'Drafts'] as const
 type Filter = (typeof filters)[number]
+type StatusSort = 'published-first' | 'drafts-first' | null
 
 const typeBadgeStyles: Record<'poetry' | 'tech' | 'ideas', React.CSSProperties> = {
   poetry: { background: 'var(--purple-bg)', color: 'var(--purple-txt)' },
@@ -16,6 +17,18 @@ const typeBadgeStyles: Record<'poetry' | 'tech' | 'ideas', React.CSSProperties> 
 function fmtDate(d: string | null): string {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function nextSort(current: StatusSort): StatusSort {
+  if (current === null) return 'published-first'
+  if (current === 'published-first') return 'drafts-first'
+  return null
+}
+
+function sortIndicator(sort: StatusSort): string {
+  if (sort === 'published-first') return ' ↑'
+  if (sort === 'drafts-first') return ' ↓'
+  return ''
 }
 
 export interface Post {
@@ -32,12 +45,20 @@ export default function PostsClient({ initialPosts }: { initialPosts: Post[] }) 
   const router = useRouter()
   const [allPosts] = useState<Post[]>(initialPosts ?? [])
   const [activeFilter, setActiveFilter] = useState<Filter>('All')
+  const [statusSort, setStatusSort] = useState<StatusSort>(null)
 
-  const displayed = allPosts.filter((p) => {
+  const filtered = allPosts.filter((p) => {
     if (activeFilter === 'All') return true
     if (activeFilter === 'Drafts') return !p.published
     return p.type === activeFilter.toLowerCase()
   })
+
+  const displayed = statusSort === null
+    ? filtered
+    : [...filtered].sort((a, b) => {
+        if (statusSort === 'published-first') return Number(b.published) - Number(a.published)
+        return Number(a.published) - Number(b.published)
+      })
 
   return (
     <>
@@ -83,7 +104,32 @@ export default function PostsClient({ initialPosts }: { initialPosts: Post[] }) 
           >
             <th style={{ paddingBottom: '0.6rem', fontWeight: 400 }}>Title</th>
             <th style={{ paddingBottom: '0.6rem', fontWeight: 400, width: 100 }}>Type</th>
-            <th style={{ paddingBottom: '0.6rem', fontWeight: 400, width: 90 }}>Status</th>
+            <th style={{ paddingBottom: '0.6rem', fontWeight: 400, width: 90 }}>
+              <button
+                type="button"
+                onClick={() => setStatusSort(nextSort(statusSort))}
+                title={
+                  statusSort === null ? 'Sort by status'
+                  : statusSort === 'published-first' ? 'Show drafts first'
+                  : 'Clear sort'
+                }
+                style={{
+                  fontFamily: 'var(--font-dm-mono)',
+                  fontSize: 10,
+                  textTransform: 'uppercase',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  color: statusSort !== null ? 'var(--teal-mid)' : 'var(--txt3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}
+              >
+                Status{sortIndicator(statusSort)}
+              </button>
+            </th>
             <th style={{ paddingBottom: '0.6rem', fontWeight: 400, width: 120 }}>Date</th>
             <th style={{ paddingBottom: '0.6rem', fontWeight: 400, width: 80 }}>Actions</th>
           </tr>
