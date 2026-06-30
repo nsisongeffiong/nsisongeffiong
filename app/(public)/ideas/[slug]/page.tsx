@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { CommentForm } from '@/components/shared/CommentForm'
@@ -6,6 +7,38 @@ import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import { posts, comments } from '@/lib/db/schema'
 import { eq, and, lt, gt, desc, asc } from 'drizzle-orm'
+
+type Props = { params: Promise<{ slug: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  const [post] = await db.select().from(posts).where(eq(posts.slug, slug)).limit(1)
+  if (!post) return {}
+
+  const plain = post.content.replace(/<[^>]+>/g, '')
+  const description = post.excerpt ?? plain.slice(0, 160).trim()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nsisongeffiong.com'
+  const url = `${siteUrl}/ideas/${post.slug}`
+
+  return {
+    title: post.title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'article',
+      title: post.title,
+      description,
+      url,
+      publishedTime: post.publishedAt?.toISOString(),
+      authors: ['Nsisong Effiong'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description,
+    },
+  }
+}
 
 export default async function IdeasSinglePage({
   params,
