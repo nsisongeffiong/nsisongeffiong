@@ -2,24 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { comments } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/lib/auth'
 
 async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await auth()
 
-  if (!user) return { user: null, error: NextResponse.json({ success: false, error: 'Unauthorised' }, { status: 401 }) }
+  if (!session?.user) return { user: null, error: NextResponse.json({ success: false, error: 'Unauthorised' }, { status: 401 }) }
 
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((v) => v.trim().toLowerCase())
-    .filter(Boolean)
-
-  if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
-    return { user: null, error: NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 }) }
-  }
-
-  return { user, error: null }
+  return { user: session.user, error: null }
 }
 
 // PATCH /api/comments/[id] — update comment status (admin only)

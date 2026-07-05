@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db }             from '@/lib/db'
 import { aboutContent }   from '@/lib/db/schema'
-import { createClient } from '@/lib/supabase/server'
+import { auth }           from '@/lib/auth'
 import { eq }             from 'drizzle-orm'
 
 export async function GET() {
@@ -16,12 +16,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim())
-  if (!adminEmails.includes(user.email ?? ''))
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { nowItems, bookList } = await req.json()
   const existing = await db.select({ id: aboutContent.id })

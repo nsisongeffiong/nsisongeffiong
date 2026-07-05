@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/lib/auth'
 import { eq, desc, and } from 'drizzle-orm'
 import { postTopics } from '@/lib/db/schema'
 import { generateSlug } from '@/lib/utils'
@@ -65,31 +65,14 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/posts — create a new post (admin only)
-// [HUMAN REVIEW NEEDED]: Currently any authenticated Supabase user can
-// create posts. Add admin role verification — email allowlist, Supabase
-// custom claim, or RLS policy — before production deployment.
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const session = await auth()
 
-    if (!user) {
+    if (!session?.user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorised' },
         { status: 401 }
-      )
-    }
-
-    // Admin authorization via email allowlist
-    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-      .split(',')
-      .map((v) => v.trim().toLowerCase())
-      .filter(Boolean)
-
-    if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
-      return NextResponse.json(
-        { success: false, error: 'Forbidden' },
-        { status: 403 }
       )
     }
 

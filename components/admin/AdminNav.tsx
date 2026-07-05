@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 const navItems = [
@@ -20,14 +21,12 @@ export default function AdminNav() {
 
   const handleSignOut = async () => {
     setSignOutError(false);
-    const res = await fetch('/api/auth', { method: 'DELETE' });
-
-    if (!res.ok) {
+    try {
+      await signOut({ redirect: false });
+      router.push('/admin/login');
+    } catch {
       setSignOutError(true);
-      return;
     }
-
-    router.push('/admin/login');
   };
 
   return (
