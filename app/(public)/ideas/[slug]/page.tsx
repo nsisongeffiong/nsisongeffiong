@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { CommentForm } from '@/components/shared/CommentForm'
+import { SharePost } from '@/components/SharePost'
+import { absoluteUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
@@ -17,8 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const plain = post.content.replace(/<[^>]+>/g, '')
   const description = post.excerpt ?? plain.slice(0, 160).trim()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nsisongeffiong.com'
-  const url = `${siteUrl}/ideas/${post.slug}`
+  const url = absoluteUrl(`/ideas/${post.slug}`)
 
   return {
     title: post.title,
@@ -95,6 +96,7 @@ export default async function IdeasSinglePage({
   const date     = post.publishedAt
     ? post.publishedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : ''
+  const canonicalUrl = absoluteUrl(`/ideas/${post.slug}`)
 
   return (
     <>
@@ -194,6 +196,11 @@ export default async function IdeasSinglePage({
             </p>
           </div>
         )}
+
+        {/* ── Share ── */}
+        <div style={{ maxWidth: 700, margin: '0 auto', padding: '2.5rem 2rem 3rem' }}>
+          <SharePost title={post.title} url={canonicalUrl} section="ideas" />
+        </div>
 
         {/* ── Prev / Next ── */}
         <div className="post-nav-grid" style={{ borderTop: '2px solid var(--txt)' }}>
