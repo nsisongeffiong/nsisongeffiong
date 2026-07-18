@@ -41,3 +41,8 @@ prompts/
 ghost-export.json
 scripts/run.py
 app/\(public\)/page.tsx.bak
+
+# Pipeline (added by import-project.sh)
+reviews/*.tmp
+.model_cache/
+__pycache__/
