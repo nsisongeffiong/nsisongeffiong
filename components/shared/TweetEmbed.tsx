@@ -38,7 +38,7 @@ export function TweetEmbed({ url, fallback }: Props) {
       style={{
         margin: '2.5rem 0',
         display: 'flex',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
       }}
     >
       <blockquote
