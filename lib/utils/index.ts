@@ -53,13 +53,14 @@ export function absoluteUrl(path: string): string {
 }
 
 // ─── Tweet embed markers ──────────────────────────────────────────────────────
-// Authors drop `<!--tweet:https://x.com/user/status/ID-->` on its own line in
-// post HTML to mark where an X/Twitter embed should render. We split the body
-// on that marker so plain HTML and tweet embeds can be rendered as siblings.
+// The editor stores an X/Twitter embed as the empty block the `tweetEmbed`
+// Tiptap node serializes to: `<div class="tweet-embed" data-tweet-url="URL">`.
+// We split the body on that block so plain HTML and tweet embeds can be
+// rendered as siblings.
 export type ContentSegment = { html?: string; tweetUrl?: string }
 
 export function splitTweetSegments(content: string): ContentSegment[] {
-  const marker = /<!--tweet:(https?:\/\/[^\s>]+?)-->/g
+  const marker = /<div[^>]*\bdata-tweet-url=["']([^"']+)["'][^>]*>\s*<\/div>/g
   const segments: ContentSegment[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null

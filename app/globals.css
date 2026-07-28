@@ -176,6 +176,26 @@ body {
   margin: 1.5rem 0;
 }
 
+/* Tweet embed preview inside editor — the node is an empty div, so surface the
+   URL it carries. On public pages the div is consumed by splitTweetSegments. */
+.tiptap div[data-tweet-url] {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 11px;
+  color: var(--txt3);
+  padding: 0.75rem 1rem;
+  border: 0.5px dashed var(--bdr);
+  border-radius: 3px;
+  margin: 1.5rem 0;
+  overflow-wrap: anywhere;
+}
+.tiptap div[data-tweet-url]::before {
+  content: 'tweet embed — ' attr(data-tweet-url);
+}
+.tiptap div[data-tweet-url].ProseMirror-selectednode {
+  border-color: var(--teal-mid);
+  color: var(--teal-mid);
+}
+
 .tiptap blockquote.ideas-pq--right {
   border-left: none;
   border-right: 3px solid var(--amber);

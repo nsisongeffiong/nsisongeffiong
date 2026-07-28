@@ -187,6 +187,30 @@ const SectionBreak = Node.create({
   },
 });
 
+// Tweet embed — atom block carrying only a URL attribute. Attribute-based (not a
+// text marker) so Typography's smart-punctuation rules can never rewrite it and
+// the node survives a round-trip through the editor's HTML save.
+const TweetNode = Node.create({
+  name: 'tweetEmbed',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  draggable: true,
+  addAttributes() {
+    return {
+      url: {
+        default: null,
+        parseHTML: el => (el as HTMLElement).getAttribute('data-tweet-url'),
+        renderHTML: attrs => (attrs.url ? { 'data-tweet-url': attrs.url } : {}),
+      },
+    };
+  },
+  parseHTML() { return [{ tag: 'div[data-tweet-url]' }]; },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes({ class: 'tweet-embed' }, HTMLAttributes)];
+  },
+});
+
 // ── Toolbar item arrays ────────────────────────────────────────────────────────
 const SEP: Sep = { sep: true };
 
@@ -276,6 +300,15 @@ const TECH_TOOLBAR: ToolbarItem[] = [
     label: 'HR', title: 'Horizontal rule',
     action: e => e.chain().focus().setHorizontalRule().run(),
   },
+  SEP,
+  {
+    label: '+tweet', title: 'Insert tweet embed',
+    action: e => {
+      const url = window.prompt('Tweet/X URL');
+      if (url) e.chain().focus().insertContent({ type: 'tweetEmbed', attrs: { url } }).run();
+    },
+    active: e => e.isActive('tweetEmbed'),
+  },
 ];
 
 const IDEAS_TOOLBAR: ToolbarItem[] = [
@@ -340,6 +373,14 @@ const IDEAS_TOOLBAR: ToolbarItem[] = [
     }).run(),
     active: e => e.isActive('sectionBreak'),
   },
+  {
+    label: '+tweet', title: 'Insert tweet embed',
+    action: e => {
+      const url = window.prompt('Tweet/X URL');
+      if (url) e.chain().focus().insertContent({ type: 'tweetEmbed', attrs: { url } }).run();
+    },
+    active: e => e.isActive('tweetEmbed'),
+  },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -354,6 +395,7 @@ function getBlockLabel(editor: Editor | null): string {
   if (editor.isActive('heading', { level: 3 })) return 'heading 3';
   if (editor.isActive('codeBlock')) return 'code block';
   if (editor.isActive('sectionBreak')) return 'section break';
+  if (editor.isActive('tweetEmbed')) return 'tweet embed';
   if (editor.isActive('classedBlockquote')) return 'blockquote';
   if (editor.isActive('blockquote')) return 'blockquote';
   if (editor.isActive('bulletList')) return 'list';
@@ -425,6 +467,7 @@ export default function PostEditor({ initialData, onSave, onContentChange }: Pos
       DeepIndentLineNode,
       ClassedBlockquote,
       SectionBreak,
+      TweetNode,
     ],
     editorProps: {
       attributes: { class: 'tiptap' },
