@@ -3,7 +3,8 @@ import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { CommentForm } from '@/components/shared/CommentForm'
 import { SharePost } from '@/components/SharePost'
-import { absoluteUrl } from '@/lib/utils'
+import { TweetEmbed } from '@/components/shared/TweetEmbed'
+import { absoluteUrl, splitTweetSegments } from '@/lib/utils'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
@@ -84,6 +85,8 @@ export default async function TechSinglePage({
     const newOpenTag = openTag.includes(' id=') ? openTag : openTag.replace('>', ` id="${id}">`)
     return `${newOpenTag}${inner}</h${level}>`
   })
+
+  const contentSegments = splitTweetSegments(contentWithIds)
 
   const meta      = post.metadata as any
   const readTime  = meta?.readTime ?? null
@@ -173,8 +176,15 @@ export default async function TechSinglePage({
               padding: '3rem 2rem',
               borderRight: '0.5px solid var(--bdr)',
             }}
-            dangerouslySetInnerHTML={{ __html: contentWithIds }}
-          />
+          >
+            {contentSegments.map((segment, i) =>
+              segment.tweetUrl ? (
+                <TweetEmbed key={i} url={segment.tweetUrl} />
+              ) : (
+                <div key={i} dangerouslySetInnerHTML={{ __html: segment.html! }} />
+              ),
+            )}
+          </article>
 
           {/* Sidebar */}
           <aside style={{

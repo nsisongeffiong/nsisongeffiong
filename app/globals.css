@@ -294,8 +294,10 @@ body {
   clear: both;
   margin: 2.5rem 0 1rem;
 }
-/* Drop cap on first paragraph only — scoped to article tag */
-article.ideas-body > p:first-of-type::first-letter {
+/* Drop cap on first paragraph only — first para of the first content chunk.
+   Body HTML is rendered in wrapping <div> chunks (tweet-embed splitting), so
+   the drop-cap targets the first <p> inside the first chunk div. */
+article.ideas-body > div:first-of-type > p:first-of-type::first-letter {
   font-family: var(--font-inter-tight), var(--font-syne), sans-serif;
   font-size: 5.2em;
   font-weight: 800;

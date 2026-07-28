@@ -51,3 +51,28 @@ export function absoluteUrl(path: string): string {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nsisongeffiong.com'
   return `${base}${path}`
 }
+
+// ─── Tweet embed markers ──────────────────────────────────────────────────────
+// Authors drop `<!--tweet:https://x.com/user/status/ID-->` on its own line in
+// post HTML to mark where an X/Twitter embed should render. We split the body
+// on that marker so plain HTML and tweet embeds can be rendered as siblings.
+export type ContentSegment = { html?: string; tweetUrl?: string }
+
+export function splitTweetSegments(content: string): ContentSegment[] {
+  const marker = /<!--tweet:(https?:\/\/[^\s>]+?)-->/g
+  const segments: ContentSegment[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = marker.exec(content)) !== null) {
+    const html = content.slice(lastIndex, match.index)
+    if (html.trim()) segments.push({ html })
+    segments.push({ tweetUrl: match[1] })
+    lastIndex = marker.lastIndex
+  }
+
+  const tail = content.slice(lastIndex)
+  if (tail.trim()) segments.push({ html: tail })
+
+  return segments
+}

@@ -3,7 +3,8 @@ import { SiteNav } from '@/components/shared/SiteNav'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { CommentForm } from '@/components/shared/CommentForm'
 import { SharePost } from '@/components/SharePost'
-import { absoluteUrl } from '@/lib/utils'
+import { TweetEmbed } from '@/components/shared/TweetEmbed'
+import { absoluteUrl, splitTweetSegments } from '@/lib/utils'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
@@ -87,6 +88,8 @@ export default async function IdeasSinglePage({
   function getVolume(year: number): string {
     return `Vol. ${toRoman(year - 2011 + 1)}`
   }
+
+  const contentSegments = splitTweetSegments(post.content)
 
   const meta     = post.metadata as any
   const kicker   = meta?.kicker ?? post.tags?.[0] ?? 'Essay'
@@ -173,8 +176,15 @@ export default async function IdeasSinglePage({
         <article
           className="ideas-body"
           style={{ maxWidth: 700, margin: '0 auto', padding: '3rem 2rem' }}
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
+        >
+          {contentSegments.map((segment, i) =>
+            segment.tweetUrl ? (
+              <TweetEmbed key={i} url={segment.tweetUrl} />
+            ) : (
+              <div key={i} dangerouslySetInnerHTML={{ __html: segment.html! }} />
+            ),
+          )}
+        </article>
 
         {/* ── Original publication attribution ── */}
         {meta?.originalPublication && (
